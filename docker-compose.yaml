@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  1c_routing_api:
+    build: .  # Путь к Dockerfile FastAPI
+    ports:
+      - "8302:8002"
+    networks:
+      - dumpnewvectordbtest_default  # Имя сети из docker inspect
+
+networks:
+  dumpnewvectordbtest_default:
+    external: true  # Используем существующую сеть
