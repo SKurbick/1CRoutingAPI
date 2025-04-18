@@ -16,7 +16,8 @@ async def create_data(
         service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service)
 ):
     try:
-        await service.create_data(data)
+        response = await service.create_data(data)
         return {"status": 201, "message": "Успешно"}
     except Exception as e:
-        pass
+        return
+

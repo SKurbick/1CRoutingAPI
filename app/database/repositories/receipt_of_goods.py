@@ -13,19 +13,33 @@ class ReceiptOfGoodsRepository:
         data_to_update: List[Tuple] = []
 
         for res_data in data:
-            date = res_data.date
-            for wd in res_data.wild_data:
-                local_vendor_code = wd.local_vendor_code
-                supply_count = wd.count
-                data_to_update.append(
-                    (date, local_vendor_code, supply_count)
-                )
+            data_to_update.append(
+                (res_data.document_number,
+                 res_data.date,
+                 res_data.local_vendor_code,
+                 res_data.quantity,
+                 res_data.amount_with_vat,
+                 res_data.amount_without_vat,
+                 res_data.supplier_name,
+                 res_data.supplier_code,
+                 res_data.update_document_datetime,
+                 res_data.author_of_the_change,
+                 res_data.our_organizations_name))
+
         pprint(data_to_update)
         query = """
-        INSERT INTO supply_to_sellers_warehouse (date, local_vendor_code, quantity_in_delivery)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (date, local_vendor_code) DO UPDATE SET
-            quantity_in_delivery = EXCLUDED.quantity_in_delivery
+        INSERT INTO supply_to_sellers_warehouse (document_number,
+                                                date,
+                                                local_vendor_code,
+                                                quantity,
+                                                amount_with_vat,
+                                                amount_without_vat,
+                                                supplier_name,
+                                                supplier_code,
+                                                update_document_datetime,
+                                                author_of_the_change,
+                                                our_organizations_name)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         """
         async with self.pool.acquire() as conn:
             await conn.executemany(query, data_to_update)
