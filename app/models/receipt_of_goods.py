@@ -23,40 +23,50 @@ example_receipt_of_goods_data = [
      "document_created_at": "2025-04-16 15:22:37",
      "update_document_datetime": "2025-04-16 15:22:37",
      "event_status": "проведен",
-     "supply_data": [
-         {"supply_date": "2025-04-16 15:22:37",
-          "local_vendor_code": "wild123",
-          "quantity": 123,
-          "amount_with_vat": 123,
-          "amount_without_vat": 123,
-          "supplier_name": "Никола Тесла",
-          "supplier_code": "7355608"},
-         {"supply_date": "2025-04-16 15:22:37",
-          "local_vendor_code": "wild123",
-          "quantity": 123,
-          "amount_with_vat": 123,
-          "amount_without_vat": 123,
-          "supplier_name": "Никола Тесла",
-          "supplier_code": "7355608"
-          }
-     ],
      "author_of_the_change": "Артур Пирожков",
-     "our_organizations_name": "Консолидация"}
+     "our_organizations_name": "Консолидация",
+     "supply_data": [
+         {
+             "supply_date": "2025-04-16 15:22:37",
+             "local_vendor_code": "wild123",
+             "quantity": 123,
+             "amount_with_vat": 123,
+             "amount_without_vat": 123,
+             "supplier_name": "Никола Тесла",
+             "supplier_code": "7355608"},
+         {
+             "supply_date": "2025-04-16 15:22:37",
+             "local_vendor_code": "wild123",
+             "quantity": 123,
+             "amount_with_vat": 123,
+             "amount_without_vat": 123,
+             "supplier_name": "Никола Тесла",
+             "supplier_code": "7355608"
+         }
+     ]
+     }
 ]
 
 
-class ReceiptOfGoodsUpdate(BaseModel):
-    document_number: str
-    date: date
+class SupplyData(BaseModel):
+    supply_date: datetime
     local_vendor_code: str
     quantity: int
     amount_with_vat: int
     amount_without_vat: Optional[int] = None
     supplier_name: str
     supplier_code: Optional[str] = None
+
+
+class ReceiptOfGoodsUpdate(BaseModel):
+    guid: str
+    document_number: str
+    document_created_at: datetime
+    event_status: str
     update_document_datetime: datetime
     author_of_the_change: str
     our_organizations_name: str
+    supply_data: List[SupplyData]
 
 
 class ReceiptOfGoodsResponse(BaseModel):
