@@ -20,15 +20,15 @@ class ReceiptOfGoodsRepository:
             event_status = document_data.event_status
             author_of_the_change = document_data.author_of_the_change
             our_organizations_name = document_data.our_organizations_name
+            supply_date = document_data.supply_date
+            supplier_name = document_data.supplier_name
+            supplier_code = document_data.supplier_code
             guid_data.append(guid)
             for supply_data in document_data.supply_data:
-                supply_date = supply_data.supply_date
                 local_vendor_code = supply_data.local_vendor_code
                 quantity = supply_data.quantity
                 amount_with_vat = supply_data.amount_with_vat
                 amount_without_vat = supply_data.amount_without_vat
-                supplier_name = supply_data.supplier_name
-                supplier_code = supply_data.supplier_code
 
                 data_to_update.append((guid, document_number, document_created_at, update_document_datetime, event_status,
                                        author_of_the_change, our_organizations_name, supply_date, local_vendor_code,

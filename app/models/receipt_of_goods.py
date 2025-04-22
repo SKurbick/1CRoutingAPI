@@ -25,23 +25,21 @@ example_receipt_of_goods_data = [
      "event_status": "проведен",
      "author_of_the_change": "Артур Пирожков",
      "our_organizations_name": "Консолидация",
+     "supply_date": "2025-04-16 15:22:37",
+     "supplier_name": "Никола Тесла",
+     "supplier_code": "7355608",
      "supply_data": [
          {
-             "supply_date": "2025-04-16 15:22:37",
              "local_vendor_code": "wild123",
              "quantity": 123,
              "amount_with_vat": 123,
              "amount_without_vat": 123,
-             "supplier_name": "Никола Тесла",
-             "supplier_code": "7355608"},
+         },
          {
-             "supply_date": "2025-04-16 15:22:37",
              "local_vendor_code": "wild123",
              "quantity": 123,
              "amount_with_vat": 123,
              "amount_without_vat": 123,
-             "supplier_name": "Никола Тесла",
-             "supplier_code": "7355608"
          }
      ]
      }
@@ -49,16 +47,16 @@ example_receipt_of_goods_data = [
 
 
 class SupplyData(BaseModel):
-    supply_date: datetime
     local_vendor_code: str
     quantity: int
     amount_with_vat: int
     amount_without_vat: Optional[int] = None
-    supplier_name: str
-    supplier_code: Optional[str] = None
 
 
 class ReceiptOfGoodsUpdate(BaseModel):
+    supply_date: datetime
+    supplier_name: str
+    supplier_code: Optional[str] = None
     guid: str
     document_number: str
     document_created_at: datetime
