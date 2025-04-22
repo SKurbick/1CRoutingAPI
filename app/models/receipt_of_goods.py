@@ -48,7 +48,7 @@ example_receipt_of_goods_data = [
 
 class SupplyData(BaseModel):
     local_vendor_code: str
-    quantity: int
+    quantity: float
     amount_with_vat: float
     amount_without_vat: Optional[float] = None
 
