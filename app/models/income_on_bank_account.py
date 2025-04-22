@@ -26,10 +26,9 @@ Payment number
 1C document number
 
 """
-from typing import Dict, List
 
 from pydantic import BaseModel
-from datetime import datetime, date
+from datetime import datetime
 
 
 class IncomeOnBankAccountUpdate(BaseModel):
@@ -58,7 +57,7 @@ example_income_on_bank_account_data = [
      "document_created_at": "2025-04-16 15:22:37",
      "payment_receipt_date": "2025-04-16 15:00:00",
      "legal_entity": "ИП Даниелян Камо Оганесович (АЛЬФА)",
-     "receipt_account": 40802810101060001885,
+     "receipt_account": 40802810101060001885.0,
      "bank": "АО \'АЛЬФА-БАНК\'",
      "counterparty_name": "АЛЬФА-БАНК АО (ГО)",
      "counterparty_inn": 7728168971,
