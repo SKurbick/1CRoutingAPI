@@ -41,7 +41,7 @@ class IncomeOnBankAccountUpdate(BaseModel):
     counterparty_name: str
     counterparty_inn: int
     amount: float
-    vat: int
+    vat: float
     payment_purpose: str
     payment_number: int
     document_number_1c: str
