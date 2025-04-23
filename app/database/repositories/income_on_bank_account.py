@@ -2,15 +2,17 @@ from pprint import pprint
 from pprint import pprint
 from typing import List, Tuple
 
-from asyncpg import Pool
+import asyncpg
+from asyncpg import Pool, UniqueViolationError
 from app.models import IncomeOnBankAccountUpdate
+from app.models.income_on_bank_account import IncomeOnBankAccountResponse
 
 
 class IncomeOnBankAccountRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
-    async def update_data(self, data: List[IncomeOnBankAccountUpdate]):
+    async def update_data(self, data: List[IncomeOnBankAccountUpdate]) -> IncomeOnBankAccountResponse:
         data_to_update: List[Tuple] = []
 
         for res_data in data:
@@ -46,5 +48,25 @@ class IncomeOnBankAccountRepository:
                                                 document_number_1c)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         """
-        async with self.pool.acquire() as conn:
-            await conn.executemany(query, data_to_update)
+        try:
+            async with self.pool.acquire() as conn:
+                await conn.executemany(query, data_to_update)
+                result = IncomeOnBankAccountResponse(
+                    status=201,
+                    message="Данные успешно обновлены",
+
+                )
+
+        except UniqueViolationError as e:
+            result = IncomeOnBankAccountResponse(
+                status=422,
+                message="UniqueViolationError",
+                details=str(e)
+            )
+        except asyncpg.PostgresError as e:
+            result = IncomeOnBankAccountResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
+        return result

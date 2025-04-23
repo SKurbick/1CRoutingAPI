@@ -1,5 +1,7 @@
 # todo подключение пользователя
 # todo метод отправки данных
+import asyncio
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.db_connect import init_db, close_db

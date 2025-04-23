@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status, Body
+from fastapi import APIRouter, Depends, status, Body, HTTPException
 from app.models.receipt_of_goods import ReceiptOfGoodsUpdate, ReceiptOfGoodsResponse, example_receipt_of_goods_data
 from app.service.receipt_of_goods import ReceiptOfGoodsService
 from app.dependencies import get_receipt_of_goods_service
@@ -21,8 +21,15 @@ async def create_data(
         data: List[ReceiptOfGoodsUpdate] = Body(example=example_receipt_of_goods_data),
         service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service)
 ):
-    try:
-        response = await service.create_data(data)
-        return {"status": 201, "message": "Успешно"}
-    except Exception as e:
-        return
+    result = await service.create_data(data)
+
+    if result.status >= 400:
+        raise HTTPException(
+            status_code=result.status,
+            detail={
+                "message": result.message,
+                "details": result.details
+            }
+        )
+
+    return result

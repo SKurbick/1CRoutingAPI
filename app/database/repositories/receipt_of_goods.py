@@ -1,8 +1,10 @@
 from pprint import pprint
 from typing import List, Tuple
 
-from asyncpg import Pool
+import asyncpg
+from asyncpg import Pool, UniqueViolationError
 from app.models import ReceiptOfGoodsUpdate
+from app.models.receipt_of_goods import ReceiptOfGoodsResponse
 
 
 class ReceiptOfGoodsRepository:
@@ -47,7 +49,19 @@ class ReceiptOfGoodsRepository:
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, True)
         ;
         """
-        async with self.pool.acquire() as conn:
-            async with conn.transaction():
-                await conn.execute(query_to_update, guid_data)
-                await conn.executemany(query_to_insert, data_to_update)
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    await conn.execute(query_to_update, guid_data)
+                    await conn.executemany(query_to_insert, data_to_update)
+
+                result = ReceiptOfGoodsResponse(
+                    status=201,
+                    message="Успешно")
+        except asyncpg.PostgresError as e:
+            result = ReceiptOfGoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
+        return result

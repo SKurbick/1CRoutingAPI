@@ -2,6 +2,7 @@ from typing import List
 
 from app.models import ReceiptOfGoodsUpdate
 from app.database.repositories import ReceiptOfGoodsRepository
+from app.models.receipt_of_goods import ReceiptOfGoodsResponse
 
 
 class ReceiptOfGoodsService:
@@ -11,5 +12,6 @@ class ReceiptOfGoodsService:
     ):
         self.receipt_of_goods_repository = receipt_of_goods_repository
 
-    async def create_data(self, data: List[ReceiptOfGoodsUpdate]):
-        await self.receipt_of_goods_repository.update_data(data)
+    async def create_data(self, data: List[ReceiptOfGoodsUpdate]) -> ReceiptOfGoodsResponse:
+        resul = await self.receipt_of_goods_repository.update_data(data)
+        return resul

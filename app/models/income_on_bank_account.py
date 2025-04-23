@@ -26,8 +26,9 @@ Payment number
 1C document number
 
 """
+from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator, field_validator
 from datetime import datetime
 
 
@@ -39,17 +40,35 @@ class IncomeOnBankAccountUpdate(BaseModel):
     receipt_account: int
     bank: str
     counterparty_name: str
-    counterparty_inn: int
+    counterparty_inn: str
     amount: float
     vat: float
     payment_purpose: str
     payment_number: int
     document_number_1c: str
 
+    @field_validator('counterparty_inn')
+    def check_at_least_one_provided(cls, value):
+        """
+        Преобразует counterparty_inn:
+        - Если значение пустая строка ("") -> None
+        - Если значение строка с числами ("123123123123") -> int
+        - Если значение уже int -> оставляет как есть
+        """
+        if value == "":
+            return None
+        if isinstance(value, str):
+            try:
+                return int(value)
+            except ValueError:
+                raise ValueError(f"Invalid counterparty_inn value: {value}. Must be a number or an empty string.")
+        return value
+
 
 class IncomeOnBankAccountResponse(BaseModel):
     status: int
     message: str
+    details: Optional[str] = None
 
 
 example_income_on_bank_account_data = [
@@ -60,7 +79,7 @@ example_income_on_bank_account_data = [
      "receipt_account": 40802810101060001885.0,
      "bank": "АО \'АЛЬФА-БАНК\'",
      "counterparty_name": "АЛЬФА-БАНК АО (ГО)",
-     "counterparty_inn": 7728168971,
+     "counterparty_inn": "772816897112",
      "amount": 1855385,
      "vat": 0,
      "payment_purpose": "Выдача кредита по договору №0A2F9V от 160524  Без НДС",

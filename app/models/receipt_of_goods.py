@@ -1,6 +1,6 @@
 from typing import Dict, List, Union, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime, date
 
 """
@@ -66,7 +66,25 @@ class ReceiptOfGoodsUpdate(BaseModel):
     our_organizations_name: str
     supply_data: List[SupplyData]
 
+    @field_validator('supplier_code')
+    def check_at_least_one_provided(cls, value):
+        """
+        Преобразует counterparty_inn:
+        - Если значение пустая строка ("") -> None
+        - Если значение строка с числами ("123123123123") -> int
+        - Если значение уже int -> оставляет как есть
+        """
+        if value == "":
+            return None
+        if isinstance(value, str):
+            try:
+                return value
+            except ValueError:
+                raise ValueError(f"Invalid counterparty_inn value: {value}. Must be a number or an empty string.")
+        return value
+
 
 class ReceiptOfGoodsResponse(BaseModel):
     status: int
     message: str
+    details: Optional[str] = None

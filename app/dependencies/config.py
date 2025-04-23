@@ -9,7 +9,8 @@ class Settings(BaseSettings):
     POSTGRES_PORT: str
     APP_IP_ADDRESS: str
     APP_PORT: int
-    API_KEY_HEADER: str = "X-API-Key"
+    INITIAL_SERVICE_TOKEN: str
+    TOKEN_HEADER: str = "X-Service-Token"
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
