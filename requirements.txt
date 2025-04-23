@@ -3,3 +3,4 @@ asyncpg
 pydantic_settings
 pydantic
 uvicorn
+passlib
