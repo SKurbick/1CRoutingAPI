@@ -31,10 +31,10 @@ class ReceiptOfGoodsRepository:
                 quantity = supply_data.quantity
                 amount_with_vat = supply_data.amount_with_vat
                 amount_without_vat = supply_data.amount_without_vat
-
+                product_name = supply_data.product_name
                 data_to_update.append((guid, document_number, document_created_at, update_document_datetime, event_status,
                                        author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
-                                       quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code))
+                                       quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name))
         pprint(data_to_update)
         query_to_update = """
         UPDATE supply_to_sellers_warehouse
@@ -45,8 +45,8 @@ class ReceiptOfGoodsRepository:
         query_to_insert = """
         INSERT INTO supply_to_sellers_warehouse (guid, document_number, document_created_at, update_document_datetime, event_status,
                                author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
-                               quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, is_valid)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, True)
+                               quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, is_valid)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, True)
         ;
         """
         try:

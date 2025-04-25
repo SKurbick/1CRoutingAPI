@@ -31,12 +31,14 @@ example_receipt_of_goods_data = [
      "supply_data": [
          {
              "local_vendor_code": "wild123",
+             "product_name": "Название товара",
              "quantity": 123,
              "amount_with_vat": 123,
              "amount_without_vat": 123,
          },
          {
              "local_vendor_code": "wild123",
+             "product_name": "Название товара",
              "quantity": 123,
              "amount_with_vat": 123,
              "amount_without_vat": 123,
@@ -48,6 +50,7 @@ example_receipt_of_goods_data = [
 
 class SupplyData(BaseModel):
     local_vendor_code: str
+    product_name: str
     quantity: float
     amount_with_vat: float
     amount_without_vat: Optional[float] = None
