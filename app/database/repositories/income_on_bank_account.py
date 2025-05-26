@@ -69,4 +69,5 @@ class IncomeOnBankAccountRepository:
                 message="PostgresError",
                 details=str(e)
             )
+        print(result)
         return result
