@@ -12,8 +12,16 @@ class ReceiptOfGoodsRepository:
         self.pool = pool
 
     async def update_data(self, data: List[ReceiptOfGoodsUpdate]):
-        data_to_update: List[Tuple] = []
+        get_wilds_in_products = """SELECT id FROM products;"""
+        data_to_update_incoming_items: List[Tuple] = []
+        data_to_update_incoming_documents: List[Tuple] = []
+        data_to_update_supply_to_sellers_warehouse: List[Tuple] = []
         guid_data: List[str] = []
+
+        async with self.pool.acquire() as conn:
+            products_data = await conn.fetch(get_wilds_in_products)
+            ids = [record['id'] for record in products_data]  # получаем все валидные id товаров
+
         for document_data in data:
             guid = document_data.guid
             document_number = document_data.document_number
@@ -32,29 +40,58 @@ class ReceiptOfGoodsRepository:
                 amount_with_vat = supply_data.amount_with_vat
                 amount_without_vat = supply_data.amount_without_vat
                 product_name = supply_data.product_name
-                data_to_update.append((guid, document_number, document_created_at, update_document_datetime, event_status,
-                                       author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
-                                       quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name))
-        pprint(data_to_update)
-        query_to_update = """
+                data_to_update_supply_to_sellers_warehouse.append((guid, document_number, document_created_at, update_document_datetime, event_status,
+                                                                   author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
+                                                                   quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name))
+
+                if local_vendor_code in ids:  # собираем данные для актуализации остатков на складе
+                    data_to_update_incoming_items.append(
+                        (guid, local_vendor_code, quantity, amount_with_vat)
+                    )
+                    data_to_update_incoming_documents.append(
+                        (guid, document_number, document_created_at, supplier_code)
+                    )
+        pprint(data_to_update_supply_to_sellers_warehouse)
+        update_is_valid_in_supply_to_sellers_warehouse = """
         UPDATE supply_to_sellers_warehouse
         SET is_valid = False
         WHERE guid = ANY($1::varchar[])
         AND is_valid = True
         """
-        query_to_insert = """
+        query_to_insert_supply_to_sellers_warehouse = """
         INSERT INTO supply_to_sellers_warehouse (guid, document_number, document_created_at, update_document_datetime, event_status,
                                author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
                                quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, is_valid)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, True)
-        ;
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, True); """
+
+        update_is_valid_in_incoming_items = """
+        UPDATE incoming_items
+        SET is_valid = False
+        WHERE guid = ANY($1::varchar[])
+        AND is_valid = True
         """
+        query_to_insert_incoming_items = """
+                INSERT INTO incoming_items (guid, product_id, quantity, price, is_valid)
+        VALUES ($1, $2, $3, $4, True) ; """
+        query_to_insert_incoming_documents = """
+                INSERT INTO incoming_documents (guid, doc_number, doc_date, supplier_code)
+        VALUES ($1, $2, $3, $4) ; """
+
         try:
             async with self.pool.acquire() as conn:
                 async with conn.transaction():
-                    await conn.execute(query_to_update, guid_data)
-                    await conn.executemany(query_to_insert, data_to_update)
-
+                    await conn.execute(update_is_valid_in_supply_to_sellers_warehouse, guid_data)
+                    await conn.executemany(query_to_insert_supply_to_sellers_warehouse, data_to_update_supply_to_sellers_warehouse)
+                #
+                async with conn.transaction():  # актуализация поставок для расчета остатков
+                    #
+                    await conn.execute(update_is_valid_in_incoming_items, guid_data)  # по совпадению guid устанавливаем false
+                    await conn.executemany(query_to_insert_incoming_documents, data_to_update_incoming_documents)
+                    await conn.executemany(query_to_insert_incoming_items, data_to_update_incoming_items)
+                    print("incoming_items data ---->")
+                    print(guid_data)
+                    print(data_to_update_incoming_documents)
+                    print(data_to_update_incoming_items)
                 result = ReceiptOfGoodsResponse(
                     status=201,
                     message="Успешно")
