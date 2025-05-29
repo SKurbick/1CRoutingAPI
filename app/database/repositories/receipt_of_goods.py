@@ -75,7 +75,8 @@ class ReceiptOfGoodsRepository:
         VALUES ($1, $2, $3, $4, True) ; """
         query_to_insert_incoming_documents = """
                 INSERT INTO incoming_documents (guid, doc_number, doc_date, supplier_code)
-        VALUES ($1, $2, $3, $4) ; """
+        VALUES ($1, $2, $3, $4) 
+        ON CONFLICT (guid) DO NOTHING; """
 
         try:
             async with self.pool.acquire() as conn:
