@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
 
@@ -31,3 +31,8 @@ class ShipmentOfGoodsUpdate(BaseModel):
     wb_warehouse: str
     account: str
     quantity: int
+
+
+class ShipmentParamsData(BaseModel):
+    products: List[str]
+    accounts: List[str]
