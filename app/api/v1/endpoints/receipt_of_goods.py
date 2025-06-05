@@ -7,7 +7,7 @@ from app.dependencies import get_receipt_of_goods_service
 
 # router = APIRouter(prefix="receipt_of_goods",dependencies=[Depends(verify_service_token)])
 
-router = APIRouter(prefix="/receipt_of_goods")
+router = APIRouter(prefix="/receipt_of_goods", tags=["Поступления товаров на склад продавца"])
 """
 Алгоритм актуализации данных по поставкам:
 1. Проверка по GUID: по совпадению из полученного списка изменяем валидность (is_valid) из True на False

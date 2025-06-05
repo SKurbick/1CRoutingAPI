@@ -9,7 +9,7 @@ from app.dependencies.security import verify_service_token
 # router = APIRouter(prefix="/income_on_bank_account", dependencies=[Depends(verify_service_token)])
 
 
-router = APIRouter(prefix="/income_on_bank_account")
+router = APIRouter(prefix="/income_on_bank_account", tags=["Поступления на РС продавца"])
 
 
 @router.post("/update", response_model=IncomeOnBankAccountResponse, status_code=status.HTTP_201_CREATED)
