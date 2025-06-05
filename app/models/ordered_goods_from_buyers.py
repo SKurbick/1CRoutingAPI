@@ -56,7 +56,7 @@ class SupplyData(BaseModel):
     amount_without_vat: Optional[float] = None
 
 
-class OrderedGoodsFromBuyersUpdate(BaseModel):
+class DocumentData1C(BaseModel):
     supply_date: datetime
     supplier_name: str
     supplier_code: Optional[str] = None
@@ -67,6 +67,9 @@ class OrderedGoodsFromBuyersUpdate(BaseModel):
     update_document_datetime: datetime
     author_of_the_change: str
     our_organizations_name: str
+
+
+class OrderedGoodsFromBuyersUpdate(DocumentData1C):
     supply_data: List[SupplyData]
 
     @field_validator('supplier_code')
@@ -91,3 +94,7 @@ class OrderedGoodsFromBuyersResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None
+
+
+class OrderedGoodsFromBuyersData(DocumentData1C, SupplyData):
+    pass

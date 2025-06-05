@@ -1,7 +1,9 @@
+import datetime
 from typing import List
 # OrderedGoodsFromBuyers
 from fastapi import APIRouter, Depends, status, Body, HTTPException
-from app.models.ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, example_ordered_goods_from_buyers_data
+from app.models.ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, example_ordered_goods_from_buyers_data, \
+    OrderedGoodsFromBuyersData
 from app.service.ordered_goods_from_buyers import OrderedGoodsFromBuyersService
 from app.dependencies import get_ordered_goods_from_buyers_service
 from app.dependencies.security import verify_service_token
@@ -29,3 +31,12 @@ async def create_data(
         )
 
     return result
+
+
+@router.get("/get_buyer_orders", response_model=List[OrderedGoodsFromBuyersData], status_code=status.HTTP_200_OK)
+async def get_buyer_orders(
+        date_from: datetime.date,
+        date_to: datetime.date,
+        service: OrderedGoodsFromBuyersService = Depends(get_ordered_goods_from_buyers_service)
+):
+    return await service.get_buyer_orders(date_from=date_from, date_to=date_to)

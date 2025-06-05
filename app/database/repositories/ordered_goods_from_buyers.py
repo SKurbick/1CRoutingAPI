@@ -1,9 +1,10 @@
+import datetime
 from pprint import pprint
 from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool
-from app.models import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse
+from app.models import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, OrderedGoodsFromBuyersData
 
 
 class OrderedGoodsFromBuyersRepository:
@@ -62,3 +63,17 @@ class OrderedGoodsFromBuyersRepository:
                 details=str(e)
             )
         return result
+
+    async def get_buyer_orders(self, date_from: datetime.date, date_to: datetime.date) -> List[OrderedGoodsFromBuyersData]:
+        datetime_from = datetime.datetime.combine(date_from, datetime.time.min)  # 2025-04-06 00:00:00
+        datetime_to = datetime.datetime.combine(date_to, datetime.time.max)  # 2025-04-06 23:59:59.999999
+        query = """
+        SELECT * FROM ordered_goods_from_buyers
+        WHERE 
+            supply_date BETWEEN $1 AND $2;
+        """
+        async with self.pool.acquire() as conn:
+            records = await conn.fetch(query, datetime_from, datetime_to)
+
+        # Преобразуем записи в Pydantic модели
+        return [OrderedGoodsFromBuyersData(**record) for record in records]
