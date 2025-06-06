@@ -97,4 +97,9 @@ class OrderedGoodsFromBuyersResponse(BaseModel):
 
 
 class OrderedGoodsFromBuyersData(DocumentData1C, SupplyData):
-    pass
+    id: int
+
+
+class IsAcceptanceStatus(BaseModel):
+    id: int
+    in_acceptance: bool

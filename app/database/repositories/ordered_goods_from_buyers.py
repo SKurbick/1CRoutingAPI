@@ -5,6 +5,7 @@ from typing import List, Tuple
 import asyncpg
 from asyncpg import Pool
 from app.models import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, OrderedGoodsFromBuyersData
+from app.models.ordered_goods_from_buyers import IsAcceptanceStatus
 
 
 class OrderedGoodsFromBuyersRepository:
@@ -77,3 +78,27 @@ class OrderedGoodsFromBuyersRepository:
 
         # Преобразуем записи в Pydantic модели
         return [OrderedGoodsFromBuyersData(**record) for record in records]
+
+    async def update_acceptance_status(self, data: List[IsAcceptanceStatus]):
+        data_to_update = [(value.id, value.in_acceptance) for value in data]
+        print(data)
+        query_update_is_acceptance = """
+            UPDATE ordered_goods_from_buyers
+            SET in_acceptance = $2
+            WHERE id = $1;
+        """
+
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    await conn.executemany(query_update_is_acceptance, data_to_update)
+                result = OrderedGoodsFromBuyersResponse(
+                    status=201,
+                    message="Успешно")
+        except asyncpg.PostgresError as e:
+            result = OrderedGoodsFromBuyersResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
+        return result
