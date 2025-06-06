@@ -65,16 +65,26 @@ class OrderedGoodsFromBuyersRepository:
             )
         return result
 
-    async def get_buyer_orders(self, date_from: datetime.date, date_to: datetime.date) -> List[OrderedGoodsFromBuyersData]:
-        datetime_from = datetime.datetime.combine(date_from, datetime.time.min)  # 2025-04-06 00:00:00
-        datetime_to = datetime.datetime.combine(date_to, datetime.time.max)  # 2025-04-06 23:59:59.999999
-        query = """
-        SELECT * FROM ordered_goods_from_buyers
-        WHERE 
-            supply_date BETWEEN $1 AND $2;
-        """
-        async with self.pool.acquire() as conn:
-            records = await conn.fetch(query, datetime_from, datetime_to)
+    async def get_buyer_orders(self, date_from: datetime.date, date_to: datetime.date, in_acceptance: bool) -> List[OrderedGoodsFromBuyersData]:
+        if in_acceptance is True:
+            query = """
+            SELECT * FROM ordered_goods_from_buyers
+            WHERE 
+                in_acceptance = TRUE;
+            """
+            async with self.pool.acquire() as conn:
+                records = await conn.fetch(query)
+
+        else:
+            datetime_from = datetime.datetime.combine(date_from, datetime.time.min)  # 2025-04-06 00:00:00
+            datetime_to = datetime.datetime.combine(date_to, datetime.time.max)  # 2025-04-06 23:59:59.999999
+            query = """
+            SELECT * FROM ordered_goods_from_buyers
+            WHERE 
+                supply_date BETWEEN $1 AND $2;
+            """
+            async with self.pool.acquire() as conn:
+                records = await conn.fetch(query, datetime_from, datetime_to)
 
         # Преобразуем записи в Pydantic модели
         return [OrderedGoodsFromBuyersData(**record) for record in records]

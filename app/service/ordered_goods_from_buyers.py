@@ -17,8 +17,8 @@ class OrderedGoodsFromBuyersService:
         result = await self.ordered_goods_from_buyers_repository.update_data(data)
         return result
 
-    async def get_buyer_orders(self, date_from: datetime.date, date_to: datetime.date) -> List[OrderedGoodsFromBuyersData]:
-        result = await self.ordered_goods_from_buyers_repository.get_buyer_orders(date_from=date_from, date_to=date_to)
+    async def get_buyer_orders(self, date_from: datetime.date, date_to: datetime.date, in_acceptance:bool) -> List[OrderedGoodsFromBuyersData]:
+        result = await self.ordered_goods_from_buyers_repository.get_buyer_orders(date_from=date_from, date_to=date_to, in_acceptance=in_acceptance)
         return result
 
     async def update_acceptance_status(self, data: List[IsAcceptanceStatus]):

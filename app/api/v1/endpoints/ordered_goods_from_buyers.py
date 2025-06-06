@@ -1,7 +1,7 @@
 import datetime
 from typing import List
 # OrderedGoodsFromBuyers
-from fastapi import APIRouter, Depends, status, Body, HTTPException
+from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
 from app.models.ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, example_ordered_goods_from_buyers_data, \
     OrderedGoodsFromBuyersData, IsAcceptanceStatus
 from app.service.ordered_goods_from_buyers import OrderedGoodsFromBuyersService
@@ -33,13 +33,22 @@ async def create_data(
     return result
 
 
+# @router.get("/get_buyers_orders", response_model=List[OrderedGoodsFromBuyersData], status_code=status.HTTP_200_OK)
+# async def get_buyers_orders(
+#         in_acceptance: bool,
+#         date_from: datetime.date,
+#         date_to: datetime.date,
+#         service: OrderedGoodsFromBuyersService = Depends(get_ordered_goods_from_buyers_service)
+# ):
+#     return await service.get_buyer_orders(date_from=date_from, date_to=date_to, in_acceptance=in_acceptance)
 @router.get("/get_buyers_orders", response_model=List[OrderedGoodsFromBuyersData], status_code=status.HTTP_200_OK)
 async def get_buyers_orders(
-        date_from: datetime.date,
-        date_to: datetime.date,
+        in_acceptance: bool = Query(description="Если передать параметр True, то параметры в date_from date_to будут проигнорированы"),
+        date_from: datetime.date = None,
+        date_to: datetime.date = None,
         service: OrderedGoodsFromBuyersService = Depends(get_ordered_goods_from_buyers_service)
 ):
-    return await service.get_buyer_orders(date_from=date_from, date_to=date_to)
+    return await service.get_buyer_orders(date_from=date_from, date_to=date_to, in_acceptance=in_acceptance)
 
 
 @router.post("/update_acceptance_status", response_model=OrderedGoodsFromBuyersResponse, status_code=status.HTTP_201_CREATED)
