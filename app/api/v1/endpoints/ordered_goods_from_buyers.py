@@ -33,14 +33,6 @@ async def create_data(
     return result
 
 
-# @router.get("/get_buyers_orders", response_model=List[OrderedGoodsFromBuyersData], status_code=status.HTTP_200_OK)
-# async def get_buyers_orders(
-#         in_acceptance: bool,
-#         date_from: datetime.date,
-#         date_to: datetime.date,
-#         service: OrderedGoodsFromBuyersService = Depends(get_ordered_goods_from_buyers_service)
-# ):
-#     return await service.get_buyer_orders(date_from=date_from, date_to=date_to, in_acceptance=in_acceptance)
 @router.get("/get_buyers_orders", response_model=List[OrderedGoodsFromBuyersData], status_code=status.HTTP_200_OK)
 async def get_buyers_orders(
         in_acceptance: bool = Query(description="Если передать параметр True, то параметры в date_from date_to будут проигнорированы"),
@@ -48,6 +40,11 @@ async def get_buyers_orders(
         date_to: datetime.date = None,
         service: OrderedGoodsFromBuyersService = Depends(get_ordered_goods_from_buyers_service)
 ):
+    if not in_acceptance and (date_from is None or date_to is None):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="date_from and date_to are required when in_acceptance is False"
+        )
     return await service.get_buyer_orders(date_from=date_from, date_to=date_to, in_acceptance=in_acceptance)
 
 
