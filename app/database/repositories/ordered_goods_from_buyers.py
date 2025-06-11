@@ -70,7 +70,7 @@ class OrderedGoodsFromBuyersRepository:
             query = """
             SELECT * FROM ordered_goods_from_buyers
             WHERE 
-                in_acceptance = TRUE;
+                in_acceptance = TRUE and is_valid = TRUE;
             """
             async with self.pool.acquire() as conn:
                 records = await conn.fetch(query)
@@ -80,7 +80,8 @@ class OrderedGoodsFromBuyersRepository:
             datetime_to = datetime.datetime.combine(date_to, datetime.time.max)  # 2025-04-06 23:59:59.999999
             query = """
             SELECT * FROM ordered_goods_from_buyers
-            WHERE 
+            WHERE
+                in_acceptance = FALSE and is_valid = TRUE
                 supply_date BETWEEN $1 AND $2;
             """
             async with self.pool.acquire() as conn:
