@@ -81,7 +81,7 @@ class OrderedGoodsFromBuyersRepository:
             query = """
             SELECT * FROM ordered_goods_from_buyers
             WHERE
-                in_acceptance = FALSE and is_valid = TRUE
+                in_acceptance = FALSE AND is_valid = TRUE AND
                 supply_date BETWEEN $1 AND $2;
             """
             async with self.pool.acquire() as conn:
