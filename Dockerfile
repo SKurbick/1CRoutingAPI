@@ -1,18 +1,16 @@
 FROM python:3.12-slim
 LABEL authors="skurbick"
 
-# Устанавливаем системные зависимости и шрифты
+# 1. Устанавливаем системные зависимости
 RUN apt-get update && \
     apt-get install -y \
     fontconfig \
-    fonts-dejavu-core \
-    ttf-mscorefonts-installer \
-    wget && \
-    # Очистка кэша apt для уменьшения размера образа
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    fonts-dejavu-core \  # Основные шрифты с кириллицей
+    wget \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем дополнительные шрифты (если нужно)
+# 2. Устанавливаем дополнительные шрифты (если нужно)
 RUN mkdir -p /usr/share/fonts/truetype/custom && \
     wget -q -O /tmp/dejavu-fonts-ttf-2.37.tar.bz2 \
     https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2 && \
