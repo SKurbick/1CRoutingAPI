@@ -7,6 +7,7 @@ RUN apt-get update && \
     fontconfig \
     fonts-dejavu-core \
     wget \
+     bzip2 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
