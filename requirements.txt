@@ -1,6 +1,10 @@
-fastapi
-asyncpg
-pydantic_settings
-pydantic
-uvicorn
-passlib
+fastapi~=0.115.12
+asyncpg~=0.30.0
+pydantic_settings~=2.8.1
+pydantic~=2.11.3
+uvicorn~=0.34.0
+passlib~=1.7.4
+python-barcode~=0.15.1
+pillow~=11.2.1
+starlette~=0.46.1
+gspread~=6.2.0
