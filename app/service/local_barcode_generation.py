@@ -71,7 +71,7 @@ class LocalBarcodeGenerationService:
             text_y = margin
             # product_draw.text((margin, text_y), f"ID: {item['id']}", font=font, fill='black')
             # product_draw.text((margin, text_y + font_size + text_margin), f"продукт: {item['product']}", font=font, fill='black')
-            # product_draw.text((margin, text_y + 2 * (font_size + text_margin)), f"Количество: {int(item['beginnig_quantity'])}", font=font, fill='black')
+            # product_draw.text((margin, text_y + 2 * (font_size + text_margin)), f"Количество: {int(item['beginning_quantity'])}", font=font, fill='black')
 
             # Центрируем "Продукт"
             product_text = f"Продукт: {item['product']}"
@@ -84,7 +84,7 @@ class LocalBarcodeGenerationService:
             )
 
             # Центрируем "Количество"
-            quantity_text = f"Количество: {int(item['beginnig_quantity'])}"
+            quantity_text = f"Количество: {int(item['beginning_quantity'])}"
             quantity_width = font.getlength(quantity_text)
             product_draw.text(
                 ((width - quantity_width) / 2, text_y + 2 * (font_size + text_margin)),
@@ -162,7 +162,7 @@ class LocalBarcodeGenerationService:
     #         text_y = margin
     #         product_draw.text((margin, text_y), f"ID: {item['id']}", font=font, fill='black')
     #         product_draw.text((margin, text_y + font_size + 5), f"Product: {item['product']}", font=font, fill='black')
-    #         product_draw.text((margin, text_y + 2 * (font_size + 5)), f"Quantity: {item['beginnig_quantity']}", font=font, fill='black')
+    #         product_draw.text((margin, text_y + 2 * (font_size + 5)), f"Quantity: {item['beginning_quantity']}", font=font, fill='black')
     #
     #         # Вставляем изображение товара в основное изображение
     #         final_image.paste(product_image, (0, y_offset))
@@ -301,7 +301,7 @@ class LocalBarcodeGenerationService:
     #         y_position += CONFIG['text']['barcode_num_size'] + CONFIG['text']['margin']
     #
     #         # Количество товара (в самом низу секции)
-    #         qty_text = f"Кол-во: {float(data['beginnig_quantity']):g}"
+    #         qty_text = f"Кол-во: {float(data['beginning_quantity']):g}"
     #         text_width = draw.textlength(qty_text, font=font_quantity)
     #         draw.text(
     #             ((total_width - text_width) // 2, y_position),
@@ -327,7 +327,7 @@ class LocalBarcodeGenerationService:
     #     :param data: Словарь с данными {
     #         'local_barcode': str,
     #         'product': str,
-    #         'beginnig_quantity': Decimal
+    #         'beginning_quantity': Decimal
     #     }
     #     :param output_dir: Директория для сохранения
     #     :return: Путь к сохраненному файлу
@@ -378,7 +378,7 @@ class LocalBarcodeGenerationService:
     #         )
     #
     #         # Текст количества (нижняя строка)
-    #         qty_text = f"Кол-во: {data['beginnig_quantity']}"
+    #         qty_text = f"Кол-во: {data['beginning_quantity']}"
     #         text_width = draw.textlength(qty_text, font=font)
     #         draw.text(
     #             ((img.width - text_width) / 2, img.height + 40),
@@ -407,7 +407,7 @@ class LocalBarcodeGenerationService:
     #     generated_files = []
     #     for item in barcode_data:
     #         # Преобразуем Decimal в строку для корректного отображения
-    #         item['beginnig_quantity'] = str(int(item['beginnig_quantity']))
+    #         item['beginning_quantity'] = str(int(item['beginning_quantity']))
     #         filepath = self.generate_barcode_image(item)
     #         generated_files.append(filepath)
     #

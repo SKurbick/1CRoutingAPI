@@ -38,7 +38,7 @@ class LocalBarcodeGenerationRepository:
         local_barcode_data_query = """
                 INSERT INTO local_barcode_data (
             product, 
-            beginnig_quantity, balance, is_box,
+            beginning_quantity, balance, is_box,
             goods_acceptance_certificate_id,
             ordered_goods_from_buyers_id
         )
@@ -83,7 +83,7 @@ class LocalBarcodeGenerationRepository:
         executemany_in_temp_table_query ="""
         INSERT INTO temp_barcode_data (
             product,
-            beginnig_quantity,
+            beginning_quantity,
             balance,
             is_box,
             goods_acceptance_certificate_id,
@@ -98,7 +98,7 @@ class LocalBarcodeGenerationRepository:
                 id,
                 local_barcode,
                 product,
-                beginnig_quantity,
+                beginning_quantity,
                 goods_acceptance_certificate_id
         )
         SELECT * FROM moved ORDER BY id;
