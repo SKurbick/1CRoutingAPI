@@ -5,7 +5,7 @@ LABEL authors="skurbick"
 RUN apt-get update && \
     apt-get install -y \
     fontconfig \
-    fonts-dejavu-core \  # Основные шрифты с кириллицей
+    fonts-dejavu-core \
     wget \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
