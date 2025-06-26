@@ -1,16 +1,12 @@
-import datetime
 from io import BytesIO
-from typing import List
 
 from app.models import GoodsAcceptanceCertificateCreate
 from app.database.repositories import LocalBarcodeGenerationRepository
-from app.models.local_barcode_generation import LocalBarcodeGenerationResponse
 
 
 from barcode import Code128
 from barcode.writer import ImageWriter
 from PIL import Image, ImageDraw, ImageFont
-import os
 
 
 class LocalBarcodeGenerationService:

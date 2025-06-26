@@ -1,11 +1,9 @@
-from typing import List
 
-from fastapi import APIRouter, Depends, status, Body, HTTPException
-from app.models.local_barcode_generation import  LocalBarcodeGenerationResponse, example_goods_acceptance_certificate , GoodsAcceptanceCertificateCreate
+from fastapi import APIRouter, Depends, status, Body
+from app.models.local_barcode_generation import  example_goods_acceptance_certificate , GoodsAcceptanceCertificateCreate
 from app.service.local_barcode_generation import LocalBarcodeGenerationService
 from app.dependencies import local_barcode_generation_service
-from app.dependencies.security import verify_service_token
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 
 from fastapi import BackgroundTasks
 import gc

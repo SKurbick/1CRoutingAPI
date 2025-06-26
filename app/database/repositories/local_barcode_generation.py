@@ -1,11 +1,8 @@
 from pprint import pprint
-from pprint import pprint
 from typing import List, Tuple
 
-import asyncpg
-from asyncpg import Pool, UniqueViolationError
+from asyncpg import Pool
 from app.models import GoodsAcceptanceCertificateCreate
-from app.models.local_barcode_generation import LocalBarcodeGenerationResponse
 
 
 class LocalBarcodeGenerationRepository:

@@ -1,7 +1,7 @@
-from typing import Dict, List, Union, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, field_validator
-from datetime import datetime, date
+from datetime import datetime
 
 """
 Номер документа - document_number

@@ -6,7 +6,6 @@ from app.models.ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, O
     OrderedGoodsFromBuyersData, IsAcceptanceStatus
 from app.service.ordered_goods_from_buyers import OrderedGoodsFromBuyersService
 from app.dependencies import get_ordered_goods_from_buyers_service
-from app.dependencies.security import verify_service_token
 
 # router = APIRouter(prefix="/income_on_bank_account", dependencies=[Depends(verify_service_token)])
 

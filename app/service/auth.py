@@ -1,6 +1,5 @@
 from fastapi import HTTPException, status
 from app.database.repositories.auth import AuthRepository
-from app.models.auth import KeyIdentifications
 
 
 class AuthService:

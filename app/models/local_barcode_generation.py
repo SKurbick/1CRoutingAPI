@@ -1,8 +1,7 @@
 
-from typing import Dict, List, Union, Optional
+from typing import List, Optional
 
-from pydantic import BaseModel, field_validator
-from datetime import datetime, date
+from pydantic import BaseModel
 
 example_goods_acceptance_certificate = {
     "ordered_goods_from_buyers_id": 1,

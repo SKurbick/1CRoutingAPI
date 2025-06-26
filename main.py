@@ -1,6 +1,5 @@
 # todo подключение пользователя
 # todo метод отправки данных
-import asyncio
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

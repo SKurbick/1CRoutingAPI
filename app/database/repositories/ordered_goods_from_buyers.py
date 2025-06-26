@@ -1,5 +1,4 @@
 import datetime
-from pprint import pprint
 from typing import List, Tuple
 
 import asyncpg

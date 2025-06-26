@@ -2,7 +2,7 @@ from pprint import pprint
 from typing import List, Tuple
 
 import asyncpg
-from asyncpg import Pool, UniqueViolationError
+from asyncpg import Pool
 from app.models import ReceiptOfGoodsUpdate
 from app.models.receipt_of_goods import ReceiptOfGoodsResponse
 

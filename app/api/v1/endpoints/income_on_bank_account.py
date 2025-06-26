@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, status, Body, HTTPException
 from app.models.income_on_bank_account import IncomeOnBankAccountUpdate, IncomeOnBankAccountResponse, example_income_on_bank_account_data
 from app.service.income_on_bank_account import IncomeOnBankAccountService
 from app.dependencies import get_income_on_bank_account_service
-from app.dependencies.security import verify_service_token
 
 # router = APIRouter(prefix="/income_on_bank_account", dependencies=[Depends(verify_service_token)])
 

@@ -1,8 +1,7 @@
-from fastapi import Depends, Header, Security
+from fastapi import Depends, Header
 from app.service.auth import AuthService
 from app.database.repositories.auth import AuthRepository
 from asyncpg import Pool
-from fastapi import Depends
 from starlette.requests import Request
 
 
@@ -27,7 +26,7 @@ async def verify_service_token(
 
 
 # core/security.py
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 security = HTTPBearer()
