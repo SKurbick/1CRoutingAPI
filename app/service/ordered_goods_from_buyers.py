@@ -1,4 +1,5 @@
 import datetime
+from pprint import pprint
 from typing import List
 
 from app.models import OrderedGoodsFromBuyersUpdate
@@ -18,8 +19,25 @@ class OrderedGoodsFromBuyersService:
         return result
 
     async def get_buyer_orders(self, date_from: datetime.date, date_to: datetime.date, in_acceptance:bool) -> List[OrderedGoodsFromBuyersData]:
-        result = await self.ordered_goods_from_buyers_repository.get_buyer_orders(date_from=date_from, date_to=date_to, in_acceptance=in_acceptance)
-        return result
+
+
+        ogb_data = await self.ordered_goods_from_buyers_repository.get_buyer_orders(date_from=date_from, date_to=date_to, in_acceptance=in_acceptance)
+
+        vendor_codes = []
+        for res in ogb_data:
+            lvc = res.local_vendor_code
+            if lvc.startswith("wild"):
+                vendor_codes.append(lvc)
+
+        photo_link_by_lvc_data = await self.ordered_goods_from_buyers_repository.get_photo_link_by_wilds(vendor_codes=vendor_codes)
+        print(vendor_codes)
+        pprint(photo_link_by_lvc_data)
+
+        for item in ogb_data:
+            lvc = item.local_vendor_code
+            if lvc in photo_link_by_lvc_data:
+                item.photo_link = photo_link_by_lvc_data[lvc]
+        return ogb_data
 
     async def update_acceptance_status(self, data: List[IsAcceptanceStatus]):
         result = await self.ordered_goods_from_buyers_repository.update_acceptance_status(data=data)

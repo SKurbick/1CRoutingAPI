@@ -21,8 +21,9 @@ class LocalBarcodeGenerationRepository:
                             declared_order_quantity,
                             sum_real_quantity,
                             acceptance_author,
-                            warehouse_id )
-        VALUES ($1, $2, $3, $4, $5, $6)
+                            warehouse_id,
+                             photo_link)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
         """
         nested_box_query = """
@@ -42,7 +43,7 @@ class LocalBarcodeGenerationRepository:
                     goods_acceptance_certificate_query,
                     data.ordered_goods_from_buyers_id, data.product,
                     data.declared_order_quantity, data.sum_real_quantity,
-                    data.acceptance_author, data.warehouse_id
+                    data.acceptance_author, data.warehouse_id, data.photo_link
                 )
                 for nested_box in data.nested_box_data:
                     nb_insert_row = await conn.fetchrow(

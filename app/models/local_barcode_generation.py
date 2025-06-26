@@ -33,6 +33,7 @@ class GoodsAcceptanceCertificateCreate(BaseModel):
     sum_real_quantity:int
     acceptance_author: str
     warehouse_id: int
+    photo_link: Optional[str] = None
     nested_box_data: List[NestedBox]
 
 

@@ -54,7 +54,7 @@ class SupplyData(BaseModel):
     quantity: float
     amount_with_vat: float
     amount_without_vat: Optional[float] = None
-
+    photo_link: Optional[str] = None
 
 class DocumentData1C(BaseModel):
     supply_date: datetime

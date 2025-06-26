@@ -90,6 +90,29 @@ class OrderedGoodsFromBuyersRepository:
         # Преобразуем записи в Pydantic модели
         return [OrderedGoodsFromBuyersData(**record) for record in records]
 
+
+    async def get_photo_link_by_wilds(self, vendor_codes:List[str]):
+
+        query = """
+            SELECT DISTINCT ON (a.local_vendor_code) 
+                a.local_vendor_code, 
+                cd.photo_link 
+            FROM article AS a
+            JOIN card_data cd ON a.nm_id = cd.article_id
+            WHERE a.account = 'ВЕКТОР' 
+            AND a.local_vendor_code = ANY($1::text[])
+            ORDER BY a.local_vendor_code;
+        """
+        async with self.pool.acquire() as conn:
+            result = await conn.fetch(query, vendor_codes)
+
+        return {res['local_vendor_code']: res['photo_link'] for res in result}
+
+
+
+
+
+
     async def update_acceptance_status(self, data: List[IsAcceptanceStatus]):
         data_to_update = [(value.id, value.in_acceptance) for value in data]
         print(data)
