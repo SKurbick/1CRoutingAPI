@@ -7,13 +7,13 @@ from datetime import datetime, date
 example_goods_acceptance_certificate = {
     "ordered_goods_from_buyers_id": 1,
     "product": "wild123",
-    "product_name": "Самотык",
+    "product_name": "съедобные трусы",
     "declared_order_quantity": 150,
     "sum_real_quantity": 150,
     "acceptance_author": "Крутой приемщик",
     "warehouse_id": 1,
     "nested_box_data": [
-        {
+        {   "photo_link":"https://avatars.mds.yandex.net/i?id=05331e8b60e705232516150f16faa955_l-10148308-images-thumbs&n=13",
             "quantity_of_boxes": 30,
             "quantity_in_a_box": 5,
             "is_box": True,
