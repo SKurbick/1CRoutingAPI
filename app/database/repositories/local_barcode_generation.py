@@ -35,17 +35,6 @@ class LocalBarcodeGenerationRepository:
                     VALUES ($1, $2, $3, $4, $5)
                     RETURNING *
         """
-        local_barcode_data_query = """
-                INSERT INTO local_barcode_data (
-            product, 
-            beginning_quantity, balance, is_box,
-            goods_acceptance_certificate_id,
-            ordered_goods_from_buyers_id
-        )
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING *
-        """
-
         data_to_add_barcodes: List[Tuple] = []
         async with self.pool.acquire() as conn:
             async with conn.transaction():
@@ -64,7 +53,7 @@ class LocalBarcodeGenerationRepository:
                     if nested_box.is_box:
                         for i in range(nested_box.quantity_of_boxes):
                             data_to_add_barcodes.append(
-                                (data.product, nested_box.quantity_in_a_box, nested_box.quantity_in_a_box, nested_box.is_box, gac_inserted_row['id'],
+                                (data.product, data.product_name, nested_box.quantity_in_a_box, nested_box.quantity_in_a_box, nested_box.is_box, gac_inserted_row['id'],
                                  data.ordered_goods_from_buyers_id)
                             )
 
@@ -83,12 +72,13 @@ class LocalBarcodeGenerationRepository:
         executemany_in_temp_table_query ="""
         INSERT INTO temp_barcode_data (
             product,
+            product_name,
             beginning_quantity,
             balance,
             is_box,
             goods_acceptance_certificate_id,
             ordered_goods_from_buyers_id
-        ) VALUES ($1, $2, $3, $4, $5, $6)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         """
         moved_in_base_table_and_return_query = """
         WITH moved AS (
@@ -98,6 +88,7 @@ class LocalBarcodeGenerationRepository:
                 id,
                 local_barcode,
                 product,
+                product_name,
                 beginning_quantity,
                 goods_acceptance_certificate_id
         )

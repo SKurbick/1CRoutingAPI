@@ -15,13 +15,12 @@ from io import BytesIO
 router = APIRouter(prefix="/local_barcode_generation", tags=["Приемка товара и генерация штрихкода"])
 
 
-@router.post("/update", response_model=LocalBarcodeGenerationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/update", status_code=status.HTTP_201_CREATED)
 async def create_data(
         background_tasks: BackgroundTasks,
     data: GoodsAcceptanceCertificateCreate = Body(example=example_goods_acceptance_certificate),
-        service: LocalBarcodeGenerationService = Depends(local_barcode_generation_service)
+    service: LocalBarcodeGenerationService = Depends(local_barcode_generation_service)
 ):
-
     img_buffer = await service.create_data(data)
 
     # Функция для очистки памяти после отправки
@@ -34,6 +33,7 @@ async def create_data(
     return StreamingResponse(
         img_buffer,
         media_type="image/png",
-        headers={"Content-Disposition": "attachment; filename=barcodes.png"}
+        headers={"Content-Disposition": "attachment; filename=barcodes.png"},
+        status_code=201
     )
 

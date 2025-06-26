@@ -64,14 +64,11 @@ class LocalBarcodeGenerationService:
             product_draw = ImageDraw.Draw(product_image)
 
             # Рассчитываем позиции для текста и штрихкода
-            text_block_height = 3 * (font_size + text_margin)  # Высота блока с текстом (3 строки)
+            text_block_height = 4 * (font_size + text_margin)  # Высота блока с текстом (3 строки)
             barcode_y = text_block_height + margin  # Позиция штрихкода ниже текста
 
             # Добавляем текст (ID, Product, Quantity) в верхней части
             text_y = margin
-            # product_draw.text((margin, text_y), f"ID: {item['id']}", font=font, fill='black')
-            # product_draw.text((margin, text_y + font_size + text_margin), f"продукт: {item['product']}", font=font, fill='black')
-            # product_draw.text((margin, text_y + 2 * (font_size + text_margin)), f"Количество: {int(item['beginning_quantity'])}", font=font, fill='black')
 
             # Центрируем "Продукт"
             product_text = f"Продукт: {item['product']}"
@@ -89,6 +86,15 @@ class LocalBarcodeGenerationService:
             product_draw.text(
                 ((width - quantity_width) / 2, text_y + 2 * (font_size + text_margin)),
                 quantity_text,
+                font=font,
+                fill='black'
+            )
+
+            product_name_text = str(item['product_name'][:41])
+            product_name_width = font.getlength(product_name_text)
+            product_draw.text(
+                ((width - product_name_width) / 2, text_y + 3 * (font_size + text_margin)),
+                product_name_text,
                 font=font,
                 fill='black'
             )

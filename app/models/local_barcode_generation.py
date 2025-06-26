@@ -7,6 +7,7 @@ from datetime import datetime, date
 example_goods_acceptance_certificate = {
     "ordered_goods_from_buyers_id": 1,
     "product": "wild123",
+    "product_name": "Самотык",
     "declared_order_quantity": 150,
     "sum_real_quantity": 150,
     "acceptance_author": "Крутой приемщик",
@@ -27,6 +28,7 @@ class NestedBox(BaseModel):
 class GoodsAcceptanceCertificateCreate(BaseModel):
     ordered_goods_from_buyers_id:int
     product:str
+    product_name: str
     declared_order_quantity: int
     sum_real_quantity:int
     acceptance_author: str
