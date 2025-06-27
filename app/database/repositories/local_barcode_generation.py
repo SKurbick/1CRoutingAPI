@@ -33,6 +33,11 @@ class LocalBarcodeGenerationRepository:
                     VALUES ($1, $2, $3, $4, $5)
                     RETURNING *
         """
+        ordered_goods_from_buyers_query = """
+            UPDATE ordered_goods_from_buyers
+            SET is_printed_barcode = TRUE
+            WHERE id = $1;
+        """
         data_to_add_barcodes: List[Tuple] = []
         async with self.pool.acquire() as conn:
             async with conn.transaction():
@@ -42,6 +47,8 @@ class LocalBarcodeGenerationRepository:
                     data.declared_order_quantity, data.sum_real_quantity,
                     data.acceptance_author, data.warehouse_id, data.added_photo_link
                 )
+                await conn.execute(ordered_goods_from_buyers_query, data.ordered_goods_from_buyers_id)
+
                 for nested_box in data.nested_box_data:
                     nb_insert_row = await conn.fetchrow(
                         nested_box_query,
