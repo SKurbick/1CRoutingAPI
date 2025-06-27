@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, field_validator
 from datetime import datetime
+from app.models.local_barcode_generation import GoodsAcceptanceCertificateCreate
 
 """
 Номер документа - document_number
@@ -47,6 +48,74 @@ example_ordered_goods_from_buyers_data = [
      }
 ]
 
+ordered_goods_and_printed_data_example = {
+    "ordered_of_goods_data": [
+        {
+            "local_vendor_code": "wild1510",
+            "product_name": "т.Велотренажер Armed HJ-088A",
+            "quantity": 422,
+            "amount_with_vat": 244760,
+            "amount_without_vat": 244760,
+            "photo_link": "https://basket-20.wbbasket.ru/vol3440/part344061/344061421/images/tm/1.webp",
+            "supply_date": "2025-06-16T17:51:53",
+            "supplier_name": "Другие поставщики",
+            "supplier_code": None,
+            "guid": "7048d107-4ac1-11f0-84f2-50ebf6b2ce7d",
+            "document_number": "К1УТ-001222",
+            "document_created_at": "2025-06-16T17:51:53",
+            "event_status": "Проведён",
+            "update_document_datetime": "2025-06-16T17:51:53",
+            "author_of_the_change": "Котова Евгения",
+            "our_organizations_name": "КОНСОЛИДАЦИЯ",
+            "id": 1
+        },
+        {
+            "local_vendor_code": "wild1555",
+            "product_name": "т.Вентилятор раскладной 180 Wind Waver",
+            "quantity": 740,
+            "amount_with_vat": 481000,
+            "amount_without_vat": 481000,
+            "photo_link": "https://basket-23.wbbasket.ru/vol4006/part400670/400670677/images/tm/1.webp",
+            "supply_date": "2025-06-17T16:41:11",
+            "supplier_name": "Назима",
+            "supplier_code": None,
+            "guid": "ba6105b7-4b80-11f0-84f2-50ebf6b2ce7d",
+            "document_number": "К1УТ-001228",
+            "document_created_at": "2025-06-17T16:41:11",
+            "event_status": "Проведён",
+            "update_document_datetime": "2025-06-17T16:41:18",
+            "author_of_the_change": "Ширыкалов Максим Андреевич",
+            "our_organizations_name": "КОНСОЛИДАЦИЯ",
+            "id": 14
+        }
+    ],
+    "printed_barcode_data": [
+        {
+            "ordered_goods_from_buyers_id": 1,
+            "product": "wild123",
+            "product_name": "т.Велотренажер Armed HJ-088A",
+            "declared_order_quantity": 15,
+            "sum_real_quantity": 15,
+            "acceptance_author": "Крутой приемщик",
+            "warehouse_id": 1,
+            "added_photo_link": "https://avatars.mds.yandex.net/i?id=05331e8b60e705232516150f16faa955_l-10148308-images-thumbs&n=13",
+            "nested_box_data": [
+                {
+                    "quantity_of_boxes": 3,
+                    "quantity_in_a_box": 3,
+                    "is_box": True
+                },
+                {
+                    "quantity_of_boxes": 2,
+                    "quantity_in_a_box": 3,
+                    "is_box": True
+                }
+            ],
+            "photo_link": None
+        }
+    ]
+}
+
 
 class SupplyData(BaseModel):
     local_vendor_code: str
@@ -55,6 +124,7 @@ class SupplyData(BaseModel):
     amount_with_vat: float
     amount_without_vat: Optional[float] = None
     photo_link: Optional[str] = None
+
 
 class DocumentData1C(BaseModel):
     supply_date: datetime
@@ -103,3 +173,12 @@ class OrderedGoodsFromBuyersData(DocumentData1C, SupplyData):
 class IsAcceptanceStatus(BaseModel):
     id: int
     in_acceptance: bool
+
+
+class PrintedBarcodeData(GoodsAcceptanceCertificateCreate):
+    photo_link: Optional[str] = None
+
+
+class OrderedGoodsAndPrintedBarcodeData(BaseModel):
+    ordered_of_goods_data: List[OrderedGoodsFromBuyersData]
+    printed_barcode_data: List[None | PrintedBarcodeData]

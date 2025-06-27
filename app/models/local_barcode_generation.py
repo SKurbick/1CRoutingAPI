@@ -11,8 +11,9 @@ example_goods_acceptance_certificate = {
     "sum_real_quantity": 150,
     "acceptance_author": "Крутой приемщик",
     "warehouse_id": 1,
+    "photo_link":"https://avatars.mds.yandex.net/i?id=05331e8b60e705232516150f16faa955_l-10148308-images-thumbs&n=13",
     "nested_box_data": [
-        {   "photo_link":"https://avatars.mds.yandex.net/i?id=05331e8b60e705232516150f16faa955_l-10148308-images-thumbs&n=13",
+        {
             "quantity_of_boxes": 30,
             "quantity_in_a_box": 5,
             "is_box": True,
@@ -32,7 +33,7 @@ class GoodsAcceptanceCertificateCreate(BaseModel):
     sum_real_quantity:int
     acceptance_author: str
     warehouse_id: int
-    photo_link: Optional[str] = None
+    added_photo_link: Optional[str] = None
     nested_box_data: List[NestedBox]
 
 

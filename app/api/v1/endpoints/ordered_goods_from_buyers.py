@@ -3,7 +3,7 @@ from typing import List
 # OrderedGoodsFromBuyers
 from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
 from app.models.ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, example_ordered_goods_from_buyers_data, \
-    OrderedGoodsFromBuyersData, IsAcceptanceStatus
+    IsAcceptanceStatus, OrderedGoodsAndPrintedBarcodeData, ordered_goods_and_printed_data_example
 from app.service.ordered_goods_from_buyers import OrderedGoodsFromBuyersService
 from app.dependencies import get_ordered_goods_from_buyers_service
 
@@ -32,7 +32,7 @@ async def create_data(
     return result
 
 
-@router.get("/get_buyers_orders", response_model=List[OrderedGoodsFromBuyersData], status_code=status.HTTP_200_OK)
+@router.get("/get_buyers_orders", response_model=OrderedGoodsAndPrintedBarcodeData, status_code=status.HTTP_200_OK)
 async def get_buyers_orders(
         in_acceptance: bool = Query(description="Если передать параметр True, то параметры в date_from date_to будут проигнорированы"),
         date_from: datetime.date = None,

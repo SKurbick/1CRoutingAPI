@@ -3,7 +3,8 @@ from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool
-from app.models import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, OrderedGoodsFromBuyersData
+from app.models import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, OrderedGoodsFromBuyersData, PrintedBarcodeData, \
+    GoodsAcceptanceCertificateCreate
 from app.models.ordered_goods_from_buyers import IsAcceptanceStatus
 
 
@@ -65,11 +66,11 @@ class OrderedGoodsFromBuyersRepository:
         return result
 
     async def get_buyer_orders(self, date_from: datetime.date, date_to: datetime.date, in_acceptance: bool) -> List[OrderedGoodsFromBuyersData]:
-        if in_acceptance is True:
+        if in_acceptance:
             query = """
             SELECT * FROM ordered_goods_from_buyers
             WHERE 
-                in_acceptance = TRUE and is_valid = TRUE;
+                in_acceptance = TRUE and is_valid = TRUE and is_printed_barcode = FALSE and acceptance_completed = FALSE;
             """
             async with self.pool.acquire() as conn:
                 records = await conn.fetch(query)
@@ -80,7 +81,7 @@ class OrderedGoodsFromBuyersRepository:
             query = """
             SELECT * FROM ordered_goods_from_buyers
             WHERE
-                in_acceptance = FALSE AND is_valid = TRUE AND
+                in_acceptance = FALSE AND is_valid = TRUE AND is_printed_barcode = FALSE AND acceptance_completed = FALSE AND
                 supply_date BETWEEN $1 AND $2;
             """
             async with self.pool.acquire() as conn:
@@ -89,8 +90,44 @@ class OrderedGoodsFromBuyersRepository:
         # Преобразуем записи в Pydantic модели
         return [OrderedGoodsFromBuyersData(**record) for record in records]
 
+    async def get_printed_barcodes(self) -> List[PrintedBarcodeData]:
+            query = """
+                SELECT  gac.*, ogfb.product_name , gac.declared_order_quantity , gac.sum_real_quantity,  nb.*  FROM ordered_goods_from_buyers as ogfb 
+                join goods_acceptance_certificate as gac on ogfb.id = gac.ordered_goods_from_buyers_id 
+                join nested_box nb on nb.goods_acceptance_certificate_id = gac.id
+                WHERE 
+                ogfb.in_acceptance = TRUE and ogfb.is_valid = TRUE and ogfb.is_printed_barcode = TRUE and ogfb.acceptance_completed = FALSE;
+            """
+            async with self.pool.acquire() as conn:
+                records = await conn.fetch(query)
 
-    async def get_photo_link_by_wilds(self, vendor_codes:List[str]):
+                certs = {}
+                for record in records:
+                    cert_id = record['ordered_goods_from_buyers_id']
+                    if cert_id not in certs:
+                        certs[cert_id] = {
+                            "ordered_goods_from_buyers_id": record["ordered_goods_from_buyers_id"],
+                            "product": record["product"],
+                            "product_name": record["product_name"],
+                            "declared_order_quantity": int(record["declared_order_quantity"]),
+                            "sum_real_quantity": int(record["sum_real_quantity"]),
+                            "acceptance_author": record["acceptance_author"],
+                            "warehouse_id": record["warehouse_id"],
+                            "added_photo_link": record["added_photo_link"],  # photo_link на верхнем уровне
+                            "nested_box_data": []
+                        }
+
+                    certs[cert_id]["nested_box_data"].append({
+                        "quantity_of_boxes": int(record["quantity_of_boxes"]),
+                        "quantity_in_a_box": int(record["quantity_in_a_box"]),
+                        "is_box": record["is_box"]
+                        # photo_link НЕ добавляем сюда
+                    })
+
+                return [PrintedBarcodeData(**cert) for cert in certs.values()]
+
+
+    async def get_photo_link_by_wilds(self, vendor_codes: List[str]):
 
         query = """
             SELECT DISTINCT ON (a.local_vendor_code) 
@@ -106,11 +143,6 @@ class OrderedGoodsFromBuyersRepository:
             result = await conn.fetch(query, vendor_codes)
 
         return {res['local_vendor_code']: res['photo_link'] for res in result}
-
-
-
-
-
 
     async def update_acceptance_status(self, data: List[IsAcceptanceStatus]):
         data_to_update = [(value.id, value.in_acceptance) for value in data]
