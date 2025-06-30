@@ -176,6 +176,12 @@ class IsAcceptanceStatus(BaseModel):
 
 
 class PrintedBarcodeData(GoodsAcceptanceCertificateCreate):
+    guid: str
+    document_number: str
+    document_created_at: datetime
+    amount_with_vat: float
+    amount_without_vat: Optional[float] = None
+    supplier_code: Optional[str] = None
     photo_link: Optional[str] = None
 
 

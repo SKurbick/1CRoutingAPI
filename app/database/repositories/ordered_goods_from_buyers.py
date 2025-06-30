@@ -92,7 +92,9 @@ class OrderedGoodsFromBuyersRepository:
 
     async def get_printed_barcodes(self) -> List[PrintedBarcodeData]:
             query = """
-                SELECT  gac.*, ogfb.product_name , gac.declared_order_quantity , gac.sum_real_quantity,  nb.*  FROM ordered_goods_from_buyers as ogfb 
+                SELECT  gac.*,
+                 ogfb.product_name, ogfb.guid, ogfb.document_number, ogfb.document_created_at, ogfb.amount_with_vat, ogfb.amount_without_vat, ogfb.supplier_code,
+                  gac.declared_order_quantity , gac.sum_real_quantity,  nb.*  FROM ordered_goods_from_buyers as ogfb 
                 join goods_acceptance_certificate as gac on ogfb.id = gac.ordered_goods_from_buyers_id 
                 join nested_box nb on nb.goods_acceptance_certificate_id = gac.id
                 WHERE 
@@ -114,6 +116,12 @@ class OrderedGoodsFromBuyersRepository:
                             "acceptance_author": record["acceptance_author"],
                             "warehouse_id": record["warehouse_id"],
                             "added_photo_link": record["added_photo_link"],  # photo_link на верхнем уровне
+                            "guid": record["guid"],
+                            "document_number": record["document_number"],
+                            "document_created_at": record["document_created_at"],
+                            "amount_with_vat": record["amount_with_vat"],
+                            "amount_without_vat": record["amount_without_vat"],
+                            "supplier_code": record["supplier_code"],
                             "nested_box_data": []
                         }
 
