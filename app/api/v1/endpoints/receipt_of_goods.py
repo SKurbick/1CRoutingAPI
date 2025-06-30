@@ -1,9 +1,9 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, status, Body, HTTPException
-from app.models.receipt_of_goods import ReceiptOfGoodsUpdate, ReceiptOfGoodsResponse, example_receipt_of_goods_data
+from app.dependencies import  get_receipt_of_goods_service
+from app.models.receipt_of_goods import ReceiptOfGoodsResponse, example_receipt_of_goods_data, ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate, example_add_incoming_receipt_data
 from app.service.receipt_of_goods import ReceiptOfGoodsService
-from app.dependencies import get_receipt_of_goods_service
 
 # router = APIRouter(prefix="receipt_of_goods",dependencies=[Depends(verify_service_token)])
 
@@ -22,6 +22,25 @@ async def create_data(
         service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service)
 ):
     result = await service.create_data(data)
+
+    if result.status >= 400:
+        raise HTTPException(
+            status_code=result.status,
+            detail={
+                "message": result.message,
+                "details": result.details
+            }
+        )
+
+    return result
+
+@router.post("/add_incoming_receipt", response_model=ReceiptOfGoodsResponse, status_code=status.HTTP_201_CREATED)
+async def add_incoming_receipt(
+        data: List[AddIncomingReceiptUpdate] = Body(example=example_add_incoming_receipt_data),
+        service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service)
+):
+    """Оприходование товаров (от акта приемки) на основной склад продавца. Временное решение пока нет актуализации поступлений в 1С"""
+    result = await service.add_incoming_receipt(data)
 
     if result.status >= 400:
         raise HTTPException(

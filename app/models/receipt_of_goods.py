@@ -47,6 +47,38 @@ example_receipt_of_goods_data = [
      }
 ]
 
+example_add_incoming_receipt_data = [
+    {
+        "guid": "faabb47d-51ba-11f0-84f2-50ebf6b2ce7d",
+        "document_number": "К1УТ-00002533",
+        "document_created_at": "2025-04-16 15:22:37",
+        "supplier_code": "7355608",
+        "supply_data": [
+            {
+                "local_vendor_code": "wild1333",
+                "product_name": "т.Садовая электропила Lithium 150мм с аккумулятором черная 48V (2акк) (ZA286)",
+                "quantity": 700,
+                "amount_with_vat": 595000,
+                "amount_without_vat": 595000
+            },
+            {
+                "local_vendor_code": "wild457",
+                "product_name": "т.Поилка для животных переносная 550мл Aqua Dog с ремешком синий (172)",
+                "quantity": 180,
+                "amount_with_vat": 27900,
+                "amount_without_vat": 27900
+            },
+            {
+                "local_vendor_code": "wild332",
+                "product_name": "т.Светильник уличный светодиодный 2178T муляж камеры белый",
+                "quantity": 50,
+                "amount_with_vat": 11500,
+                "amount_without_vat": 11500
+            }
+        ]
+    }
+]
+
 
 class SupplyData(BaseModel):
     local_vendor_code: str
@@ -91,3 +123,11 @@ class ReceiptOfGoodsResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None
+
+
+class AddIncomingReceiptUpdate(BaseModel):
+    supplier_code: Optional[str] = None
+    guid: str
+    document_number: str
+    document_created_at: datetime
+    supply_data: List[SupplyData]

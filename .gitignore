@@ -8,3 +8,5 @@ add_orders_revenues_data_in_db.py
 Воронка_2024_may.csv
 technical_scripts/
 create_barcode.py
+testing_loggers.py
+my_log.log
