@@ -104,14 +104,12 @@ class ReceiptOfGoodsRepository:
             )
         return result
 
-
-    async def add_incoming_receipt(self, data:List[AddIncomingReceiptUpdate]):
+    async def add_incoming_receipt(self, data: List[AddIncomingReceiptUpdate]):
         get_wilds_in_products = """SELECT id FROM products;"""
         data_to_update_incoming_items: List[Tuple] = []
         data_to_update_incoming_documents: List[Tuple] = []
-        data_to_update_supply_to_sellers_warehouse: List[Tuple] = []
         guid_data: List[str] = []
-
+        ordered_goods_from_buyers_ids: List[int] = []
         async with self.pool.acquire() as conn:
             products_data = await conn.fetch(get_wilds_in_products)
             ids = [record['id'] for record in products_data]  # получаем все валидные id товаров
@@ -121,12 +119,13 @@ class ReceiptOfGoodsRepository:
             document_number = document_data.document_number
             document_created_at = document_data.document_created_at
             supplier_code = document_data.supplier_code
+            ordered_goods_from_buyers_id = document_data.ordered_goods_from_buyers_id
             guid_data.append(guid)
+            ordered_goods_from_buyers_ids.append(ordered_goods_from_buyers_id)
             for supply_data in document_data.supply_data:
                 local_vendor_code = supply_data.local_vendor_code
                 quantity = supply_data.quantity
                 amount_with_vat = supply_data.amount_with_vat
-
 
                 if local_vendor_code in ids:  # собираем данные для актуализации остатков на складе
                     data_to_update_incoming_items.append(
@@ -135,7 +134,6 @@ class ReceiptOfGoodsRepository:
                     data_to_update_incoming_documents.append(
                         (guid, document_number, document_created_at, supplier_code)
                     )
-        pprint(data_to_update_supply_to_sellers_warehouse)
 
         update_is_valid_in_incoming_items = """
         UPDATE incoming_items
@@ -143,6 +141,7 @@ class ReceiptOfGoodsRepository:
         WHERE guid = ANY($1::varchar[])
         AND is_valid = True
         """
+
         query_to_insert_incoming_items = """
                 INSERT INTO incoming_items (guid, product_id, quantity, price, is_valid, correction_comment)
         VALUES ($1, $2, $3, $4, True, 'локальное оприходование (данные поступили не через 1С)') ; """
@@ -151,6 +150,11 @@ class ReceiptOfGoodsRepository:
         VALUES ($1, $2, $3, $4) 
         ON CONFLICT (guid) DO NOTHING; """
 
+        query_update_acceptance_completed = """
+            UPDATE ordered_goods_from_buyers
+            SET acceptance_completed = True
+            WHERE id = ANY($1::integer[]);
+        """
         try:
             async with self.pool.acquire() as conn:
 
@@ -158,6 +162,7 @@ class ReceiptOfGoodsRepository:
                     await conn.execute(update_is_valid_in_incoming_items, guid_data)  # по совпадению guid устанавливаем false
                     await conn.executemany(query_to_insert_incoming_documents, data_to_update_incoming_documents)
                     await conn.executemany(query_to_insert_incoming_items, data_to_update_incoming_items)
+                    await conn.execute(query_update_acceptance_completed, ordered_goods_from_buyers_ids)
                     print("incoming_items data ---->")
                     print(guid_data)
                     print(data_to_update_incoming_documents)
