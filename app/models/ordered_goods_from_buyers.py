@@ -99,6 +99,10 @@ ordered_goods_and_printed_data_example = {
             "acceptance_author": "Крутой приемщик",
             "warehouse_id": 1,
             "added_photo_link": "https://avatars.mds.yandex.net/i?id=05331e8b60e705232516150f16faa955_l-10148308-images-thumbs&n=13",
+            "supplier_code": None,
+            "guid": "ba6105b7-4b80-11f0-84f2-50ebf6b2ce7d",
+            "document_number": "К1УТ-001228",
+            "document_created_at": "2025-06-17T16:41:11",
             "nested_box_data": [
                 {
                     "quantity_of_boxes": 3,
