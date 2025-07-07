@@ -6,12 +6,15 @@ from app.service.warehouse_and_balances import WarehouseAndBalancesService
 from app.dependencies import get_warehouse_and_balances_service
 
 # router = APIRouter(prefix="/income_on_bank_account", dependencies=[Depends(verify_service_token)])
-
+add_defective_goods_description = """
+status_id = 1, при условии что товар переносится из брака в валидный остаток. status_id = 3, при условии что товар переносится
+из валидного остатка в склад брака.
+"""
 
 router = APIRouter(prefix="/warehouse_and_balances", tags=["Склады и остатки"])
 
 
-@router.post("/add_defective_goods", response_model=DefectiveGoodsResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/add_defective_goods", response_model=DefectiveGoodsResponse, status_code=status.HTTP_201_CREATED, description=add_defective_goods_description)
 async def add_defective_goods(
         data: List[DefectiveGoodsUpdate] = Body(example=example_defective_goods_data),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)

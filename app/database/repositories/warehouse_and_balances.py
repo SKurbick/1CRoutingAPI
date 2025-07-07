@@ -12,24 +12,31 @@ class WarehouseAndBalancesRepository:
         self.pool = pool
 
     async def add_defective_goods(self, data: List[DefectiveGoodsUpdate]) -> DefectiveGoodsResponse:
-        # data_to_update: List[Tuple] = []
-        #
-        #
-        # author
-        # supply_id
-        # product_id
-        # warehouse_id
-        # status_id
-        # quantity
-        # delivery_type
-        # transaction_type
-        # correction_comment
-        # insert_query = """
-        # INSERT INTO (
-        #
-        # )
-        # """
-        pass
+        data_to_update: List[Tuple] = []
+        insert_query = """
+        INSERT INTO inventory_transactions (transaction_type, author, product_id, warehouse_id, quantity, correction_comment, status_id )
+        VALUES ($1, $2, $3, $4, $5, $6, $7) ;
+        """
+
+        for defective_goods in data:
+            data_to_update.extend(
+                [
+                    ("outgoing", defective_goods.author, defective_goods.product_id, defective_goods.from_warehouse, defective_goods.quantity,
+                     defective_goods.correction_comment, defective_goods.status_id),
+                    ("incoming", defective_goods.author, defective_goods.product_id, defective_goods.to_warehouse, defective_goods.quantity,
+                     defective_goods.correction_comment, defective_goods.status_id)
+                ]
+            )
+        pprint(data_to_update)
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                await conn.executemany(insert_query, data_to_update)
+
+        result = DefectiveGoodsResponse(
+            status=201,
+            message="Данные успешно обновлены"
+        )
+        return result
 
     async def get_warehouses(self) -> List[Warehouse]:
         select_query = """
