@@ -3,11 +3,13 @@ from .income_on_bank_account import IncomeOnBankAccountRepository
 from .shipment_of_goods import ShipmentOfGoodsRepository
 from .ordered_goods_from_buyers import OrderedGoodsFromBuyersRepository
 from .local_barcode_generation import LocalBarcodeGenerationRepository
+from .warehouse_and_balances import WarehouseAndBalancesRepository
 
 __all__ = [
     'ReceiptOfGoodsRepository',
     'IncomeOnBankAccountRepository',
     'ShipmentOfGoodsRepository',
     'OrderedGoodsFromBuyersRepository',
-    'LocalBarcodeGenerationRepository'
+    'LocalBarcodeGenerationRepository',
+    'WarehouseAndBalancesRepository'
 ]

@@ -3,10 +3,13 @@ from .income_on_bank_account import get_income_on_bank_account_service
 from .shipment_of_goods import get_shipment_of_goods_service
 from .ordered_goods_from_buyers import get_ordered_goods_from_buyers_service
 from .local_barcode_generation import local_barcode_generation_service
+from .warehouse_and_balances import get_warehouse_and_balances_service
+
 __all__ = [
     'get_income_on_bank_account_service',
     'get_receipt_of_goods_service',
     'get_shipment_of_goods_service',
     'get_ordered_goods_from_buyers_service',
-    'local_barcode_generation_service'
+    'local_barcode_generation_service',
+    'get_warehouse_and_balances_service'
 ]
