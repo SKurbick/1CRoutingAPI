@@ -4,12 +4,12 @@ from pydantic import BaseModel, field_validator
 from datetime import datetime
 
 example_defective_goods_data = [
-    {
-        "from_warehouse": 1,
-        "to_warehouse": 2,
-        "product_id": 'testwild',
-        "quantity": 15
-    }
+    {"author": "soskanerealka",
+     "from_warehouse": 1,
+     "to_warehouse": 2,
+     "product_id": 'testwild',
+     "quantity": 15
+     }
 ]
 
 
@@ -25,6 +25,7 @@ example_defective_goods_data = [
 # correction_comment
 
 class DefectiveGoodsUpdate(BaseModel):
+    author: str
     from_warehouse: int
     to_warehouse: int
     product_id: str
