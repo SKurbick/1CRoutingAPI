@@ -22,14 +22,14 @@ class ShipmentOfGoodsRepository:
             wb_warehouse = shipment_data.wb_warehouse
             account = shipment_data.account
             quantity = shipment_data.quantity
-            tuple_data = (author, supply_id, product_id, warehouse_id, delivery_type, wb_warehouse, account, quantity)
+            date = shipment_data.date
+            tuple_data = (author, supply_id, product_id, warehouse_id, delivery_type, wb_warehouse, account, quantity, date)
             data_to_update.append(tuple_data)
         pprint(data_to_update)
         query_to_insert = """
         INSERT INTO shipment_of_goods (author, supply_id, product_id, warehouse_id, delivery_type,
-                               wb_warehouse, account, quantity)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        ;
+                               wb_warehouse, account, quantity, date)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
         """
         try:
             async with self.pool.acquire() as conn:
