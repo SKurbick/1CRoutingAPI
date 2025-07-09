@@ -5,7 +5,7 @@ from app.models.shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsR
 from app.service.shipment_of_goods import ShipmentOfGoodsService
 from app.dependencies import get_shipment_of_goods_service
 
-router = APIRouter(prefix="/shipment_of_goods", tags=["Отгрузка ФБО"])
+router = APIRouter(prefix="/shipment_of_goods", tags=["Отгрузка со склада продавца"])
 
 
 @router.post("/update", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
