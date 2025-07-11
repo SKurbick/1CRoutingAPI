@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
-from app.models.goods_information import MetawildsData, metawilds_data_example
+from app.models.goods_information import MetawildsData, metawilds_data_example, AllProductsData, all_products_data_example
 from app.service.goods_information import GoodsInformationService
 from app.dependencies import get_goods_information_service
 
@@ -15,3 +15,9 @@ async def get_metawilds_data(
         service: GoodsInformationService = Depends(get_goods_information_service)
 ):
     return await service.get_metawilds_data()
+
+@router.get("/get_all_products_data", response_model=List[AllProductsData], status_code=status.HTTP_200_OK, responses={200: all_products_data_example})
+async def get_all_products_data(
+        service: GoodsInformationService = Depends(get_goods_information_service)
+):
+    return await service.get_all_products_data()

@@ -5,7 +5,7 @@ from .ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGood
     OrderedGoodsFromBuyersData, PrintedBarcodeData, OrderedGoodsAndPrintedBarcodeData
 from .local_barcode_generation import GoodsAcceptanceCertificateCreate
 from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data
-from .goods_information import MetawildsData
+from .goods_information import MetawildsData, AllProductsData
 __all__ = [
     'ReceiptOfGoodsUpdate',
     'IncomeOnBankAccountUpdate',
@@ -25,5 +25,5 @@ __all__ = [
     'DefectiveGoodsResponse',
     'example_defective_goods_data',
     'MetawildsData',
-
+    'AllProductsData'
 ]

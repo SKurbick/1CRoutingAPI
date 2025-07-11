@@ -19,24 +19,43 @@ metawilds_data_example = {
         }
     },
 }
+all_products_data_example = {
+    "description": "Список всех активных товаров, включая и наборы ",
+    "content": {
+        "application/json": {
+            "example": [
+                {
+                    "id": "some_wild",
+                    "name": "Губо-закаточная машинка",
+                    "photo_link": "https://histrf.ru/images/common/19/RJ1SavyfUXRPzURBLqpSqmryu8mP1jl08kYToYWd.jpg",
+                    "is_kit": True,
+                    "share_of_kit": False,
+                    "kit_components": {"testwild": 2, "testwild2": 1}
+                },
+                {
+                    "id": "wild1523",
+                    "name": "Казан 20л черный (SB)",
+                    "is_kit": False,
+                    "share_of_kit": False,
+                    "photo_link": None,
+                    "kit_components": {}
+                },
+            ]
+        }
+    },
+}
 
 
 class MetawildsData(BaseModel):
-    id: str = Field(..., example="123e4567-e89b-12d3-a456-426614174000")
-    name: str = Field(..., example="123e4567-e89b-12d3-a456-426614174000")
-    kit_components: Dict[str, int] = Field(
-        ...,
-        example={
-            "telescope": 1,
-            "binoculars": 1,
-            "field_guide": 1
-        }
-    )
-    # class Config:
-    #     schema_extra = {
-    #         "example": {
-    #             "id": "metawild",
-    #             "name": "Губо-закаточная машинка",
-    #             "kit_components": {"testwild": 2, "testwild2": 1}
-    #         }
-    #     }
+    id: str
+    name: str
+    kit_components: Dict[str, int]
+
+
+class AllProductsData(BaseModel):
+    id: str
+    name: str
+    is_kit: bool
+    share_of_kit: bool
+    photo_link: Optional[str] = None
+    kit_components: Optional[Dict[str, int]] = None
