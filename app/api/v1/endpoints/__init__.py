@@ -5,6 +5,7 @@ from .ordered_goods_from_buyers import router as ordered_goods_from_buyers_route
 from .local_barcode_generation import router as local_barcode_generation_router
 from .warehouse_and_balances import router as warehouse_and_balances_router
 from .goods_information import router as goods_information_router
+from .inventory_check import router as inventory_check_router
 __all__ = [
     'receipt_of_goods_router',
     'income_on_bank_account_router',
@@ -12,5 +13,6 @@ __all__ = [
     'ordered_goods_from_buyers_router',
     'local_barcode_generation_router',
     'warehouse_and_balances_router',
-    'goods_information_router'
+    'goods_information_router',
+    'inventory_check_router'
 ]

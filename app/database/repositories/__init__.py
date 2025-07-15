@@ -5,6 +5,7 @@ from .ordered_goods_from_buyers import OrderedGoodsFromBuyersRepository
 from .local_barcode_generation import LocalBarcodeGenerationRepository
 from .warehouse_and_balances import WarehouseAndBalancesRepository
 from .goods_information import GoodsInformationRepository
+from .inventory_check import InventoryCheckRepository
 
 __all__ = [
     'ReceiptOfGoodsRepository',
@@ -13,5 +14,6 @@ __all__ = [
     'OrderedGoodsFromBuyersRepository',
     'LocalBarcodeGenerationRepository',
     'WarehouseAndBalancesRepository',
-    'GoodsInformationRepository'
+    'GoodsInformationRepository',
+    'InventoryCheckRepository'
 ]
