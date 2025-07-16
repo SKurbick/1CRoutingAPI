@@ -1,10 +1,11 @@
+import json
 from pprint import pprint
 from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool, UniqueViolationError
 from app.models import DefectiveGoodsUpdate
-from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances
+from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, ComponentsInfo
 
 
 class WarehouseAndBalancesRepository:
@@ -55,3 +56,38 @@ class WarehouseAndBalancesRepository:
             result = await conn.fetch(select_query)
         pprint(result)
         return [CurrentBalances(**res) for res in result]
+
+    async def get_valid_stock_data(self) -> List[ValidStockData]:
+        select_query = """
+        SELECT * FROM product_availability;
+        """
+        async with self.pool.acquire() as conn:
+            result = await conn.fetch(select_query)
+
+        stock_data = []
+        for row in result:
+            components_info = None
+            if row['is_kit'] and row['components_info']:
+                # Парсим JSON строку в список словарей
+                components_list = json.loads(row['components_info'])
+                components_info = [
+                    ComponentsInfo(
+                        component_id=str(comp['component_id']),
+                        required=int(comp['required']),
+                        available=int(comp['available'])
+                    )
+                    for comp in components_list
+                ]
+
+            stock_data.append(
+                ValidStockData(
+                    product_id=str(row['product_id']),
+                    name=str(row['name']),
+                    is_kit=bool(row['is_kit']),
+                    warehouse_id=1,
+                    available_stock=int(row['available_stock']),
+                    components_info=components_info
+                )
+            )
+
+        return stock_data

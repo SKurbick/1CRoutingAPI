@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict, List
 
 from pydantic import BaseModel, field_validator
 from datetime import datetime
@@ -53,3 +53,19 @@ class CurrentBalances(BaseModel):
     product_id: str
     warehouse_id: int
     physical_quantity: int
+
+
+class ComponentsInfo(BaseModel):
+    # {"required": 2, "available": 11, "component_id": "testwild"}
+    required: int
+    available: int
+    component_id: str
+
+
+class ValidStockData(BaseModel):
+    product_id: str
+    name: str
+    is_kit: bool
+    warehouse_id: int
+    available_stock: int
+    components_info: Optional[List[ComponentsInfo]] = None

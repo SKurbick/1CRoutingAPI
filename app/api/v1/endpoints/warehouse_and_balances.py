@@ -1,7 +1,8 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, status, Body, HTTPException
-from app.models.warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, Warehouse, CurrentBalances
+from app.models.warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, Warehouse, CurrentBalances, \
+    ValidStockData
 from app.service.warehouse_and_balances import WarehouseAndBalancesService
 from app.dependencies import get_warehouse_and_balances_service
 
@@ -45,4 +46,11 @@ async def get_warehouses(
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
     result = await service.get_all_product_current_balances()
+    return result
+
+@router.get("/get_valid_stock_data", response_model=List[ValidStockData], status_code=status.HTTP_200_OK)
+async def get_valid_stock_data(
+        service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
+):
+    result = await service.get_valid_stock_data()
     return result
