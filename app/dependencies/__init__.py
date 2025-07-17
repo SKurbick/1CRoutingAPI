@@ -6,7 +6,7 @@ from .local_barcode_generation import local_barcode_generation_service
 from .warehouse_and_balances import get_warehouse_and_balances_service
 from .goods_information import get_goods_information_service
 from .inventory_check import get_inventory_check_service
-
+from .inventory_transactions import get_inventory_transactions_service
 __all__ = [
     'get_income_on_bank_account_service',
     'get_receipt_of_goods_service',
@@ -15,5 +15,6 @@ __all__ = [
     'local_barcode_generation_service',
     'get_warehouse_and_balances_service',
     'get_goods_information_service',
-    'get_inventory_check_service'
+    'get_inventory_check_service',
+    'get_inventory_transactions_service'
 ]

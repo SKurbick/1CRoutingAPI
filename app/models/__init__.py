@@ -7,6 +7,7 @@ from .local_barcode_generation import GoodsAcceptanceCertificateCreate
 from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data
 from .goods_information import MetawildsData, AllProductsData
 from .inventory_check import InventoryCheckUpdate
+from .inventory_transactions import ITGroupData
 __all__ = [
     'ReceiptOfGoodsUpdate',
     'IncomeOnBankAccountUpdate',
@@ -27,5 +28,6 @@ __all__ = [
     'example_defective_goods_data',
     'MetawildsData',
     'AllProductsData',
-    'InventoryCheckUpdate'
+    'InventoryCheckUpdate',
+    'ITGroupData'
 ]

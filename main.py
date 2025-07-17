@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database.db_connect import init_db, close_db
 from app.api.v1.endpoints import (receipt_of_goods_router, income_on_bank_account_router, shipment_of_goods_router,
                                   ordered_goods_from_buyers_router, local_barcode_generation_router, warehouse_and_balances_router,
-                                  goods_information_router, inventory_check_router)
+                                  goods_information_router, inventory_check_router, inventory_transactions_router)
 from contextlib import asynccontextmanager
 import uvicorn
 from app.dependencies.config import settings
@@ -33,6 +33,8 @@ app.include_router(local_barcode_generation_router, prefix="/api")
 app.include_router(warehouse_and_balances_router, prefix="/api")
 app.include_router(goods_information_router, prefix="/api")
 app.include_router(inventory_check_router, prefix="/api")
+app.include_router(inventory_transactions_router, prefix="/api")
+
 origins = [
     "*",  # временное решение
 ]
