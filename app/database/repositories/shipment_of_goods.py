@@ -35,7 +35,7 @@ class ShipmentOfGoodsRepository:
                 print(kit_components)
                 for wild, qty in kit_components.items():
                     data_to_update.append(
-                        (author, supply_id, wild, warehouse_id, delivery_type, wb_warehouse, account, quantity * qty, date,False, product_id)
+                        (author, supply_id, wild, warehouse_id, delivery_type, wb_warehouse, account, quantity * qty, date, True, product_id)
                     )
                 continue
             tuple_data = (author, supply_id, product_id, warehouse_id, delivery_type, wb_warehouse, account, quantity, date, False, None)
