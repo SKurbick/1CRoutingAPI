@@ -54,3 +54,41 @@ async def get_valid_stock_data(
 ):
     result = await service.get_valid_stock_data()
     return result
+#
+#
+# @router.post("/assembly_metawild", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
+# async def assembly_metawild(
+#         data: List[ShipmentOfGoodsUpdate] = Body(example=example_assembly_metawild_data),
+#         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
+# ):
+#     result = await service.assembly_metawild(data)
+#
+#     if result.status >= 400:
+#         raise HTTPException(
+#             status_code=result.status,
+#             detail={
+#                 "message": result.message,
+#                 "details": result.details
+#             }
+#         )
+#
+#     return result
+#
+#
+# # @router.post("/disassembly_metawild", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
+# # async def disassembly_metawild(
+# #         data: List[ShipmentOfGoodsUpdate] = Body(example=example_shipment_of_goods_data),
+# #         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
+# # ):
+# #     result = await service.create_data(data)
+# #
+# #     if result.status >= 400:
+# #         raise HTTPException(
+# #             status_code=result.status,
+# #             detail={
+# #                 "message": result.message,
+# #                 "details": result.details
+# #             }
+# #         )
+# #
+# #     return result
