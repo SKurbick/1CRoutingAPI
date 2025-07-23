@@ -13,11 +13,11 @@ class ShipmentOfGoodsRepository:
         self.pool = pool
 
     async def update_data(self, data: List[ShipmentOfGoodsUpdate]):
-        get_wilds_in_products = """SELECT id, kit_components FROM products WHERE is_kit=TRUE;"""
-        async with self.pool.acquire() as conn:
-            products_data = await conn.fetch(get_wilds_in_products)
-            meta_wilds = {record['id']: record['kit_components'] for record in products_data}  # получаем все валидные id товаров
-            pprint(meta_wilds)
+        # get_wilds_in_products = """SELECT id, kit_components FROM products WHERE is_kit=TRUE;"""
+        # async with self.pool.acquire() as conn:
+        #     products_data = await conn.fetch(get_wilds_in_products)
+        #     meta_wilds = {record['id']: record['kit_components'] for record in products_data}  # получаем все валидные id товаров
+        #     pprint(meta_wilds)
         data_to_update: List[Tuple] = []
         for shipment_data in data:
             author = shipment_data.author
@@ -29,15 +29,15 @@ class ShipmentOfGoodsRepository:
             account = shipment_data.account
             quantity = shipment_data.quantity
             date = shipment_data.shipment_date
-            if product_id in meta_wilds:
-                kit_components = json.loads(meta_wilds[product_id])
-                print(type(kit_components))
-                print(kit_components)
-                for wild, qty in kit_components.items():
-                    data_to_update.append(
-                        (author, supply_id, wild, warehouse_id, delivery_type, wb_warehouse, account, quantity * qty, date, True, product_id)
-                    )
-                continue
+            # if product_id in meta_wilds:
+            #     kit_components = json.loads(meta_wilds[product_id])
+            #     print(type(kit_components))
+            #     print(kit_components)
+            #     for wild, qty in kit_components.items():
+            #         data_to_update.append(
+            #             (author, supply_id, wild, warehouse_id, delivery_type, wb_warehouse, account, quantity * qty, date, True, product_id)
+            #         )
+            #     continue
             tuple_data = (author, supply_id, product_id, warehouse_id, delivery_type, wb_warehouse, account, quantity, date, False, None)
             data_to_update.append(tuple_data)
         pprint(data_to_update)
