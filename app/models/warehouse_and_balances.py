@@ -1,4 +1,4 @@
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Literal
 
 from pydantic import BaseModel, field_validator
 from datetime import datetime
@@ -14,18 +14,37 @@ example_defective_goods_data = [
         "correction_comment": "поломался пока чинил"
     }
 ]
+assembly_or_disassembly_metawild_description = "Передавайте operation_type = 'assembly' если нужно собрать комплект из компонентов и operation_type = 'disassembly' если необходимо разобрать комплект на компоненты"
+add_defective_goods_description = """
+status_id = 1, при условии что товар переносится из брака в валидный остаток. status_id = 3, при условии что товар переносится
+из валидного остатка в склад брака.
+"""
+example_assembly_metawild_data = {
+    "metawild": "metawild_test",
+    "count": 3,
+    "author": "Ваня который соска",
+    "warehouse_id": 1,
+    "operation_type": "assembly"
+}
 
 
-#
-#     author
-# supply_id
-# product_id
-# warehouse_id
-# status_id
-# quantity
-# delivery_type
-# transaction_type
-# correction_comment
+class AssemblyMetawild(BaseModel):
+    author: str
+    warehouse_id: int
+    metawild: str
+    count: int
+
+
+class AssemblyOrDisassemblyMetawildData(AssemblyMetawild):
+    operation_type: Literal["assembly", "disassembly"]  # только эти значения
+
+
+class AssemblyMetawildResponse(BaseModel):
+    product_id: str
+    operation_status: str
+    code_status: int
+    error_message: Optional[str] = None
+
 
 class DefectiveGoodsUpdate(BaseModel):
     author: str
@@ -69,3 +88,9 @@ class ValidStockData(BaseModel):
     warehouse_id: int
     available_stock: int
     components_info: Optional[List[ComponentsInfo]] = None
+
+
+class WarehouseAndBalanceResponse(BaseModel):
+    status: int
+    message: str
+    details: Optional[str] = None
