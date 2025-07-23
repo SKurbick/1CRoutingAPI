@@ -5,7 +5,9 @@ from typing import List, Tuple
 import asyncpg
 from asyncpg import Pool, UniqueViolationError
 from app.models import DefectiveGoodsUpdate
-from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, ComponentsInfo
+from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, ComponentsInfo, \
+    AssemblyOrDisassemblyMetawildData, \
+    AssemblyMetawildResponse, WarehouseAndBalanceResponse
 
 
 class WarehouseAndBalancesRepository:
@@ -91,3 +93,33 @@ class WarehouseAndBalancesRepository:
             )
 
         return stock_data
+
+    async def assembly_or_disassembly_metawild(self, data: AssemblyOrDisassemblyMetawildData) -> AssemblyMetawildResponse:
+        data_to_insert = (data.warehouse_id, data.metawild, data.operation_type, data.count, data.author)
+        try:
+            insert_query = """
+            INSERT INTO kit_operations 
+            (warehouse_id, kit_product_id, operation_type, quantity, author)
+            VALUES 
+            ($1, $2, $3, $4, $5)
+            RETURNING id;
+            """
+            select_query = """
+            SELECT kit_product_id AS product_id,  status AS operation_status,  error_message FROM kit_operations
+                   WHERE id = $1;
+            """
+            async with self.pool.acquire() as conn:
+                result_id = await conn.fetchrow(insert_query, *data_to_insert)
+                while True:
+                    check_status = await conn.fetchrow(select_query, result_id['id'])
+                    pprint(check_status)
+                    if check_status['operation_status'] != 'pending':
+                        break
+                return AssemblyMetawildResponse(**check_status,code_status=201)
+        except asyncpg.PostgresError as e:
+            return AssemblyMetawildResponse(
+                product_id=data.metawild,
+                code_status=422,
+                operation_status="PostgresError",
+                error_message=str(e)
+            )

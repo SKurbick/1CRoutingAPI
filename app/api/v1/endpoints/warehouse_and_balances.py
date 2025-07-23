@@ -2,15 +2,10 @@ from typing import List
 
 from fastapi import APIRouter, Depends, status, Body, HTTPException
 from app.models.warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, Warehouse, CurrentBalances, \
-    ValidStockData
+    ValidStockData, example_assembly_metawild_data, AssemblyOrDisassemblyMetawildData, AssemblyMetawildResponse, assembly_or_disassembly_metawild_description, \
+    add_defective_goods_description
 from app.service.warehouse_and_balances import WarehouseAndBalancesService
 from app.dependencies import get_warehouse_and_balances_service
-
-# router = APIRouter(prefix="/income_on_bank_account", dependencies=[Depends(verify_service_token)])
-add_defective_goods_description = """
-status_id = 1, при условии что товар переносится из брака в валидный остаток. status_id = 3, при условии что товар переносится
-из валидного остатка в склад брака.
-"""
 
 router = APIRouter(prefix="/warehouse_and_balances", tags=["Склады и остатки"])
 
@@ -41,16 +36,38 @@ async def get_warehouses(
     result = await service.get_warehouses()
     return result
 
+
 @router.get("/get_all_product_current_balances", response_model=List[CurrentBalances], status_code=status.HTTP_200_OK)
-async def get_warehouses(
+async def get_all_product_current_balances(
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
     result = await service.get_all_product_current_balances()
     return result
+
 
 @router.get("/get_valid_stock_data", response_model=List[ValidStockData], status_code=status.HTTP_200_OK)
 async def get_valid_stock_data(
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
     result = await service.get_valid_stock_data()
+    return result
+
+
+@router.post("/assembly_or_disassembly_metawild", response_model=AssemblyMetawildResponse, status_code=status.HTTP_201_CREATED,
+             description=assembly_or_disassembly_metawild_description)
+async def assembly_or_disassembly_metawild(
+        data: AssemblyOrDisassemblyMetawildData = Body(example=example_assembly_metawild_data),
+        service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
+):
+    result = await service.assembly_or_disassembly_metawild(data)
+
+    if result.code_status >= 400:
+        raise HTTPException(
+            status_code=result.code_status,
+            detail={
+                "message": result.error_message,
+                "details": "HTTPException"
+            }
+        )
+
     return result
