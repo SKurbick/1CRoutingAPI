@@ -5,7 +5,7 @@ from typing import List, Tuple
 import asyncpg
 from asyncpg import Pool
 from app.models import ShipmentOfGoodsUpdate
-from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData
+from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsCreate, ReserveOfGoodsResponse, ShippedGoods
 
 
 class ShipmentOfGoodsRepository:
@@ -80,3 +80,88 @@ class ShipmentOfGoodsRepository:
                 details=str(e)
             )
         return result
+
+    async def create_reserve(self, data: List[ReserveOfGoodsCreate]) -> List[ReserveOfGoodsResponse]:
+        insert_query = """
+                INSERT INTO product_reserves (
+                    product_id,
+                    warehouse_id,
+                    ordered,
+                    account,
+                    delivery_type,
+                    reserve_date,
+                    supply_id,
+                    expires_at
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING 
+                    id,
+                    supply_id
+                """
+
+        # Подготавливаем значения для вставки
+        values = [
+            (
+                item.product_id,
+                item.warehouse_id,
+                item.ordered,
+                item.account,
+                item.delivery_type,
+                item.reserve_date,
+                item.supply_id,
+                item.expires_at
+            )
+            for item in data
+        ]
+        records = []
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                # Выполняем запрос с возвратом данных
+                for value in values:
+                    record = await conn.fetchrow(insert_query, *value)
+                    records.append(record)
+        # Преобразуем результат в список ReserveOfGoodsResponse
+        result = [
+            ReserveOfGoodsResponse(
+                product_reserves_id=return_data["id"],
+                supply_id=return_data["supply_id"]  # Добавляем supply_id из связанной транзакции
+            )
+            for return_data in records
+        ]
+        print(result)
+        return result
+
+    async def add_shipped_goods(self, data: List[ShippedGoods]) -> List[ReserveOfGoodsResponse]:
+        pprint(data)
+        update_query = """
+            UPDATE product_reserves as pr
+            SET shipped =  pr.shipped + $2
+            WHERE supply_id = $1
+            RETURNING id, supply_id;
+        """
+
+        values = [
+            (
+                item.supply_id,
+                item.quantity_shipped
+            )
+            for item in data
+        ]
+        records = []
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                # Выполняем запрос с возвратом данных
+                for value in values:
+                    record = await conn.fetchrow(update_query, *value)
+                    records.append(record)
+
+        print(records)
+        updated_supplies = {r["supply_id"]: r["id"] for r in records if r is not None}
+
+        return [
+            ReserveOfGoodsResponse(
+                product_reserves_id=updated_supplies.get(item.supply_id, None),
+                supply_id=item.supply_id
+            )
+            for item in data
+        ]

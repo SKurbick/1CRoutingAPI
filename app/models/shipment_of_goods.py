@@ -39,3 +39,45 @@ class ShipmentOfGoodsUpdate(BaseModel):
 class ShipmentParamsData(BaseModel):
     products: List[str]
     accounts: List[str]
+
+
+class ReserveOfGoodsResponse(BaseModel):
+    supply_id: Optional[str] = None
+    product_reserves_id: Optional[int] = None
+
+
+class ReserveOfGoodsCreate(BaseModel):
+    product_id: str
+    warehouse_id: int
+    ordered: int
+    account: str
+    delivery_type: str
+    reserve_date: datetime.date
+    supply_id: str
+    expires_at: datetime.datetime
+
+
+class ShippedGoods(BaseModel):
+    supply_id: str
+    quantity_shipped: int
+
+
+example_shipped_goods_data = [
+    {
+        "supply_id": "WB-GI-166715280",
+        "quantity_shipped": 5
+    }
+]
+
+example_reserve_of_goods_data = [
+    {
+        "product_id": "testwild",
+        "warehouse_id": 1,
+        "ordered": 20,
+        "account": "Тоноян",
+        "delivery_type": "ФБС",
+        "supply_id": "WB-GI-166715280",
+        "reserve_date": "2025-07-25",
+        "expires_at": "2025-08-05 16:08:57.089858",
+    }
+]
