@@ -20,7 +20,7 @@ class GoodsReturn(BaseModel):
     subject_name: Optional[str] = None
     tech_size: Optional[int] = None
     account: Optional[str] = None
-    date: Optional[datetime.date] = None
+    date: Optional[datetime.datetime] = None
 
 class ReturnOfGoodsData(BaseModel):
     product_id: str
