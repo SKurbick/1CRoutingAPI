@@ -14,6 +14,7 @@ example_shipment_of_goods_data = [
         'wb_warehouse': 'Лентяево',
         'account': 'Хачатрян',
         'quantity': 12,
+        "product_reserves_id": 11
     }
 ]
 
@@ -34,6 +35,7 @@ class ShipmentOfGoodsUpdate(BaseModel):
     account: str
     quantity: int
     shipment_date: Optional[datetime.date] = None
+    product_reserves_id: Optional[int] = None
 
 
 class ShipmentParamsData(BaseModel):
