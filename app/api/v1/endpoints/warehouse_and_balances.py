@@ -45,12 +45,12 @@ async def get_all_product_current_balances(
     return result
 
 
-@router.get("/get_valid_stock_data", response_model=List[ValidStockData], status_code=status.HTTP_200_OK)
-async def get_valid_stock_data(
-        service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
-):
-    result = await service.get_valid_stock_data()
-    return result
+# @router.get("/get_valid_stock_data", response_model=List[ValidStockData], status_code=status.HTTP_200_OK)
+# async def get_valid_stock_data(
+#         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
+# ):
+#     result = await service.get_valid_stock_data()
+#     return result
 
 
 @router.post("/assembly_or_disassembly_metawild", response_model=AssemblyMetawildResponse, status_code=status.HTTP_201_CREATED,
