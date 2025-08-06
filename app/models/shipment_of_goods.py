@@ -83,3 +83,7 @@ example_reserve_of_goods_data = [
         "expires_at": "2025-08-05 16:08:57.089858",
     }
 ]
+
+shipment_data_response_example = {
+
+}
