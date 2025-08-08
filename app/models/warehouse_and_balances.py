@@ -19,6 +19,16 @@ add_defective_goods_description = """
 status_id = 1, при условии что товар переносится из брака в валидный остаток. status_id = 3, при условии что товар переносится
 из валидного остатка в склад брака.
 """
+re_sorting_operations_description = "Метод для операции пересортицы"
+example_re_sorting_operations = {
+    'from_product_id': "testwild",
+    'to_product_id': "testwild2",
+    'warehouse_id': 1,
+    'quantity': 10,
+    'reason': "Поставщик перепутал цвет товара",
+    'author': "Зина"
+}
+
 example_assembly_metawild_data = {
     "metawild": "metawild_test",
     "count": 3,
@@ -96,3 +106,18 @@ class WarehouseAndBalanceResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None
+
+
+class ReSortingOperation(BaseModel):
+    from_product_id: str
+    to_product_id: str
+    warehouse_id: int
+    quantity: int
+    reason: str
+    author: str
+
+
+class ReSortingOperationResponse(BaseModel):
+    operation_status: str
+    code_status: int
+    error_message: Optional[str] = None

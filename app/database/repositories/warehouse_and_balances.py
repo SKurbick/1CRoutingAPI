@@ -7,12 +7,42 @@ from asyncpg import Pool, UniqueViolationError
 from app.models import DefectiveGoodsUpdate
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, ComponentsInfo, \
     AssemblyOrDisassemblyMetawildData, \
-    AssemblyMetawildResponse, WarehouseAndBalanceResponse
+    AssemblyMetawildResponse, WarehouseAndBalanceResponse, ReSortingOperation, ReSortingOperationResponse
 
 
 class WarehouseAndBalancesRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+    async def re_sorting_operations(self, data: ReSortingOperation) -> ReSortingOperationResponse:
+        data_to_insert = (data.from_product_id, data.to_product_id, data.warehouse_id, data.quantity, data.reason, data.author)
+        try:
+            insert_query = """
+            INSERT INTO re_sorting_operations 
+                (from_product_id, to_product_id, warehouse_id, quantity, reason, author)
+                VALUES 
+                ($1, $2, $3, $4, $5, $6)
+            RETURNING id;
+            """
+            select_query = """
+            SELECT operation_status,  error_message FROM re_sorting_operations
+                WHERE id = $1;
+            """
+
+            async with self.pool.acquire() as conn:
+                result_id = await conn.fetchrow(insert_query, *data_to_insert)
+                while True:
+                    check_status = await conn.fetchrow(select_query, result_id['id'])
+                    pprint(check_status)
+                    if check_status['operation_status'] not in ('pending', 'processing'):
+                        break
+                return ReSortingOperationResponse(**check_status, code_status=201)
+        except asyncpg.PostgresError as e:
+            return ReSortingOperationResponse(
+                code_status=422,
+                operation_status="PostgresError",
+                error_message=str(e)
+            )
 
     async def add_defective_goods(self, data: List[DefectiveGoodsUpdate]) -> DefectiveGoodsResponse:
         data_to_update: List[Tuple] = []
@@ -113,9 +143,9 @@ class WarehouseAndBalancesRepository:
                 while True:
                     check_status = await conn.fetchrow(select_query, result_id['id'])
                     pprint(check_status)
-                    if check_status['operation_status'] != 'pending':
+                    if check_status['operation_status'] not in ('pending', 'processing'):
                         break
-                return AssemblyMetawildResponse(**check_status,code_status=201)
+                return AssemblyMetawildResponse(**check_status, code_status=201)
         except asyncpg.PostgresError as e:
             return AssemblyMetawildResponse(
                 product_id=data.metawild,

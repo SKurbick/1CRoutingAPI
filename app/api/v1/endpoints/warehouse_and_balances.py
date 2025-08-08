@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status, Body, HTTPException
 from app.models.warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, Warehouse, CurrentBalances, \
     ValidStockData, example_assembly_metawild_data, AssemblyOrDisassemblyMetawildData, AssemblyMetawildResponse, assembly_or_disassembly_metawild_description, \
-    add_defective_goods_description
+    add_defective_goods_description, ReSortingOperationResponse, ReSortingOperation, re_sorting_operations_description, example_re_sorting_operations
 from app.service.warehouse_and_balances import WarehouseAndBalancesService
 from app.dependencies import get_warehouse_and_balances_service
 
@@ -60,6 +60,26 @@ async def assembly_or_disassembly_metawild(
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
     result = await service.assembly_or_disassembly_metawild(data)
+
+    if result.code_status >= 400:
+        raise HTTPException(
+            status_code=result.code_status,
+            detail={
+                "message": result.error_message,
+                "details": "HTTPException"
+            }
+        )
+
+    return result
+
+
+@router.post("/re_sorting_operations", response_model=ReSortingOperationResponse, status_code=status.HTTP_201_CREATED,
+             description=re_sorting_operations_description)
+async def re_sorting_operations(
+        data: ReSortingOperation = Body(example=example_re_sorting_operations),
+        service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
+):
+    result = await service.re_sorting_operations(data)
 
     if result.code_status >= 400:
         raise HTTPException(

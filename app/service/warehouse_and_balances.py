@@ -2,7 +2,8 @@ from typing import List
 
 from app.models import DefectiveGoodsUpdate
 from app.database.repositories import WarehouseAndBalancesRepository
-from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, AssemblyOrDisassemblyMetawildData, AssemblyMetawildResponse
+from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, AssemblyOrDisassemblyMetawildData, \
+    AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse
 
 
 class WarehouseAndBalancesService:
@@ -30,4 +31,8 @@ class WarehouseAndBalancesService:
 
     async def assembly_or_disassembly_metawild(self, data: AssemblyOrDisassemblyMetawildData) -> AssemblyMetawildResponse:
         result = await self.warehouse_and_balances_repository.assembly_or_disassembly_metawild(data)
+        return result
+
+    async def re_sorting_operations(self, data: ReSortingOperation) -> ReSortingOperationResponse:
+        result = await self.warehouse_and_balances_repository.re_sorting_operations(data)
         return result
