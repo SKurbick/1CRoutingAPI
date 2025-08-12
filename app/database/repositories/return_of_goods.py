@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool
-from app.models.return_of_goods import ReturnOfGoodsResponse, ReturnOfGoodsData, GoodsReturn, IncomingReturns
+from app.models.return_of_goods import ReturnOfGoodsResponse, ReturnOfGoodsData, GoodsReturn, IncomingReturns, GroupDataGoodsReturns
 
 
 class ReturnOfGoodsRepository:
@@ -14,17 +14,51 @@ class ReturnOfGoodsRepository:
 
     async def get_return_of_goods(self) -> List[ReturnOfGoodsData] | ReturnOfGoodsResponse:
         select_query = """
-            SELECT 
-                COALESCE(a.local_vendor_code, 'не найден артикул продавца по артикулу wb') AS product_id,
-                gr.*
-            FROM 
-                public.goods_returns gr
-            LEFT JOIN 
-                public.article a ON gr.nm_id = a.nm_id
-            WHERE 
-                gr.status = 'Выдано' AND gr.is_received = false
-            ORDER BY 
-                a.local_vendor_code;
+                SELECT 
+                    -- Артикул продавца (или заглушка, если не найден)
+                    COALESCE(a.local_vendor_code, 'не найден артикул продавца по артикулу wb') AS product_id,
+                    -- Поля из goods_returns_dev
+                    grd.srid,
+                    grd.account,
+                    grd.barcode,
+                    grd.brand,
+                    grd.dst_office_address,
+                    grd.dst_office_id,
+                    grd.nm_id,
+                    grd.order_dt,
+                    grd.order_id,
+                    grd.return_type,
+                    grd.shk_id,
+                    grd.sticker_id,
+                    grd.subject_name,
+                    grd.tech_size,
+                    grd.reason,
+                    grd.is_status_active,
+                    grd.created_at AS goods_created_at,
+                    grd.is_received,
+                    -- Поля из goods_returns_status_history
+                    grsh.status,
+                    grsh.status_dt,
+                    grsh.completed_dt,
+                    grsh.expired_dt,
+                    grsh.ready_to_return_dt,
+                    grsh.created_at AS status_created_at
+                FROM 
+                    public.goods_returns_dev grd
+                    LEFT JOIN public.article a ON grd.nm_id = a.nm_id
+                    JOIN (
+                        -- Подзапрос: берём только последнюю запись статуса по времени для каждого srid
+                        SELECT 
+                            *,
+                            ROW_NUMBER() OVER (PARTITION BY srid ORDER BY created_at DESC) AS rn
+                        FROM 
+                            public.goods_returns_status_history
+                    ) grsh ON grd.srid = grsh.srid AND grsh.rn = 1
+                WHERE 
+                    grsh.status IN ('Выдано', 'Готов к выдаче')
+                    AND grd.is_received = FALSE
+                ORDER BY 
+                    a.local_vendor_code;
         """
         try:
             async with self.pool.acquire() as conn:
@@ -34,7 +68,7 @@ class ReturnOfGoodsRepository:
                 for row in query_result:
                     row_dict = dict(row)
                     product_id = row_dict.pop("product_id")  # Извлекаем local_vendor_code
-                    grouped_data[product_id].append(GoodsReturn(**row_dict))
+                    grouped_data[product_id].append(GroupDataGoodsReturns(**row_dict))
 
                 result = [
                     # Преобразуем в список ReturnOfGoodsData
@@ -66,7 +100,7 @@ class ReturnOfGoodsRepository:
             warehouse_id = return_data.warehouse_id
             return_date = return_data.return_date
             for is_received_data in return_data.is_received_data:
-                data_to_update_goods_returns.append((is_received_data.id, is_received_data.is_received))
+                data_to_update_goods_returns.append((is_received_data.srid, is_received_data.is_received))
             # if product_id in meta_wilds:
             #     kit_components = json.loads(meta_wilds[product_id])
             #     print(type(kit_components))
@@ -83,9 +117,9 @@ class ReturnOfGoodsRepository:
         VALUES ($1, $2, $3, $4, $5, $6, $7);
         """
         query_update_is_received = """
-            UPDATE goods_returns
+            UPDATE goods_returns_dev
             SET is_received = $2
-            WHERE id = $1;
+            WHERE srid = $1;
         """
         try:
             async with self.pool.acquire() as conn:
