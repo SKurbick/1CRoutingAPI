@@ -55,11 +55,11 @@ class ReturnOfGoodsRepository:
                             public.goods_returns_status_history
                     ) grsh ON grd.srid = grsh.srid AND grsh.rn = 1
                 WHERE 
-                    grsh.status IN ('Выдано', 'Готов к выдаче')
-                    AND grd.is_received = FALSE
+                    grd.is_received = FALSE
                 ORDER BY 
                     a.local_vendor_code;
         """
+        #                    grsh.status IN ('Выдано', 'Готов к выдаче') AND
         try:
             async with self.pool.acquire() as conn:
                 query_result = await conn.fetch(select_query)
