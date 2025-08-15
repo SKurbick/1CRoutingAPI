@@ -1,8 +1,8 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status, Body, HTTPException
+from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
 from app.models.shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsResponse, example_shipment_of_goods_data, ShipmentParamsData, \
-    ReserveOfGoodsResponse, ReserveOfGoodsCreate, example_reserve_of_goods_data, ShippedGoods, example_shipped_goods_data
+    ReserveOfGoodsResponse, ReserveOfGoodsCreate, example_reserve_of_goods_data, ShippedGoods, example_shipped_goods_data, DeliveryType
 from app.service.shipment_of_goods import ShipmentOfGoodsService
 from app.dependencies import get_shipment_of_goods_service
 
@@ -11,10 +11,11 @@ router = APIRouter(prefix="/shipment_of_goods", tags=["Отгрузка со с�
 
 @router.post("/update", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def create_data(
+        delivery_type: DeliveryType = Query(..., description="принимает ФБС или ФБО"),
         data: List[ShipmentOfGoodsUpdate] = Body(example=example_shipment_of_goods_data),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
-    result = await service.create_data(data)
+    result = await service.create_data(data, delivery_type)
 
     if result.status >= 400:
         raise HTTPException(
@@ -61,7 +62,6 @@ async def add_shipped_goods(
 ):
     result = await service.add_shipped_goods(data)
     return result
-
 
 # @router.get("/get_shipment_data", response_model=List[ITGroupData] | InventoryTransactionsResponse, status_code=status.HTTP_200_OK,
 #             responses={200: shipment_data_response_example})

@@ -2,7 +2,7 @@ from typing import List
 
 from app.models import ShipmentOfGoodsUpdate
 from app.database.repositories import ShipmentOfGoodsRepository
-from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsResponse, ReserveOfGoodsCreate, ShippedGoods
+from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsResponse, ReserveOfGoodsCreate, ShippedGoods, DeliveryType
 
 
 class ShipmentOfGoodsService:
@@ -12,8 +12,13 @@ class ShipmentOfGoodsService:
     ):
         self.shipment_of_goods_repository = shipment_of_goods_repository
 
-    async def create_data(self, data: List[ShipmentOfGoodsUpdate]) -> ShipmentOfGoodsResponse:
+    async def create_data(self, data: List[ShipmentOfGoodsUpdate], delivery_type: DeliveryType) -> ShipmentOfGoodsResponse:
         result = await self.shipment_of_goods_repository.update_data(data)
+        if result.status == 201:
+            match delivery_type: # запрос для 1С
+                case DeliveryType.FBO:
+                    # todo обработка данных по 1С
+                    print("ФБО (через match-case)")
         return result
 
     async def get_shipment_params(self) -> ShipmentParamsData:

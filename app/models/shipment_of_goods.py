@@ -1,5 +1,6 @@
 import datetime
 from typing import Optional, List
+from enum import Enum
 
 from pydantic import BaseModel
 
@@ -18,6 +19,10 @@ example_shipment_of_goods_data = [
     }
 ]
 
+
+class DeliveryType(str, Enum):
+    FBS = "ФБС"
+    FBO = "ФБО"
 
 class ShipmentOfGoodsResponse(BaseModel):
     status: int
