@@ -1,5 +1,7 @@
 from typing import List
 
+from app.dependencies.config import settings, account_inn_map
+from app.infrastructure.ONE_C import ONECRouting
 from app.models import ShipmentOfGoodsUpdate
 from app.database.repositories import ShipmentOfGoodsRepository
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsResponse, ReserveOfGoodsCreate, ShippedGoods, DeliveryType
@@ -15,10 +17,15 @@ class ShipmentOfGoodsService:
     async def create_data(self, data: List[ShipmentOfGoodsUpdate], delivery_type: DeliveryType) -> ShipmentOfGoodsResponse:
         result = await self.shipment_of_goods_repository.update_data(data)
         if result.status == 201:
-            match delivery_type: # запрос для 1С
+            match delivery_type:  # запрос для 1С
                 case DeliveryType.FBO:
-                    # todo обработка данных по 1С
-                    print("ФБО (через match-case)")
+                    try:
+                        one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
+                        refactoring_data = one_c_connect.refactoring_to_account_data(shipments=data, account_to_inn=account_inn_map)
+                        result = await one_c_connect.commission_sales_fbo_add(data=refactoring_data)
+                        print(result)
+                    except Exception as e:
+                        print(e)
         return result
 
     async def get_shipment_params(self) -> ShipmentParamsData:
