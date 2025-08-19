@@ -22,8 +22,8 @@ class ShipmentOfGoodsService:
                     try:
                         one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
                         refactoring_data = one_c_connect.refactoring_to_account_data(shipments=data, account_to_inn=account_inn_map)
-                        result = await one_c_connect.commission_sales_fbo_add(data=refactoring_data)
-                        print(result)
+                        one_c_result = await one_c_connect.commission_sales_fbo_add(data=refactoring_data)
+                        print(one_c_result)
                     except Exception as e:
                         print(e)
         return result
