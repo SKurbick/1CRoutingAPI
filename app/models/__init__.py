@@ -6,7 +6,7 @@ from .ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGood
 from .local_barcode_generation import GoodsAcceptanceCertificateCreate
 from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, ReSortingOperation, ReSortingOperationResponse
 from .goods_information import MetawildsData, AllProductsData, GoodsResponse
-from .inventory_check import InventoryCheckUpdate
+from .inventory_check import InventoryCheckUpdate, InventoryData, InventoryDataResponse, IDGroupData
 from .inventory_transactions import ITGroupData
 
 __all__ = [
@@ -34,4 +34,7 @@ __all__ = [
     'GoodsResponse',
     'ReSortingOperation',
     'ReSortingOperationResponse',
+    'InventoryData',
+    'InventoryDataResponse',
+    'IDGroupData'
 ]
