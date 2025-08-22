@@ -21,26 +21,49 @@ class InventoryTransactionsRepository:
                             DATE(it.created_at) as "Дата",
                             it.product_id as "ID продукта",
                             SUM(CASE 
-                                    WHEN it.transaction_type = 'outgoing' AND it.delivery_type = 'ФБО' THEN it.quantity
+                                    WHEN it.transaction_type = 'outgoing' AND it.delivery_type = 'ФБО' AND it.warehouse_id = 1 THEN it.quantity
                                     ELSE 0 
                                 END)::INTEGER AS "Отгрузка по ФБО",
                             SUM(CASE 
-                                    WHEN it.transaction_type = 'outgoing' AND it.delivery_type = 'ФБС' THEN it.quantity
+                                    WHEN it.transaction_type = 'outgoing' AND it.delivery_type = 'ФБС' AND it.warehouse_id = 1 THEN it.quantity
                                     ELSE 0 
                                 END)::INTEGER AS "Отгрузка по ФБС",
                             SUM(CASE 
                                     WHEN (it.transaction_type = 'incoming' OR it.transaction_type = 'adjustment') 
-                                    AND it.document_guid IS NOT NULL THEN it.quantity
+                                    AND it.document_guid IS NOT NULL AND it.warehouse_id = 1 THEN it.quantity
                                     ELSE 0 
-                                END)::INTEGER AS "Поступления"
+                                END)::INTEGER AS "Поступления",
+                           SUM(CASE 
+                                WHEN it.transaction_type in ('kit_disassembly', 'kit_assembly', 'kit_result') 
+                                AND it.warehouse_id = 1 THEN it.quantity
+                                ELSE 0 
+                            END)::INTEGER AS "Участие в сборке/разборе",
+                           SUM(CASE 
+                                WHEN it.transaction_type = 'incoming' and document_guid is null and delivery_type is null
+                               THEN it.quantity
+                                ELSE 0 
+                            END)::INTEGER AS "Поступило со склада «Брак»",
+                           SUM(CASE 
+                                WHEN it.transaction_type = 'outgoing' and document_guid is null and delivery_type is null
+                               THEN it.quantity
+                                ELSE 0 
+                            END)::INTEGER AS "Перемещен на склад «Брак»",
+                           SUM(CASE 
+                                WHEN it.transaction_type = 'return'
+                               THEN it.quantity
+                                ELSE 0 
+                            END)::INTEGER AS "Возвраты от клиента",
+                           SUM(CASE 
+                                WHEN it.transaction_type in ('re_sorting_incoming', 're_sorting_outgoing') and it.warehouse_id=1
+                               THEN it.quantity
+                                ELSE 0 
+                            END)::INTEGER AS "Пересортица"   
                         FROM 
                             inventory_transactions it
-                        LEFT JOIN 
-                            current_balances cb ON it.product_id = cb.product_id
                         WHERE 
-                            cb.warehouse_id = 1 and created_at BETWEEN $1 AND $2
+                            created_at BETWEEN $1 AND $2
                         GROUP BY 
-                            DATE(it.created_at), it.product_id, cb.available_quantity
+                            DATE(it.created_at), it.product_id
                         ORDER BY 
                             DATE(it.created_at), it.product_id;
                 """
@@ -55,7 +78,12 @@ class InventoryTransactionsRepository:
                         product_id=record["ID продукта"],
                         shipment_fbo=record["Отгрузка по ФБО"],
                         shipment_fbs=record["Отгрузка по ФБС"],
-                        incoming=record["Поступления"]
+                        incoming=record["Поступления"],
+                        re_sorting=record["Пересортица"],
+                        returns=record["Возвраты от клиента"],
+                        moved_to_the_warehouse_defective=record["Перемещен на склад «Брак»"],
+                        received_from_the_warehouse_defective=record["Поступило со склада «Брак»"],
+                        kit_result=record["Участие в сборке/разборе"]
                     )
 
                     if date not in grouped_data:

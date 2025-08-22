@@ -55,6 +55,11 @@ class ProductGroupData(BaseModel):
     shipment_fbo: int
     shipment_fbs: int
     incoming: int
+    re_sorting: int
+    returns: int
+    moved_to_the_warehouse_defective: int
+    received_from_the_warehouse_defective: int
+    kit_result: int
 
 
 class ITGroupData(BaseModel):
