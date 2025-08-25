@@ -9,3 +9,5 @@ pillow~=11.2.1
 starlette~=0.46.1
 gspread~=6.2.0
 aiohttp
+pdfplumber
+pandas

@@ -1,24 +1,17 @@
-import base64
-import datetime
-import zipfile
-from pprint import pprint
+
 from typing import List
 
 from app.models import DocsData
 from app.database.repositories import DocsRepository
-from app.models import MetawildsData, AllProductsData
 from app.infrastructure.WildberriesAPI.docs import Docs
 import datetime
 import io
 import re
-import os
 import base64
 import zipfile
 from pprint import pprint
 
-import requests
 import pdfplumber
-import json
 import pandas as pd
 
 
