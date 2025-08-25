@@ -1,3 +1,4 @@
+from .docs import DocsRepository
 from .receipt_of_goods import ReceiptOfGoodsRepository
 from .income_on_bank_account import IncomeOnBankAccountRepository
 from .shipment_of_goods import ShipmentOfGoodsRepository
@@ -18,5 +19,6 @@ __all__ = [
     'GoodsInformationRepository',
     'InventoryCheckRepository',
     'InventoryTransactionsRepository',
-    'ReturnOfGoodsRepository'
+    'ReturnOfGoodsRepository',
+    'DocsRepository'
 ]

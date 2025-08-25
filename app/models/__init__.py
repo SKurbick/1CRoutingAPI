@@ -8,7 +8,7 @@ from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse
 from .goods_information import MetawildsData, AllProductsData, GoodsResponse
 from .inventory_check import InventoryCheckUpdate, InventoryData, InventoryDataResponse, IDGroupData
 from .inventory_transactions import ITGroupData
-
+from .docs import docs_data_response_example, DocsData
 __all__ = [
     'ReceiptOfGoodsUpdate',
     'IncomeOnBankAccountUpdate',
@@ -36,5 +36,7 @@ __all__ = [
     'ReSortingOperationResponse',
     'InventoryData',
     'InventoryDataResponse',
-    'IDGroupData'
+    'IDGroupData',
+    'docs_data_response_example',
+    'DocsData'
 ]
