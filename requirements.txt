@@ -11,3 +11,4 @@ gspread~=6.2.0
 aiohttp
 pdfplumber
 pandas
+slowapi

@@ -1,5 +1,4 @@
-
-from typing import List
+from typing import List, Dict
 
 from app.models import DocsData
 from app.database.repositories import DocsRepository
@@ -22,24 +21,33 @@ class DocsService:
     ):
         self.docs_repository = docs_repository
 
-    async def get_docs(self, date_from: datetime.date, date_to: datetime.date) -> List[DocsData]:
+    async def get_docs(self, date_from: datetime.date, date_to: datetime.date) -> List[Dict]:
+        return_result = []
         tokens = await self.docs_repository.get_tokens()
-        pprint(tokens)
-        token = tokens['ВЕКТОР']
-        docs_wb_api = Docs(token=token)
+        # token = tokens["ВЕКТОР"]
+        for account, token in tokens.items():
 
-        docs_list = await docs_wb_api.get_docs_list(str(date_from), str(date_to))
+            # if account == "ВЕКТОР":
+            #     continue
+            print(account)
+            docs_wb_api = Docs(token=token)
 
-        upd_docs_names = self.get_upd_doc_names(docs_list['data']['documents'])
-        pprint(upd_docs_names)
-        upd_docs_per_client_zip = await docs_wb_api.get_upd_docs_per_client(upd_docs_names)
-        raw_text = self.extract_and_process_pdfs_from_zip(upd_docs_per_client_zip)
-        final_data = self.merge_invoice_data(raw_text)
-        pprint(final_data)
+            docs_list = await docs_wb_api.get_docs_list(str(date_from), str(date_to))
 
-        return [DocsData(**res) for res in final_data]
+            upd_docs_names = self.get_upd_doc_names(docs_list['data']['documents'])
+            if len(upd_docs_names['params']) == 0:
+                continue # пропуск аккаунтов у которых нет документов за период
+            pprint(upd_docs_names)
+            upd_docs_per_client_zip = await docs_wb_api.get_upd_docs_per_client(upd_docs_names)
+            raw_text = self.extract_and_process_pdfs_from_zip(upd_docs_per_client_zip)
+            final_data = self.merge_invoice_data(raw_text)
+            pprint(final_data)
 
-
+            return_result.extend(final_data)
+            print(final_data)
+            # return final_data
+            # return [DocsData(**res) for res in final_data]
+        return return_result
     def get_upd_doc_names(self, docs_list_data):
         '''
         Возвращает { 'params' : [{'extension': 'zip', 'serviceName': 'upd-250070987'}, ... ]}
@@ -159,21 +167,25 @@ class DocsService:
                 combined['Услуги'] = services
                 # Add metadata
                 combined['inner_zip_name'] = doc['inner_zip_name']
-                combined['pdf_base64'] = doc['pdf_base64']
+                # combined['pdf_base64'] = doc['pdf_base64']
                 result.append(combined)
 
         return result
 
     def extract_invoice_data(self, text):
         data = {}
+
+        # Extract invoice number and date
         match = re.search(r'Счет-фактура №\s*(\d+) от (\d{2}\.\d{2}\.\d{4})', text)
         if match:
             data["Счёт фактура номер"] = match.group(1)
             data["Счёт фактура дата"] = match.group(2)
 
+        # Extract seller name
         seller_match = re.search(r'Продавец:[^\"]*\"([^\"]+)\"', text)
         data["Наименование продавца"] = seller_match.group(1) if seller_match else None
 
+        # --- Original logic first ---
         inn_seller = re.search(r'ИНН/КПП продавца:\s*([\d/]+)', text)
         if inn_seller:
             parts = inn_seller.group(1).split('/')
@@ -182,9 +194,7 @@ class DocsService:
         else:
             data["ИНН продавца"] = data["КПП продавца"] = None
 
-        data["Наименование покупателя"] = self.extract_buyer_name(text)
-        # buyer_match = re.search(r'Покупатель:\s*([^"\s][^"]*?)"', text)
-        # data["Наименование покупателя"] = buyer_match.group(1) if buyer_match else None
+        data["Наименование покупателя"] = self.extract_buyer_name(text[:1000])
 
         inn_buyer = re.search(r'ИНН/КПП покупателя:\s*([\d/]+)', text)
         if inn_buyer:
@@ -193,21 +203,61 @@ class DocsService:
             data["КПП покупателя"] = parts[1] if len(parts) > 1 else None
         else:
             data["ИНН покупателя"] = data["КПП покупателя"] = None
+        # --- End of original logic ---
 
-        # Return only if at least one field is found
+        # --- Fallback: only if original failed ---
+        if data["ИНН продавца"] is None or data["ИНН покупателя"] is None:
+            # Look for both labels
+            seller_label_pos = text.find('ИНН/КПП продавца:')
+            buyer_label_pos = text.find('ИНН/КПП покупателя:')
+
+            if seller_label_pos == -1 and buyer_label_pos == -1:
+                return data  # No labels, nothing to do
+
+            # Find all INN/KPP blocks: \d{10,12} or \d{10,12}/\d{4,9}
+            blocks = re.finditer(r'\b(\d{10,12}(?:/\d{4,9})?)\b', text)
+            found_values = []
+            for match in blocks:
+                value = match.group(1)
+                start_pos = match.start()
+                # Only consider values that look like real INN/KPP and are not invoice number
+                if not (value == data.get("Счёт фактура номер")):  # avoid invoice number
+                    found_values.append((value, start_pos))
+
+            # Sort by position
+            found_values.sort(key=lambda x: x[1])
+
+            # We need at least two blocks
+            if len(found_values) >= 2:
+                first_block, second_block = found_values[0][0], found_values[1][0]
+
+                # Assume: first block after labels is продавец, second is покупатель
+                # Only assign if original was None
+                if data["ИНН продавца"] is None:
+                    parts = first_block.split('/')
+                    data["ИНН продавца"] = parts[0]
+                    data["КПП продавца"] = parts[1] if len(parts) > 1 else ''
+
+                if data["ИНН покупателя"] is None:
+                    parts = second_block.split('/')
+                    data["ИНН покупателя"] = parts[0]
+                    data["КПП покупателя"] = parts[1] if len(parts) > 1 else ''
+
+        # Return empty dict if no data was extracted
         if all(v is None for v in data.values()):
             return {}
+
         return data
 
     @staticmethod
     def extract_buyer_name(text):
-        # 1. Standard case: Покупатель: "Company Name"
-        match = re.search(r'Покупатель:\s*"?([^"\s][^"]*?)"', text)
+        # 2. Fallback: ИП — take first word after "Индивидуальный предприниматель"
+        match = re.search(r'Индивидуальный\s+предприниматель\s+([^\s]+)', text, re.IGNORECASE)
         if match:
             return match.group(1).strip()
 
-        # 2. Fallback: ИП — take first word after "Индивидуальный предприниматель"
-        match = re.search(r'Индивидуальный\s+предприниматель\s+([^\s]+)', text, re.IGNORECASE)
+        # 1. Standard case: Покупатель: "Company Name"
+        match = re.search(r'Покупатель:\s*"?([^"\s][^"]*?)"', text)
         if match:
             return match.group(1).strip()
 
@@ -234,8 +284,10 @@ class DocsService:
             'наименование товара': 'Услуга',
             'без налога - всего': 'Стоимость без НДС',
             'с налогом - всего': 'Стоимость с НДС',
-            'налоговая ставка': 'Налоговая ставка'
+            'налоговая ставка': 'Налоговая ставка',
+            'нало- говая став- ка': 'Налоговая ставка'
         }
+
         selected_cols = {}
         for key_part, standard_name in col_mapping.items():
             matches = [col for col in df.columns if key_part in col]
@@ -254,6 +306,8 @@ class DocsService:
         df_clean = df_clean[
             df_clean['Услуга'].str[0].str.match(r'[a-zA-Zа-яА-Я]', na=False)
         ]
+
+        df_clean['Налоговая ставка'] = df_clean['Налоговая ставка'].str.replace(r'^[aа]', '', regex=True)
 
         for col in ('Стоимость без НДС', 'Стоимость с НДС'):
             df_clean[col] = df_clean[col].str.replace(',', '.', regex=False).astype(float)

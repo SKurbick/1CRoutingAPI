@@ -49,6 +49,6 @@ class Docs:
         url = 'https://documents-api.wildberries.ru/api/v1/documents/download/all'
         async with ClientSession() as session:
             async with session.post(url, json=doc_names, headers=self.headers) as response:
-                print(response.json())
                 response_json =  await response.json()
+                print(response_json)
                 return response_json['data']['document']

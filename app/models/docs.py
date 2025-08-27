@@ -9,13 +9,16 @@ from datetime import datetime
 
 class ServiceItem(BaseModel):
     """Model for service item"""
-    description: str = Field(..., alias="Услуга")
+    # description: str = Field(..., alias="Услуга")
+    description: str
     price_without_vat: float = Field(..., alias="Стоимость без НДС")
     price_with_vat: float = Field(..., alias="Стоимость с НДС")
-    tax_rate: str = Field(..., alias="Налоговая ставка")
+    # tax_rate: str = Field(..., alias="Налоговая ставка")
+    tax_rate: Optional[str] = Field(None, alias="Налоговая ставка")  # Сделали опциональным
 
-    class Config:
-        allow_population_by_field_name = True
+    # class Config:
+    #     validate_by_name = True
+    #     populate_by_name = True
 
 class DocsData(BaseModel):
     """Main invoice data model"""
@@ -29,7 +32,8 @@ class DocsData(BaseModel):
     buyer_kpp: Optional[str] = Field("", alias="КПП покупателя")
     services: List[ServiceItem] = Field(..., alias="Услуги")
     inner_zip_name: str
-    pdf_base64: str
+    # pdf_base64: str
 
     class Config:
-        allow_population_by_field_name = True
+        # validate_by_name = True
+        populate_by_name = True
