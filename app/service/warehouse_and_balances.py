@@ -1,9 +1,9 @@
 from typing import List
 
-from app.models import DefectiveGoodsUpdate
+from app.models import DefectiveGoodsUpdate, AddStockByClientResponse
 from app.database.repositories import WarehouseAndBalancesRepository
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, AssemblyOrDisassemblyMetawildData, \
-    AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse
+    AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClient
 
 
 class WarehouseAndBalancesService:
@@ -35,4 +35,8 @@ class WarehouseAndBalancesService:
 
     async def re_sorting_operations(self, data: ReSortingOperation) -> ReSortingOperationResponse:
         result = await self.warehouse_and_balances_repository.re_sorting_operations(data)
+        return result
+
+    async def add_stock_by_client(self,data: List[AddStockByClient]) -> AddStockByClientResponse:
+        result = await self.warehouse_and_balances_repository.add_stock_by_client(data)
         return result

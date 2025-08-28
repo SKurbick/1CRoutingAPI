@@ -4,15 +4,43 @@ from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool, UniqueViolationError
-from app.models import DefectiveGoodsUpdate
+from app.models import DefectiveGoodsUpdate, AddStockByClient
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, ComponentsInfo, \
     AssemblyOrDisassemblyMetawildData, \
-    AssemblyMetawildResponse, WarehouseAndBalanceResponse, ReSortingOperation, ReSortingOperationResponse
+    AssemblyMetawildResponse, WarehouseAndBalanceResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClientResponse
 
 
 class WarehouseAndBalancesRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+    async def add_stock_by_client(self, data: List[AddStockByClient]) -> AddStockByClientResponse:
+        data_to_insert: List[Tuple] = []
+        for value in data:
+            data_to_insert.append(
+                (value.product_id, value.quantity, value.warehouse_id, value.author, value.comment, value.transaction_type)
+            )
+        query = """
+        INSERT INTO inventory_transactions (product_id, quantity, warehouse_id, author, correction_comment, transaction_type, status_id)
+        VALUES ($1, $2, $3, $4, $5, $6, 1)
+        """
+        pprint(data_to_insert)
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    await conn.executemany(query, data_to_insert)
+
+            result = AddStockByClientResponse(
+                status=201,
+                message="Данные успешно обновлены"
+            )
+            return result
+        except asyncpg.PostgresError as e:
+            return AddStockByClientResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
 
     async def re_sorting_operations(self, data: ReSortingOperation) -> ReSortingOperationResponse:
         data_to_insert = (data.from_product_id, data.to_product_id, data.warehouse_id, data.quantity, data.reason, data.author)

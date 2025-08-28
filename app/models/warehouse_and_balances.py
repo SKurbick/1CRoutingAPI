@@ -66,6 +66,7 @@ class DefectiveGoodsUpdate(BaseModel):
     correction_comment: Optional[str] = None
 
 
+
 class DefectiveGoodsResponse(BaseModel):
     status: int
     message: str
@@ -121,3 +122,17 @@ class ReSortingOperationResponse(BaseModel):
     operation_status: str
     code_status: int
     error_message: Optional[str] = None
+
+
+class AddStockByClient(BaseModel):
+    product_id: str
+    quantity: int
+    warehouse_id: int
+    author: str
+    comment: str
+    transaction_type: Literal['add_stock_by_client'] = 'add_stock_by_client'
+
+class AddStockByClientResponse(BaseModel):
+    status: int
+    message: str
+    details: Optional[str] = None

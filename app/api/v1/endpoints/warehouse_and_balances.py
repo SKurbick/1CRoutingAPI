@@ -3,7 +3,8 @@ from typing import List
 from fastapi import APIRouter, Depends, status, Body, HTTPException
 from app.models.warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, Warehouse, CurrentBalances, \
     ValidStockData, example_assembly_metawild_data, AssemblyOrDisassemblyMetawildData, AssemblyMetawildResponse, assembly_or_disassembly_metawild_description, \
-    add_defective_goods_description, ReSortingOperationResponse, ReSortingOperation, re_sorting_operations_description, example_re_sorting_operations
+    add_defective_goods_description, ReSortingOperationResponse, ReSortingOperation, re_sorting_operations_description, example_re_sorting_operations, \
+    AddStockByClient, AddStockByClientResponse
 from app.service.warehouse_and_balances import WarehouseAndBalancesService
 from app.dependencies import get_warehouse_and_balances_service
 
@@ -90,4 +91,13 @@ async def re_sorting_operations(
             }
         )
 
+    return result
+
+
+@router.post("/add_stock_by_client", response_model=AddStockByClientResponse)
+async def add_stock_by_client(
+        data: List[AddStockByClient],
+        service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
+):
+    result = await service.add_stock_by_client(data)
     return result

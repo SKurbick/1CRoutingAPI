@@ -4,11 +4,13 @@ from .shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsResponse, e
 from .ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, example_ordered_goods_from_buyers_data, \
     OrderedGoodsFromBuyersData, PrintedBarcodeData, OrderedGoodsAndPrintedBarcodeData
 from .local_barcode_generation import GoodsAcceptanceCertificateCreate
-from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, ReSortingOperation, ReSortingOperationResponse
+from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, ReSortingOperation, ReSortingOperationResponse, \
+    AddStockByClient, AddStockByClientResponse
 from .goods_information import MetawildsData, AllProductsData, GoodsResponse
 from .inventory_check import InventoryCheckUpdate, InventoryData, InventoryDataResponse, IDGroupData
 from .inventory_transactions import ITGroupData
 from .docs import docs_data_response_example, DocsData
+
 __all__ = [
     'ReceiptOfGoodsUpdate',
     'IncomeOnBankAccountUpdate',
@@ -38,5 +40,7 @@ __all__ = [
     'InventoryDataResponse',
     'IDGroupData',
     'docs_data_response_example',
-    'DocsData'
+    'DocsData',
+    'AddStockByClient',
+    'AddStockByClientResponse',
 ]

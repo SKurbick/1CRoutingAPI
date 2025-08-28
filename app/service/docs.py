@@ -167,7 +167,7 @@ class DocsService:
                 combined['Услуги'] = services
                 # Add metadata
                 combined['inner_zip_name'] = doc['inner_zip_name']
-                # combined['pdf_base64'] = doc['pdf_base64']
+                combined['pdf_base64'] = doc['pdf_base64']
                 result.append(combined)
 
         return result
