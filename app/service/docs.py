@@ -36,7 +36,7 @@ class DocsService:
 
             upd_docs_names = self.get_upd_doc_names(docs_list['data']['documents'])
             if len(upd_docs_names['params']) == 0:
-                continue # пропуск аккаунтов у которых нет документов за период
+                continue  # пропуск аккаунтов у которых нет документов за период
             pprint(upd_docs_names)
             upd_docs_per_client_zip = await docs_wb_api.get_upd_docs_per_client(upd_docs_names)
             raw_text = self.extract_and_process_pdfs_from_zip(upd_docs_per_client_zip)
@@ -48,6 +48,7 @@ class DocsService:
             # return final_data
             # return [DocsData(**res) for res in final_data]
         return return_result
+
     def get_upd_doc_names(self, docs_list_data):
         '''
         Возвращает { 'params' : [{'extension': 'zip', 'serviceName': 'upd-250070987'}, ... ]}
@@ -55,7 +56,7 @@ class DocsService:
         '''
         return {'params': [{"extension": i['extensions'][0], "serviceName": i['serviceName']} for i in docs_list_data]}
 
-    def extract_and_process_pdfs_from_zip(self, zip_data, parse_func=None):
+    def extract_and_process_pdfs_from_zip(self,zip_data, parse_func=None):
         """
         Extracts PDFs from nested ZIPs.
         - Always includes raw_data (text + tables) on success
@@ -64,38 +65,34 @@ class DocsService:
         """
         results = []
 
-        for inner_zip_name, pdf_filename, pdf_data in self.iter_inner_pdfs(zip_data):
+        for inner_zip_name, pdf_filename, pdf_data, inner_zip_data in self.iter_inner_pdfs(zip_data):
             try:
-                # Extract structured raw data (text, tables)
                 raw_data = self.extract_pdf_data(pdf_data)
-
-                # Build success result
                 item = {
                     "filename": pdf_filename,
-                    "inner_zip_name": inner_zip_name,  # ← NEW
-                    "pdf_base64": base64.b64encode(pdf_data).decode('utf-8'),  # ← NEW
+                    "inner_zip_name": inner_zip_name,
+                    "inner_zip_base64": base64.b64encode(inner_zip_data).decode('utf-8'),  # ✅ внутренний ZIP
                     "raw_data": raw_data
                 }
                 if parse_func is not None:
                     item["parsed_data"] = parse_func(raw_data)
-
                 results.append(item)
 
             except Exception as e:
-                # Extraction failed → keep base64 for later retry
                 results.append({
                     "filename": pdf_filename,
-                    "inner_zip_name": inner_zip_name,  # ← NEW
+                    "inner_zip_name": inner_zip_name,
                     "error": str(e),
-                    "pdf_base64": base64.b64encode(pdf_data).decode('utf-8')
+                    "inner_zip_base64": base64.b64encode(inner_zip_data).decode('utf-8')  # ✅
                 })
                 print(f"Failed to extract raw_data: {pdf_filename} – {e}")
 
         return results
 
-    def iter_inner_pdfs(self, zip_data):
+    @staticmethod
+    def iter_inner_pdfs(zip_data):
         """
-        Yield (inner_zip_name, pdf_filename, pdf_bytes) from outer ZIP → inner ZIPs → PDFs
+        Yield (inner_zip_name, pdf_filename, pdf_bytes, inner_zip_data)
         """
         if isinstance(zip_data, str):
             zip_data = base64.b64decode(zip_data)
@@ -104,11 +101,11 @@ class DocsService:
             for outer_info in outer_zip.infolist():
                 if outer_info.filename.lower().endswith('.zip'):
                     inner_zip_data = outer_zip.read(outer_info)
-                    inner_zip_name = outer_info.filename  # Capture inner zip name
+                    inner_zip_name = outer_info.filename
                     with zipfile.ZipFile(io.BytesIO(inner_zip_data)) as inner_zip:
                         for file_info in inner_zip.infolist():
                             if file_info.filename.lower().endswith('.pdf'):
-                                yield inner_zip_name, file_info.filename, inner_zip.read(file_info)
+                                yield inner_zip_name, file_info.filename, inner_zip.read(file_info), inner_zip_data
 
     def extract_pdf_data(self, pdf_data):
         """
@@ -167,7 +164,7 @@ class DocsService:
                 combined['Услуги'] = services
                 # Add metadata
                 combined['inner_zip_name'] = doc['inner_zip_name']
-                combined['pdf_base64'] = doc['pdf_base64']
+                combined['inner_zip_base64'] = doc['inner_zip_base64']
                 result.append(combined)
 
         return result
