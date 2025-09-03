@@ -27,8 +27,8 @@ class DocsService:
         # token = tokens["ВЕКТОР"]
         for account, token in tokens.items():
 
-            # if account == "ВЕКТОР":
-            #     continue
+            if account != "СТАРТ":
+                continue
             print(account)
             docs_wb_api = Docs(token=token)
 
@@ -182,63 +182,75 @@ class DocsService:
         seller_match = re.search(r'Продавец:[^\"]*\"([^\"]+)\"', text)
         data["Наименование продавца"] = seller_match.group(1) if seller_match else None
 
-        # --- Original logic first ---
+        # Extract seller INN/KPP
         inn_seller = re.search(r'ИНН/КПП продавца:\s*([\d/]+)', text)
         if inn_seller:
             parts = inn_seller.group(1).split('/')
             data["ИНН продавца"] = parts[0]
-            data["КПП продавца"] = parts[1] if len(parts) > 1 else None
+            data["КПП продавца"] = parts[1] if len(parts) > 1 else ''
         else:
-            data["ИНН продавца"] = data["КПП продавца"] = None
+            data["ИНН продавца"] = None
+            data["КПП продавца"] = ''
 
-        data["Наименование покупателя"] = self.extract_buyer_name(text[:1000])
-
+        # Extract buyer INN/KPP
         inn_buyer = re.search(r'ИНН/КПП покупателя:\s*([\d/]+)', text)
         if inn_buyer:
             parts = inn_buyer.group(1).split('/')
             data["ИНН покупателя"] = parts[0]
-            data["КПП покупателя"] = parts[1] if len(parts) > 1 else None
+            data["КПП покупателя"] = parts[1] if len(parts) > 1 else ''
+            # Handle case where KPP is missing or empty like "503822685772/"
+            if data["КПП покупателя"] == '':
+                data["КПП покупателя"] = ''
         else:
-            data["ИНН покупателя"] = data["КПП покупателя"] = None
-        # --- End of original logic ---
+            data["ИНН покупателя"] = None
+            data["КПП покупателя"] = ''
 
-        # --- Fallback: only if original failed ---
-        if data["ИНН продавца"] is None or data["ИНН покупателя"] is None:
-            # Look for both labels
-            seller_label_pos = text.find('ИНН/КПП продавца:')
-            buyer_label_pos = text.find('ИНН/КПП покупателя:')
+        if data["ИНН покупателя"] is None or data["ИНН продавца"] is None:
+            # === INN/KPP Extraction for Seller and Buyer ===
+            # Look for the line containing both INN/KPP fields
+            inn_kpp_line_match = re.search(r'ИНН/КПП продавца:[^\n]*\n([^\n]+)', text)
+            if not inn_kpp_line_match:
+                data["ИНН продавца"] = data["КПП продавца"] = None
+                data["ИНН покупателя"] = data["КПП покупателя"] = None
+            else:
+                line = inn_kpp_line_match.group(1).strip()
 
-            if seller_label_pos == -1 and buyer_label_pos == -1:
-                return data  # No labels, nothing to do
+                # Pattern to capture INN/KPP pairs, possibly with labels or markers like (2б), (6б)
+                # Handles cases where KPP may be missing or empty
+                parts = re.findall(r'(\d{10,12})\s*/\s*([\d]{0,9})', line)
 
-            # Find all INN/KPP blocks: \d{10,12} or \d{10,12}/\d{4,9}
-            blocks = re.finditer(r'\b(\d{10,12}(?:/\d{4,9})?)\b', text)
-            found_values = []
-            for match in blocks:
-                value = match.group(1)
-                start_pos = match.start()
-                # Only consider values that look like real INN/KPP and are not invoice number
-                if not (value == data.get("Счёт фактура номер")):  # avoid invoice number
-                    found_values.append((value, start_pos))
+                if len(parts) == 0:
+                    data["ИНН продавца"] = data["КПП продавца"] = None
+                    data["ИНН покупателя"] = data["КПП покупателя"] = None
+                elif len(parts) == 1:
+                    # Only seller present?
+                    inn_s, kpp_s = parts[0]
+                    data["ИНН продавца"] = inn_s
+                    data["КПП продавца"] = kpp_s if kpp_s else None
+                    data["ИНН покупателя"] = data["КПП покупателя"] = None
+                else:
+                    # Assume first is seller, second is buyer
+                    (inn_s, kpp_s), (inn_b, kpp_b) = parts[0], parts[1]
+                    data["ИНН продавца"] = inn_s
+                    data["КПП продавца"] = kpp_s if kpp_s else None
+                    data["ИНН покупателя"] = inn_b
+                    data["КПП покупателя"] = kpp_b if kpp_b else ''
 
-            # Sort by position
-            found_values.sort(key=lambda x: x[1])
+        # Extract buyer name from the beginning part of the document
+        data["Наименование покупателя"] = self.extract_buyer_name(text[:1000])
 
-            # We need at least two blocks
-            if len(found_values) >= 2:
-                first_block, second_block = found_values[0][0], found_values[1][0]
-
-                # Assume: first block after labels is продавец, second is покупатель
-                # Only assign if original was None
-                if data["ИНН продавца"] is None:
-                    parts = first_block.split('/')
-                    data["ИНН продавца"] = parts[0]
-                    data["КПП продавца"] = parts[1] if len(parts) > 1 else ''
-
-                if data["ИНН покупателя"] is None:
-                    parts = second_block.split('/')
-                    data["ИНН покупателя"] = parts[0]
-                    data["КПП покупателя"] = parts[1] if len(parts) > 1 else ''
+        # fallback if client name is not found
+        if data["Наименование покупателя"] is None:
+            inn_client = {'503822685772': 'Тоноян',
+                          '615490441596': 'Даниелян',
+                          '9715401127': 'ВЕКТОР',
+                          '771675966776': 'Хачатрян',
+                          '5029275624': 'СТАРТ',
+                          '771575954343': 'Лопатина',
+                          '774308962107': 'Оганесян',
+                          '753619553871': 'Пилосян'
+                          }
+            data["Наименование покупателя"] = inn_client[data["ИНН покупателя"]]
 
         # Return empty dict if no data was extracted
         if all(v is None for v in data.values()):
@@ -248,12 +260,17 @@ class DocsService:
 
     @staticmethod
     def extract_buyer_name(text):
-        # 2. Fallback: ИП — take first word after "Индивидуальный предприниматель"
+        # индивидуальный предприниматель
         match = re.search(r'Индивидуальный\s+предприниматель\s+([^\s]+)', text, re.IGNORECASE)
         if match:
             return match.group(1).strip()
 
-        # 1. Standard case: Покупатель: "Company Name"
+        # special case for Start 2023-2024
+        match = re.search(r'Покупатель:[^"]*"([^"]+)"', text)
+        if match:
+            return match.group(1).strip()
+
+        # all other cases
         match = re.search(r'Покупатель:\s*"?([^"\s][^"]*?)"', text)
         if match:
             return match.group(1).strip()
@@ -309,3 +326,10 @@ class DocsService:
         for col in ('Стоимость без НДС', 'Стоимость с НДС'):
             df_clean[col] = df_clean[col].str.replace(',', '.', regex=False).astype(float)
         return df_clean.to_dict('records')
+
+
+
+
+
+
+

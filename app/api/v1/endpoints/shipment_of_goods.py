@@ -1,8 +1,11 @@
-from typing import List
+import datetime
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
+
+from app.models import ShippedGoodsByID
 from app.models.shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsResponse, example_shipment_of_goods_data, ShipmentParamsData, \
-    ReserveOfGoodsResponse, ReserveOfGoodsCreate, example_reserve_of_goods_data, ShippedGoods, example_shipped_goods_data, DeliveryType
+    ReserveOfGoodsResponse, ReserveOfGoodsCreate, example_reserve_of_goods_data, ShippedGoods, example_shipped_goods_data, DeliveryType, ReservedData
 from app.service.shipment_of_goods import ShipmentOfGoodsService
 from app.dependencies import get_shipment_of_goods_service
 
@@ -53,6 +56,25 @@ async def create_reserve(
     #     )
 
     return result
+
+@router.get("/get_reserved_data", response_model=List[ReservedData], status_code=status.HTTP_200_OK)
+async def get_reserved_data(
+        service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service),
+        delivery_type: DeliveryType = Query(None, description="принимает ФБС или ФБО"),
+        is_fulfilled:Optional[bool] = Query(None, description="Фильтр по статусу отгрузок. False для неотгруженных"),
+        begin_date: Optional[datetime.date] = Query(None, description="Начальная дата"),
+):
+    return await service.get_reserved_data(is_fulfilled, begin_date, delivery_type)
+
+@router.post("/add_shipped_goods_by_id", response_model=List[ReserveOfGoodsResponse], status_code=status.HTTP_201_CREATED)
+async def add_shipped_goods_by_id(
+        data: List[ShippedGoodsByID],
+        service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
+):
+    result = await service.add_shipped_goods_by_id(data)
+    return result
+
+
 
 
 @router.post("/add_shipped_goods", response_model=List[ReserveOfGoodsResponse], status_code=status.HTTP_201_CREATED)

@@ -1,3 +1,4 @@
+import datetime
 import json
 from pprint import pprint
 from typing import List, Tuple
@@ -5,12 +6,83 @@ from typing import List, Tuple
 import asyncpg
 from asyncpg import Pool
 from app.models import ShipmentOfGoodsUpdate
-from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsCreate, ReserveOfGoodsResponse, ShippedGoods
+from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsCreate, ReserveOfGoodsResponse, ShippedGoods, ReservedData, \
+    DeliveryType, ShippedGoodsByID
 
 
 class ShipmentOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+    async def add_shipped_goods_by_id(self, data: List[ShippedGoodsByID]) -> List[ReserveOfGoodsResponse]:
+        pprint(data)
+        update_query = """
+            UPDATE product_reserves as pr
+            SET shipped =  pr.shipped + $2
+            is_fulfilled = $3 
+            WHERE id = $1
+            RETURNING id, supply_id;
+        """
+
+        values = [
+            (
+                item.id,
+                item.quantity_shipped
+            )
+            for item in data
+        ]
+        records = []
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                # Выполняем запрос с возвратом данных
+                for value in values:
+                    record = await conn.fetchrow(update_query, *value)
+                    records.append(record)
+
+        print(records)
+        updated_supplies = {r["supply_id"]: r["id"] for r in records if r is not None}
+
+        return [
+            ReserveOfGoodsResponse(
+                product_reserves_id=updated_supplies.get(item.supply_id, None),
+                supply_id=item.supply_id
+            )
+            for item in data
+        ]
+
+    async def get_reserved_data(self, is_fulfilled: bool | None, begin_date: datetime.date | None, delivery_type: DeliveryType | None) -> List[ReservedData]:
+        query = ("""SELECT 
+                    id as reserve_id,
+                    product_id,
+                    warehouse_id,
+                    ordered,
+                    shipped,
+                    account,
+                    delivery_type,
+                    supply_id,
+                    reserve_date
+                  from product_reserves WHERE 1=1""")
+        params = []
+        param_count = 1
+
+        if is_fulfilled is not None:
+            query += f" AND is_fulfilled = ${param_count}"
+            params.append(is_fulfilled)
+            param_count += 1
+
+        if begin_date is not None:
+            query += f" AND reserve_date>= ${param_count}"
+            params.append(begin_date)
+
+        if delivery_type is not None:
+            query += f" AND  delivery_type = ${param_count}"
+            params.append(delivery_type)
+
+        print(query)
+
+        async with self.pool.acquire() as conn:
+            select_result = await conn.fetch(query, *params)
+        return [ReservedData(**res) for res in select_result]
 
     async def update_data(self, data: List[ShipmentOfGoodsUpdate]):
         data_to_update: List[Tuple] = []

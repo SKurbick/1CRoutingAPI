@@ -24,6 +24,7 @@ class DeliveryType(str, Enum):
     FBS = "ФБС"
     FBO = "ФБО"
 
+
 class ShipmentOfGoodsResponse(BaseModel):
     status: int
     message: str
@@ -69,6 +70,12 @@ class ShippedGoods(BaseModel):
     quantity_shipped: int
 
 
+class ShippedGoodsByID(BaseModel):
+    reserve_id: str
+    quantity_shipped: int
+    is_fulfilled: bool
+
+
 example_shipped_goods_data = [
     {
         "supply_id": "WB-GI-166715280",
@@ -92,3 +99,18 @@ example_reserve_of_goods_data = [
 shipment_data_response_example = {
 
 }
+
+
+class ReservedData(BaseModel):
+    reserve_id: int
+    product_id: str
+    warehouse_id: int
+    ordered: int
+    shipped: int
+    account: str
+    delivery_type: str
+    supply_id: str
+    reserve_date: datetime.date
+    # created_at
+    # expires_at
+    # is_fulfilled
