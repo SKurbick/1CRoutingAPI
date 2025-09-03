@@ -71,7 +71,7 @@ class ShippedGoods(BaseModel):
 
 
 class ShippedGoodsByID(BaseModel):
-    reserve_id: str
+    reserve_id: int
     quantity_shipped: int
     is_fulfilled: bool
 

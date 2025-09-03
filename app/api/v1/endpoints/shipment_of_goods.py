@@ -66,7 +66,7 @@ async def get_reserved_data(
 ):
     return await service.get_reserved_data(is_fulfilled, begin_date, delivery_type)
 
-@router.post("/add_shipped_goods_by_id", response_model=List[ReserveOfGoodsResponse], status_code=status.HTTP_201_CREATED)
+@router.post("/add_shipped_goods_by_id", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_shipped_goods_by_id(
         data: List[ShippedGoodsByID],
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)

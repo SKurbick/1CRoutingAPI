@@ -14,11 +14,11 @@ class ShipmentOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
-    async def add_shipped_goods_by_id(self, data: List[ShippedGoodsByID]) -> List[ReserveOfGoodsResponse]:
+    async def add_shipped_goods_by_id(self, data: List[ShippedGoodsByID]) -> ShipmentOfGoodsResponse:
         pprint(data)
         update_query = """
             UPDATE product_reserves as pr
-            SET shipped =  pr.shipped + $2
+            SET shipped =  pr.shipped + $2,
             is_fulfilled = $3 
             WHERE id = $1
             RETURNING id, supply_id;
@@ -26,29 +26,30 @@ class ShipmentOfGoodsRepository:
 
         values = [
             (
-                item.id,
-                item.quantity_shipped
+                item.reserve_id,
+                item.quantity_shipped,
+                item.is_fulfilled
             )
             for item in data
         ]
         records = []
-        async with self.pool.acquire() as conn:
-            async with conn.transaction():
-                # Выполняем запрос с возвратом данных
-                for value in values:
-                    record = await conn.fetchrow(update_query, *value)
-                    records.append(record)
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    # Выполняем запрос с возвратом данных
+                    for value in values:
+                        record = await conn.fetchrow(update_query, *value)
+                        records.append(record)
 
-        print(records)
-        updated_supplies = {r["supply_id"]: r["id"] for r in records if r is not None}
-
-        return [
-            ReserveOfGoodsResponse(
-                product_reserves_id=updated_supplies.get(item.supply_id, None),
-                supply_id=item.supply_id
+                return ShipmentOfGoodsResponse(
+                    status=201,
+                    message="Успешно")
+        except asyncpg.PostgresError as e:
+            return ShipmentOfGoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
             )
-            for item in data
-        ]
 
     async def get_reserved_data(self, is_fulfilled: bool | None, begin_date: datetime.date | None, delivery_type: DeliveryType | None) -> List[ReservedData]:
         query = ("""SELECT 

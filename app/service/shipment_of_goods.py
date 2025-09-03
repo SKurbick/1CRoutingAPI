@@ -16,7 +16,7 @@ class ShipmentOfGoodsService:
     ):
         self.shipment_of_goods_repository = shipment_of_goods_repository
 
-    async def add_shipped_goods_by_id(self, data: List[ShippedGoodsByID]) -> List[ReserveOfGoodsResponse]:
+    async def add_shipped_goods_by_id(self, data: List[ShippedGoodsByID]) -> ShipmentOfGoodsResponse:
         result = await self.shipment_of_goods_repository.add_shipped_goods_by_id(data)
         return result
 
