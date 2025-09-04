@@ -61,7 +61,8 @@ class ShipmentOfGoodsRepository:
                     account,
                     delivery_type,
                     supply_id,
-                    reserve_date
+                    reserve_date,
+                    is_fulfilled
                   from product_reserves WHERE 1=1""")
         params = []
         param_count = 1
@@ -72,12 +73,15 @@ class ShipmentOfGoodsRepository:
             param_count += 1
 
         if begin_date is not None:
-            query += f" AND reserve_date>= ${param_count}"
+            print("begin_date",begin_date, type(begin_date))
+            query += f" AND reserve_date::date >= ${param_count}::date"
             params.append(begin_date)
+            param_count += 1
 
         if delivery_type is not None:
             query += f" AND  delivery_type = ${param_count}"
             params.append(delivery_type)
+            param_count += 1
 
         print(query)
 

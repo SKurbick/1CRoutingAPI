@@ -113,4 +113,4 @@ class ReservedData(BaseModel):
     reserve_date: datetime.date
     # created_at
     # expires_at
-    # is_fulfilled
+    is_fulfilled: bool

@@ -22,7 +22,7 @@ class ShipmentOfGoodsService:
 
 
     async def get_reserved_data(self, is_fulfilled: bool | None, begin_date: datetime.date | None, delivery_type: DeliveryType | None) -> List[ReservedData]:
-        result = await self.shipment_of_goods_repository.get_reserved_data(is_fulfilled, begin_date, delivery_type)
+        result = await self.shipment_of_goods_repository.get_reserved_data(is_fulfilled=is_fulfilled, begin_date=begin_date, delivery_type=delivery_type)
         return result
 
     async def create_data(self, data: List[ShipmentOfGoodsUpdate], delivery_type: DeliveryType) -> ShipmentOfGoodsResponse:
