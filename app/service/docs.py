@@ -24,12 +24,11 @@ class DocsService:
     async def get_docs(self, date_from: datetime.date, date_to: datetime.date) -> List[Dict]:
         return_result = []
         tokens = await self.docs_repository.get_tokens()
-        # token = tokens["ВЕКТОР"]
         for account, token in tokens.items():
-
-            if account != "СТАРТ":
-                continue
-            print(account)
+            #
+            # if account != "СТАРТ":
+            #     continue
+            # print(account)
             docs_wb_api = Docs(token=token)
 
             docs_list = await docs_wb_api.get_docs_list(str(date_from), str(date_to))
