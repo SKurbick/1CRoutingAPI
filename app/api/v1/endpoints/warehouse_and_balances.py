@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status, Body, HTTPException
 from app.models.warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, Warehouse, CurrentBalances, \
     ValidStockData, example_assembly_metawild_data, AssemblyOrDisassemblyMetawildData, AssemblyMetawildResponse, assembly_or_disassembly_metawild_description, \
     add_defective_goods_description, ReSortingOperationResponse, ReSortingOperation, re_sorting_operations_description, example_re_sorting_operations, \
-    AddStockByClient, AddStockByClientResponse
+    AddStockByClient, AddStockByClientResponse,HistoricalStockData, HistoricalStockBody
 from app.service.warehouse_and_balances import WarehouseAndBalancesService
 from app.dependencies import get_warehouse_and_balances_service
 
@@ -101,3 +101,12 @@ async def add_stock_by_client(
 ):
     result = await service.add_stock_by_client(data)
     return result
+
+@router.post("/get_historical_stocks", response_model=List[HistoricalStockData])
+async def get_historical_stocks(
+        data: HistoricalStockBody,
+        service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
+):
+    result = await service.get_historical_stocks(data)
+    return result
+

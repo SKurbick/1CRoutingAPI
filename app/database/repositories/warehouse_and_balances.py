@@ -1,4 +1,6 @@
 import json
+from collections import defaultdict
+from decimal import Decimal
 from pprint import pprint
 from typing import List, Tuple
 
@@ -7,12 +9,57 @@ from asyncpg import Pool, UniqueViolationError
 from app.models import DefectiveGoodsUpdate, AddStockByClient
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, ComponentsInfo, \
     AssemblyOrDisassemblyMetawildData, \
-    AssemblyMetawildResponse, WarehouseAndBalanceResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClientResponse
+    AssemblyMetawildResponse, WarehouseAndBalanceResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClientResponse, HistoricalStockBody, \
+    HistoricalStockData, StockData
 
 
 class WarehouseAndBalancesRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+    async def get_historical_stocks(self, data: HistoricalStockBody) -> List[HistoricalStockData]:
+        select_query = """
+        SELECT * FROM get_daily_balances_paginated(
+            $1, $2, $3, $4, $5, $6
+        );
+        """
+        async with self.pool.acquire() as conn:
+            result = await conn.fetch(
+                select_query,
+                data.page_size,
+                data.page_num,
+                data.date_from,
+                data.date_to,
+                data.product_id,
+                data.warehouse_id
+            )
+
+        # Группируем данные по product_id
+        grouped_data = defaultdict(list)
+
+        for row in result:
+            balance = row['end_of_day_balance']
+            if isinstance(balance, Decimal):
+                balance = int(balance)
+
+            stock_data = StockData(
+                transaction_date=row['transaction_date'],
+                end_of_day_balance=balance
+            )
+
+            grouped_data[row['product_id']].append(stock_data)
+
+        # Создаем список HistoricalStockData для каждого product_id
+        historical_stocks_list = []
+        for product_id, stock_data_list in grouped_data.items():
+            historical_stocks_list.append(
+                HistoricalStockData(
+                    product_id=product_id,
+                    data=stock_data_list
+                )
+            )
+
+        return historical_stocks_list
 
     async def add_stock_by_client(self, data: List[AddStockByClient]) -> AddStockByClientResponse:
         data_to_insert: List[Tuple] = []

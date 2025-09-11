@@ -1,7 +1,7 @@
 from typing import Optional, Dict, List, Literal
 
-from pydantic import BaseModel, field_validator
-from datetime import datetime
+from pydantic import BaseModel, field_validator, Field
+from datetime import datetime, date
 
 example_defective_goods_data = [
     {
@@ -36,6 +36,28 @@ example_assembly_metawild_data = {
     "warehouse_id": 1,
     "operation_type": "assembly"
 }
+
+
+
+
+class StockData(BaseModel):
+    transaction_date: date
+    end_of_day_balance: int
+
+class HistoricalStockData(BaseModel):
+    product_id: str
+    data: List[StockData]
+
+
+
+class HistoricalStockBody(BaseModel):
+    date_from: Optional[date] = None
+    date_to: Optional[date] = None
+    product_id: Optional[str] = None
+    warehouse_id: int = Field(default=1, ge=1)
+    page_size: int = Field(default=100, ge=1, le=5000)
+    page_num: int = Field(default=1, ge=1)
+
 
 
 class AssemblyMetawild(BaseModel):

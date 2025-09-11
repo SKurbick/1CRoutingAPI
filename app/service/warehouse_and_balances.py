@@ -3,7 +3,7 @@ from typing import List
 from app.models import DefectiveGoodsUpdate, AddStockByClientResponse
 from app.database.repositories import WarehouseAndBalancesRepository
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, AssemblyOrDisassemblyMetawildData, \
-    AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClient
+    AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClient, HistoricalStockBody, HistoricalStockData
 
 
 class WarehouseAndBalancesService:
@@ -12,6 +12,11 @@ class WarehouseAndBalancesService:
             warehouse_and_balances_repository: WarehouseAndBalancesRepository,
     ):
         self.warehouse_and_balances_repository = warehouse_and_balances_repository
+
+    async def get_historical_stocks(self, data:HistoricalStockBody) -> List[HistoricalStockData]:
+        result = await self.warehouse_and_balances_repository.get_historical_stocks(data)
+        return result
+
 
     async def add_defective_goods(self, data: List[DefectiveGoodsUpdate]) -> DefectiveGoodsResponse:
         result = await self.warehouse_and_balances_repository.add_defective_goods(data)
