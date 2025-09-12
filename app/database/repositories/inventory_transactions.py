@@ -39,12 +39,12 @@ class InventoryTransactionsRepository:
                                 ELSE 0 
                             END)::INTEGER AS "Участие в сборке/разборе",
                            SUM(CASE 
-                                WHEN it.transaction_type = 'incoming' and document_guid is null and delivery_type is null
+                                WHEN it.transaction_type = 'incoming' and document_guid is null and delivery_type is null  and it.warehouse_id =1 
                                THEN it.quantity
                                 ELSE 0 
                             END)::INTEGER AS "Поступило со склада «Брак»",
                            SUM(CASE 
-                                WHEN it.transaction_type = 'outgoing' and document_guid is null and delivery_type is null
+                                WHEN it.transaction_type = 'outgoing' and document_guid is null and delivery_type is null  and it.warehouse_id =1 
                                THEN it.quantity
                                 ELSE 0 
                             END)::INTEGER AS "Перемещен на склад «Брак»",

@@ -11,13 +11,23 @@ group_data_example = [
                 "product_id": "testwild",
                 "shipment_fbo": 0,
                 "shipment_fbs": 0,
-                "incoming": 0
+                "incoming": 0,
+                "re_sorting": 1,
+                "returns": 2,
+                "moved_to_the_warehouse_defective": 3,
+                "received_from_the_warehouse_defective": 2,
+                "kit_result": -2
             },
             {
                 "product_id": "wild1075",
                 "shipment_fbo": 0,
                 "shipment_fbs": 10,
-                "incoming": 0
+                "incoming": 0,
+                "re_sorting": 1,
+                "returns": 2,
+                "moved_to_the_warehouse_defective": 3,
+                "received_from_the_warehouse_defective": 2,
+                "kit_result": -2
             }
         ]
     },
@@ -28,13 +38,23 @@ group_data_example = [
                 "product_id": "wild1332",
                 "shipment_fbo": 0,
                 "shipment_fbs": 0,
-                "incoming": 0
+                "incoming": 0,
+                "re_sorting": 1,
+                "returns": 2,
+                "moved_to_the_warehouse_defective": 3,
+                "received_from_the_warehouse_defective": 2,
+                "kit_result": -2
             },
             {
                 "product_id": "wild1383",
                 "shipment_fbo": 0,
                 "shipment_fbs": 0,
-                "incoming": 100
+                "incoming": 100,
+                "re_sorting": 1,
+                "returns": 2,
+                "moved_to_the_warehouse_defective": 3,
+                "received_from_the_warehouse_defective": 2,
+                "kit_result": -2
             }
         ]
     }
