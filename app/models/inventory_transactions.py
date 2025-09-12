@@ -80,7 +80,7 @@ class ProductGroupData(BaseModel):
     moved_to_the_warehouse_defective: int
     received_from_the_warehouse_defective: int
     kit_result: int
-
+    editing_the_remainder: int
 
 class ITGroupData(BaseModel):
     date: date

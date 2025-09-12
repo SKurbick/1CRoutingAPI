@@ -57,7 +57,12 @@ class InventoryTransactionsRepository:
                                 WHEN it.transaction_type in ('re_sorting_incoming', 're_sorting_outgoing') and it.warehouse_id=1
                                THEN it.quantity
                                 ELSE 0 
-                            END)::INTEGER AS "Пересортица"   
+                            END)::INTEGER AS "Пересортица",
+                               SUM(CASE 
+                                WHEN it.transaction_type in ('add_stock_by_client') 
+                               THEN it.quantity
+                                ELSE 0 
+                            END)::INTEGER AS "Редактирование остатка"  
                         FROM 
                             inventory_transactions it
                         WHERE 
@@ -83,7 +88,8 @@ class InventoryTransactionsRepository:
                         returns=record["Возвраты от клиента"],
                         moved_to_the_warehouse_defective=record["Перемещен на склад «Брак»"],
                         received_from_the_warehouse_defective=record["Поступило со склада «Брак»"],
-                        kit_result=record["Участие в сборке/разборе"]
+                        kit_result=record["Участие в сборке/разборе"],
+                        editing_the_remainder = record["Редактирование остатка"]
                     )
 
                     if date not in grouped_data:
