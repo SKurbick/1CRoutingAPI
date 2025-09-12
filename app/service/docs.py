@@ -81,13 +81,12 @@ class DocsService:
                 results.append({
                     "filename": pdf_filename,
                     "inner_zip_name": inner_zip_name,
-                    "error": str(e),
+                    "error": f"Не удалось открыть pdf: {pdf_filename}. Ошибка: {e}",
                     "inner_zip_base64": base64.b64encode(inner_zip_data).decode('utf-8')  # ✅
                 })
-                print(f"Failed to extract raw_data: {pdf_filename} – {e}")
+                print(f"Не удалось открыть pdf: {pdf_filename} – {e}")
 
         return results
-
     @staticmethod
     def iter_inner_pdfs(zip_data):
         """
@@ -129,14 +128,34 @@ class DocsService:
 
         Args:
             res (list): Output of extract_and_process_pdfs_from_zip
-                      Each item has 'raw_data', 'filename', 'inner_zip_name', 'pdf_base64'
+                     Each item has 'raw_data', 'filename', 'inner_zip_name', 'pdf_base64'
 
         Returns:
             list of dicts: Each with header + 'Услуги' + 'pdf_base64' + 'inner_zip_name'
         """
         result = []
 
+        # если ранее при парсинге были ошибки (нет 'raw_data'), пропускаем
         for doc in res:
+
+            if 'raw_data' not in doc:
+                combined = {
+                    'Счёт фактура номер': '',
+                    'Счёт фактура дата': '',
+                    'Наименование продавца': '',
+                    'ИНН продавца': '',
+                    'КПП продавца': '',
+                    'ИНН покупателя': '',
+                    'КПП покупателя': '',
+                    'Наименование покупателя': '',
+                    "Услуги": [],
+                    "inner_zip_name": doc.get("inner_zip_name", ""),
+                    "inner_zip_base64": doc.get("inner_zip_base64", ""),
+                    "error": doc.get("error", "Unknown error")
+                }
+                result.append(combined)
+                continue
+
             main_data = {}
             services = []
 
