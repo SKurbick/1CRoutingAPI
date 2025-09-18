@@ -4,12 +4,72 @@ from typing import List, Tuple, Any, Coroutine
 
 import asyncpg
 from asyncpg import Pool, UniqueViolationError
-from app.models.inventory_transactions import ITGroupData, InventoryTransactionsResponse, ProductGroupData
+from app.models.inventory_transactions import ITGroupData, InventoryTransactionsResponse, ProductGroupData, AddStockByClientGroupData, AddStockByClient
 
 
 class InventoryTransactionsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+    async def get_add_stock_by_client(self, date_from, date_to) -> List[AddStockByClientGroupData] | InventoryTransactionsResponse:
+        try:
+            datetime_from = datetime.datetime.combine(date_from, datetime.time.min)  # 2025-04-06 00:00:00
+            datetime_to = datetime.datetime.combine(date_to, datetime.time.max)  # 2025-04-06 23:59:59.999999
+
+            query = """
+                        SELECT 
+                            product_id,
+                            author,
+                            warehouse_id,
+                            quantity,
+                            correction_comment,
+                            DATE(created_at) as "date"
+                        FROM 
+                            inventory_transactions
+                        WHERE 
+                            created_at BETWEEN $1 AND $2 and transaction_type = 'add_stock_by_client'
+                        ORDER BY 
+                            DATE(created_at), product_id;
+                """
+
+            async with self.pool.acquire() as conn:
+                records = await conn.fetch(query, datetime_from, datetime_to)
+                # Группируем данные по дате
+                grouped_data = {}
+                for record in records:
+                    date = record["date"]
+                    product_data = AddStockByClient(
+                        product_id=record["product_id"],
+                        author=record["author"],
+                        warehouse_id=record["warehouse_id"],
+                        quantity=record["quantity"],
+                        correction_comment=record["correction_comment"]
+                    )
+
+                    if date not in grouped_data:
+                        grouped_data[date] = AddStockByClientGroupData(
+                            date=date,
+                            product_group_data=[]
+                        )
+                    grouped_data[date].product_group_data.append(product_data)
+
+                # Преобразуем словарь в список ITGroupData
+                result = list(grouped_data.values())
+                return result
+
+        except UniqueViolationError as e:
+            return InventoryTransactionsResponse(
+                status=422,
+                message="UniqueViolationError",
+                details=str(e)
+            )
+
+        except asyncpg.PostgresError as e:
+            return InventoryTransactionsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
 
     async def group_data(self, date_from, date_to) -> List[ITGroupData] | InventoryTransactionsResponse:
         try:
@@ -89,7 +149,7 @@ class InventoryTransactionsRepository:
                         moved_to_the_warehouse_defective=record["Перемещен на склад «Брак»"],
                         received_from_the_warehouse_defective=record["Поступило со склада «Брак»"],
                         kit_result=record["Участие в сборке/разборе"],
-                        editing_the_remainder = record["Редактирование остатка"]
+                        editing_the_remainder=record["Редактирование остатка"]
                     )
 
                     if date not in grouped_data:

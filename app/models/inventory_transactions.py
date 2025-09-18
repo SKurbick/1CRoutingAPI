@@ -91,3 +91,32 @@ class InventoryTransactionsResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None
+
+
+
+class AddStockByClient(BaseModel):
+    product_id: str
+    author: str
+    warehouse_id: int
+    quantity: int
+    correction_comment: str
+
+class AddStockByClientGroupData(BaseModel):
+    date: date
+    product_group_data: List[AddStockByClient]
+
+
+
+class KitOperationsData(BaseModel):
+    pass
+
+class IncomingReturnsData(BaseModel):
+    pass
+
+class ReSortingOperationData(BaseModel):
+    pass
+
+add_stock_by_client_response_example = ...
+kit_operations_response_example = ...
+incoming_returns_response_example = ...
+re_sorting_operations_response_example = ...
