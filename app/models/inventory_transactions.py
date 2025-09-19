@@ -1,3 +1,4 @@
+import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel
@@ -82,6 +83,7 @@ class ProductGroupData(BaseModel):
     kit_result: int
     editing_the_remainder: int
 
+
 class ITGroupData(BaseModel):
     date: date
     product_group_data: List[ProductGroupData]
@@ -93,7 +95,6 @@ class InventoryTransactionsResponse(BaseModel):
     details: Optional[str] = None
 
 
-
 class AddStockByClient(BaseModel):
     product_id: str
     author: str
@@ -101,20 +102,55 @@ class AddStockByClient(BaseModel):
     quantity: int
     correction_comment: str
 
+
 class AddStockByClientGroupData(BaseModel):
     date: date
     product_group_data: List[AddStockByClient]
 
 
+class KitOperations(BaseModel):
+    operation_id: int
+    kit_product_id: str
+    warehouse_id: int
+    operation_type: str
+    quantity: int
+    status: str
+    author: str
+    created_at: datetime.datetime
 
-class KitOperationsData(BaseModel):
-    pass
+class KitOperationsGroupData(BaseModel):
+    date: date
+    product_group_data: List[KitOperations]
 
-class IncomingReturnsData(BaseModel):
-    pass
 
-class ReSortingOperationData(BaseModel):
-    pass
+class IncomingReturns(BaseModel):
+    operation_id: int
+    author: str
+    product_id: str
+    warehouse_id: int
+    quantity: int
+    created_at: datetime.datetime
+
+class IncomingReturnsGroupData(BaseModel):
+    date: date
+    product_group_data: List[IncomingReturns]
+
+
+class ReSortingOperation(BaseModel):
+    operation_id: int
+    from_product_id: str
+    to_product_id: str
+    warehouse_id: int
+    quantity: int
+    reason: str
+    created_at: datetime.datetime
+    author: str
+    operation_status: str
+
+class ReSortingOperationGroupData(BaseModel):
+    date: date
+    product_group_data: List[ReSortingOperation]
+
 
 add_stock_by_client_response_example = ...
 kit_operations_response_example = ...

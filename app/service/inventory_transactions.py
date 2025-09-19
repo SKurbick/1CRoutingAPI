@@ -4,7 +4,7 @@ from typing import List
 
 from app.models import OrderedGoodsFromBuyersUpdate
 from app.database.repositories import InventoryTransactionsRepository
-from app.models.inventory_transactions import ITGroupData, AddStockByClientGroupData
+from app.models.inventory_transactions import ITGroupData, AddStockByClientGroupData, KitOperationsGroupData
 
 
 class InventoryTransactionsService:
@@ -13,6 +13,11 @@ class InventoryTransactionsService:
             inventory_transactions_repository: InventoryTransactionsRepository,
     ):
         self.inventory_transactions_repository = inventory_transactions_repository
+
+    async def get_kit_operations(self, date_from: datetime.date, date_to: datetime.date) -> List[KitOperationsGroupData]:
+        data = await self.inventory_transactions_repository.get_kit_operations(date_from=date_from, date_to=date_to)
+        return data
+
 
     async def get_add_stock_by_client(self, date_from: datetime.date, date_to: datetime.date) -> List[AddStockByClientGroupData]:
         data = await self.inventory_transactions_repository.get_add_stock_by_client(date_from=date_from, date_to=date_to)
