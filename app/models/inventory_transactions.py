@@ -123,7 +123,7 @@ class KitOperationsGroupData(BaseModel):
     product_group_data: List[KitOperations]
 
 
-class IncomingReturns(BaseModel):
+class IncomingReturnsTable(BaseModel):
     operation_id: int
     author: str
     product_id: str
@@ -133,7 +133,7 @@ class IncomingReturns(BaseModel):
 
 class IncomingReturnsGroupData(BaseModel):
     date: date
-    product_group_data: List[IncomingReturns]
+    product_group_data: List[IncomingReturnsTable]
 
 
 class ReSortingOperation(BaseModel):

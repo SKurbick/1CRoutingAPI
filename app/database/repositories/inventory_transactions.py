@@ -5,12 +5,67 @@ from typing import List, Tuple, Any, Coroutine
 import asyncpg
 from asyncpg import Pool, UniqueViolationError
 from app.models.inventory_transactions import ITGroupData, InventoryTransactionsResponse, ProductGroupData, AddStockByClientGroupData, AddStockByClient, \
-    KitOperationsGroupData, KitOperations
+    KitOperationsGroupData, KitOperations, IncomingReturnsTable
 
 
 class InventoryTransactionsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+    async def get_incoming_returns(self, date_from, date_to) -> List[KitOperationsGroupData] | InventoryTransactionsResponse:
+        try:
+            datetime_from = datetime.datetime.combine(date_from, datetime.time.min)  # 2025-04-06 00:00:00
+            datetime_to = datetime.datetime.combine(date_to, datetime.time.max)  # 2025-04-06 23:59:59.999999
+
+            query = """
+                        SELECT 
+                            id,
+                            product_id,
+                            warehouse_id,
+                            quantity,
+                            author,
+                            created_at,
+                            DATE(created_at) as "date"
+                        FROM 
+                            incoming_returns
+                        WHERE 
+                            created_at BETWEEN $1 AND $2 
+                        ORDER BY 
+                            DATE(created_at), product_id;
+                """
+
+            async with self.pool.acquire() as conn:
+                records = await conn.fetch(query, datetime_from, datetime_to)
+                # Группируем данные по дате
+                grouped_data = {}
+                for record in records:
+                    date = record["date"]
+                    product_data = IncomingReturnsTable(
+                        operation_id=record['id'],
+                        product_id=record['product_id'],
+                        warehouse_id=record['warehouse_id'],
+                        quantity=record['quantity'],
+                        author=record['author'],
+                        created_at=record['created_at']
+                    )
+
+                    if date not in grouped_data:
+                        grouped_data[date] = AddStockByClientGroupData(
+                            date=date,
+                            product_group_data=[]
+                        )
+                    grouped_data[date].product_group_data.append(product_data)
+
+                # Преобразуем словарь в список ITGroupData
+                result = list(grouped_data.values())
+                return result
+        except UniqueViolationError as e:
+            return InventoryTransactionsResponse(
+                status=422,
+                message="UniqueViolationError",
+                details=str(e)
+            )
+
 
 
     async def get_kit_operations(self, date_from, date_to) -> List[KitOperationsGroupData] | InventoryTransactionsResponse:

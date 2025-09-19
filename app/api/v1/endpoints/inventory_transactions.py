@@ -55,21 +55,20 @@ async def get_kit_operations(date_from: datetime.date = None,
         )
     return await service.get_kit_operations(date_from=date_from, date_to=date_to)
 
+            # responses={200: incoming_returns_response_example}
+@router.get("/get_incoming_returns", response_model=List[IncomingReturnsGroupData] | InventoryTransactionsResponse, status_code=status.HTTP_200_OK)
+async def get_incoming_returns(date_from: datetime.date = None,
+                               date_to: datetime.date = None,
+                               service: InventoryTransactionsService = Depends(get_inventory_transactions_service)
+                               ):
+    if date_from is None or date_to is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="date_from and date_to are required."
+        )
+    return await service.get_incoming_returns(date_from=date_from, date_to=date_to)
 
-# @router.get("/get_incoming_returns", response_model=List[IncomingReturnsData] | InventoryTransactionsResponse, status_code=status.HTTP_200_OK,
-#             responses={200: incoming_returns_response_example})
-# async def get_incoming_returns(date_from: datetime.date = None,
-#                                date_to: datetime.date = None,
-#                                service: InventoryTransactionsService = Depends(get_inventory_transactions_service)
-#                                ):
-#     if date_from is None or date_to is None:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="date_from and date_to are required."
-#         )
-#     return await service.get_incoming_returns(date_from=date_from, date_to=date_to)
-#
-#
+
 # @router.get("/get_re_sorting_operations", response_model=List[ReSortingOperationData] | InventoryTransactionsResponse, status_code=status.HTTP_200_OK,
 #             responses={200: re_sorting_operations_response_example})
 # async def get_re_sorting_operations(date_from: datetime.date = None,
