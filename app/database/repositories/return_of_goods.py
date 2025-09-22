@@ -85,51 +85,103 @@ class ReturnOfGoodsRepository:
                 details=str(e)
             )
 
+    # async def incoming_returns(self, data: List[IncomingReturns]) -> ReturnOfGoodsResponse:
+    #
+    #     data_to_add_incoming_returns: List[Tuple] = []
+    #     data_to_update_goods_returns: List[Tuple] = []
+    #     for return_data in data:
+    #         product_id = return_data.product_id
+    #         quantity = return_data.sum_quantity
+    #         author = return_data.author
+    #         warehouse_id = return_data.warehouse_id
+    #         return_date = return_data.return_date
+    #         for is_received_data in return_data.is_received_data:
+    #             data_to_update_goods_returns.append((is_received_data.srid, is_received_data.is_received))
+    #
+    #         tuple_data = (author, product_id, warehouse_id, quantity, return_date, False, None)
+    #         data_to_add_incoming_returns.append(tuple_data)
+    #     query_to_insert_incoming_returns = """
+    #     INSERT INTO incoming_returns (author, product_id, warehouse_id, quantity, return_date, share_of_kit, metawild)
+    #     VALUES ($1, $2, $3, $4, $5, $6, $7);
+    #     """
+    #     query_update_is_received = """
+    #         UPDATE goods_returns_dev
+    #         SET is_received = $2
+    #         WHERE srid = $1;
+    #     """
+    #     try:
+    #         async with self.pool.acquire() as conn:
+    #             pprint(data_to_add_incoming_returns)
+    #             async with conn.transaction():
+    #                 await conn.executemany(query_to_insert_incoming_returns, data_to_add_incoming_returns)
+    #                 await conn.executemany(query_update_is_received, data_to_update_goods_returns)
+    #         result = ReturnOfGoodsResponse(
+    #             status=201,
+    #             message="Успешно")
+    #     except asyncpg.PostgresError as e:
+    #         result = ReturnOfGoodsResponse(
+    #             status=422,
+    #             message="PostgresError",
+    #             details=str(e)
+    #         )
+    #     return result
+
     async def incoming_returns(self, data: List[IncomingReturns]) -> ReturnOfGoodsResponse:
-        # get_wilds_in_products = """SELECT id, kit_components FROM products WHERE is_kit=TRUE;"""
-        # async with self.pool.acquire() as conn:
-        #     products_data = await conn.fetch(get_wilds_in_products)
-        #     meta_wilds = {record['id']: record['kit_components'] for record in products_data}  # получаем все валидные id товаров
-        #     pprint(meta_wilds)
         data_to_add_incoming_returns: List[Tuple] = []
-        data_to_update_goods_returns: List[Tuple] = []
+        goods_returns_update_data: List[Tuple] = []
+
+        # Подготовка данных для вставки в incoming_returns
         for return_data in data:
-            product_id = return_data.product_id
-            quantity = return_data.sum_quantity
-            author = return_data.author
-            warehouse_id = return_data.warehouse_id
-            return_date = return_data.return_date
-            for is_received_data in return_data.is_received_data:
-                data_to_update_goods_returns.append((is_received_data.srid, is_received_data.is_received))
-            # if product_id in meta_wilds:
-            #     kit_components = json.loads(meta_wilds[product_id])
-            #     print(type(kit_components))
-            #     print(kit_components)
-            #     for wild, qty in kit_components.items():
-            #         data_to_add_incoming_returns.append(
-            #             (author, wild, warehouse_id, quantity, return_date, True, product_id)
-            #         )
-            #     continue
-            tuple_data = (author, product_id, warehouse_id, quantity, return_date, False, None)
+            tuple_data = (
+                return_data.author,
+                return_data.product_id,
+                return_data.warehouse_id,
+                return_data.sum_quantity,
+                return_data.return_date,
+                False,
+                None
+            )
             data_to_add_incoming_returns.append(tuple_data)
+
         query_to_insert_incoming_returns = """
         INSERT INTO incoming_returns (author, product_id, warehouse_id, quantity, return_date, share_of_kit, metawild)
-        VALUES ($1, $2, $3, $4, $5, $6, $7);
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id;
         """
-        query_update_is_received = """
-            UPDATE goods_returns_dev
-            SET is_received = $2
-            WHERE srid = $1;
+
+        query_update_goods_returns = """
+        UPDATE goods_returns_dev 
+        SET is_received = $2, incoming_return_id = $3
+        WHERE srid = $1;
         """
+
         try:
             async with self.pool.acquire() as conn:
-                pprint(data_to_add_incoming_returns)
                 async with conn.transaction():
-                    await conn.executemany(query_to_insert_incoming_returns, data_to_add_incoming_returns)
-                    await conn.executemany(query_update_is_received, data_to_update_goods_returns)
+                    # Вставляем записи и получаем их ID
+                    inserted_ids = []
+                    for insert_data in data_to_add_incoming_returns:
+                        row = await conn.fetchrow(query_to_insert_incoming_returns, *insert_data)
+                        inserted_ids.append(row['id'])
+
+                    # Подготавливаем данные для обновления goods_returns_dev
+                    update_data = []
+                    for i, return_data in enumerate(data):
+                        incoming_return_id = inserted_ids[i]  # ID только что вставленной записи
+                        for is_received_data in return_data.is_received_data:
+                            update_data.append((
+                                is_received_data.srid,
+                                is_received_data.is_received,
+                                incoming_return_id  # Добавляем связь
+                            ))
+
+                    # Обновляем goods_returns_dev
+                    await conn.executemany(query_update_goods_returns, update_data)
+
             result = ReturnOfGoodsResponse(
                 status=201,
-                message="Успешно")
+                message="Успешно"
+            )
         except asyncpg.PostgresError as e:
             result = ReturnOfGoodsResponse(
                 status=422,
