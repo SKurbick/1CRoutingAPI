@@ -49,7 +49,7 @@ example_receipt_of_goods_data = [
 
 example_add_incoming_receipt_data = [
     {
-        "ordered_goods_from_buyers_id":1,
+        "ordered_goods_from_buyers_id": 1,
         "guid": "faabb47d-51ba-11f0-84f2-50ebf6b2ce7d",
         "document_number": "К1УТ-00002533",
         "document_created_at": "2025-04-16 15:22:37",
@@ -87,6 +87,11 @@ class SupplyData(BaseModel):
     quantity: float
     amount_with_vat: float
     amount_without_vat: Optional[float] = None
+
+
+class OneCModelUpdate(BaseModel):
+    guid: str
+    supply_data: List[SupplyData]
 
 
 class ReceiptOfGoodsUpdate(BaseModel):
@@ -127,7 +132,7 @@ class ReceiptOfGoodsResponse(BaseModel):
 
 
 class AddIncomingReceiptUpdate(BaseModel):
-    ordered_goods_from_buyers_id:int
+    ordered_goods_from_buyers_id: int
     supplier_code: Optional[str] = None
     guid: str
     document_number: str

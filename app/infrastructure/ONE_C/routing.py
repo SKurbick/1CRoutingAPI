@@ -7,7 +7,7 @@ from aiohttp import BasicAuth
 from typing import List, Dict
 from collections import defaultdict
 
-from app.models import ShipmentOfGoodsUpdate
+from app.models import ShipmentOfGoodsUpdate, OneCModelUpdate
 from app.models.one_c import AccountData, Wild, Order, SupplyData
 
 
@@ -17,6 +17,16 @@ class ONECRouting:
         self.login = login
         self.password = password
 
+    async def receipt_of_goods_update(self, data: List[OneCModelUpdate]):
+        url = self.base_url + "inc_invoice/"
+        model_dump_json_data = [value.model_dump() for value in data]
+        print(model_dump_json_data)
+        async with aiohttp.ClientSession() as session:
+            async with session.request(method="POST", url=url, json=model_dump_json_data, auth=BasicAuth(self.login, self.password)) as response:
+                print(response.status)
+                json_response = await response.text()
+                return json_response
+
     async def commission_sales_fbo_add(self, data):
         url = self.base_url + "commission_sales_fbo/"
         async with aiohttp.ClientSession() as session:
@@ -24,6 +34,7 @@ class ONECRouting:
                 print(response.status)
                 json_response = await response.text()
                 return json_response
+
     @staticmethod
     def refactoring_to_account_data(
             shipments: List[ShipmentOfGoodsUpdate],
@@ -66,53 +77,3 @@ class ONECRouting:
             ).model_dump_json())
 
         return result
-#
-#
-# data = [
-#     {
-#         "account": "Хачатрян",
-#         "inn": "771675966776",
-#         "data": [
-#             {
-#                 "supply_id": "170261889",
-#                 "wilds": [
-#                     {
-#                         "wild_code": "wild128",
-#                         "orders": [
-#                             {
-#                                 "sum": 0,
-#                                 "count": 1
-#                             }
-#                         ]
-#                     }
-#                 ]
-#             }
-#         ]
-#     }
-# ]
-# Тестовые данные
-# shipments = [
-#     ShipmentOfGoodsUpdate(account="A", supply_id="S1", product_id="P1", quantity=1, author="", shipment_date=None, product_reserves_id=None, warehouse_id=1,
-#                           delivery_type="ФБО"),
-#     ShipmentOfGoodsUpdate(account="A", supply_id="S1", product_id="P1", quantity=2, author="", shipment_date=None, product_reserves_id=None, warehouse_id=1,
-#                           delivery_type="ФБО"),
-#     ShipmentOfGoodsUpdate(account="A", supply_id="S1", product_id="P2", quantity=5, author="", shipment_date=None, product_reserves_id=None, warehouse_id=1,
-#                           delivery_type="ФБО"),
-#     ShipmentOfGoodsUpdate(account="A", supply_id="S2", product_id="P3", quantity=4, author="", shipment_date=None, product_reserves_id=None, warehouse_id=1,
-#                           delivery_type="ФБО"),
-#     ShipmentOfGoodsUpdate(account="B", supply_id="S3", product_id="P1", quantity=10, author="", shipment_date=None, product_reserves_id=None, warehouse_id=1,
-#                           delivery_type="ФБО"),
-# ]
-#
-# account_to_inn = {"A": "1234567890", "B": "9876543210"}
-
-
-#
-# async def test():
-#     test = ONECRouting(password='', login='', base_url='')
-#     # await test.commission_sales_fbo_add(data)
-#     res = test.refactoring_to_account_data(account_to_inn=account_to_inn, shipments=shipments)
-#     pprint(res)
-#
-#
-# asyncio.run(test())

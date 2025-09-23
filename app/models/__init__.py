@@ -1,4 +1,4 @@
-from .receipt_of_goods import ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate
+from .receipt_of_goods import ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate, OneCModelUpdate
 from .income_on_bank_account import IncomeOnBankAccountUpdate
 from .shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsResponse, example_shipment_of_goods_data, ShipmentParamsData, ReservedData, \
     ShippedGoodsByID
@@ -48,5 +48,6 @@ __all__ = [
     'ShippedGoodsByID',
     'StockData',
     'HistoricalStockData',
-    'HistoricalStockBody'
+    'HistoricalStockBody',
+    'OneCModelUpdate'
 ]
