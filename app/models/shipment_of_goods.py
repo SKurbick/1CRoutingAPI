@@ -117,3 +117,29 @@ class ReservedData(BaseModel):
     # created_at
     # expires_at
     is_fulfilled: bool
+
+
+
+
+data = [
+    {
+        "product_id": "wild123",
+        "delivery_type_data": [
+            {
+                "reserve_type": "ФБО",
+                "current_reserve": 12},
+            {
+                "reserve_type": "ФБО",
+                "current_reserve": 12},
+        ]
+
+    }
+]
+
+class DeliveryTypeData(BaseModel):
+    reserve_type: str
+    current_reserve: int
+
+class SummReserveData(BaseModel):
+    product_id: str
+    delivery_type_data: List[DeliveryTypeData]

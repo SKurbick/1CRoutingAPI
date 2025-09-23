@@ -16,10 +16,14 @@ class ShipmentOfGoodsService:
     ):
         self.shipment_of_goods_repository = shipment_of_goods_repository
 
+    async def get_summ_reserve_data(self):
+
+        result = await self.shipment_of_goods_repository.get_summ_reserve_data()
+        return result
+
     async def add_shipped_goods_by_id(self, data: List[ShippedGoodsByID]) -> ShipmentOfGoodsResponse:
         result = await self.shipment_of_goods_repository.add_shipped_goods_by_id(data)
         return result
-
 
     async def get_reserved_data(self, is_fulfilled: bool | None, begin_date: datetime.date | None, delivery_type: DeliveryType | None) -> List[ReservedData]:
         result = await self.shipment_of_goods_repository.get_reserved_data(is_fulfilled=is_fulfilled, begin_date=begin_date, delivery_type=delivery_type)

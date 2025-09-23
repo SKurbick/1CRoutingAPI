@@ -1,5 +1,6 @@
 import datetime
 import json
+from collections import defaultdict
 from pprint import pprint
 from typing import List, Tuple
 
@@ -7,12 +8,46 @@ import asyncpg
 from asyncpg import Pool
 from app.models import ShipmentOfGoodsUpdate
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsCreate, ReserveOfGoodsResponse, ShippedGoods, ReservedData, \
-    DeliveryType, ShippedGoodsByID
+    DeliveryType, ShippedGoodsByID, SummReserveData, DeliveryTypeData
 
 
 class ShipmentOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+
+    async def get_summ_reserve_data(self) -> List[SummReserveData]:
+
+        query = """
+        SELECT 
+            product_id,
+            delivery_type,
+            SUM(ordered - shipped) as current_reserve
+        FROM public.product_reserves
+        GROUP BY product_id, delivery_type
+        ORDER BY product_id, delivery_type;
+        """
+        async with self.pool.acquire() as connection:
+            rows = await connection.fetch(query)
+
+            grouped_data = defaultdict(list)
+
+            for row in rows:
+                grouped_data[row["product_id"]].append(
+                    DeliveryTypeData(
+                        reserve_type=row["delivery_type"],
+                        current_reserve=int(row["current_reserve"])
+                    )
+                )
+
+            return [
+                SummReserveData(
+                    product_id=product_id,
+                    delivery_type_data=delivery_type_data
+                )
+                for product_id, delivery_type_data in grouped_data.items()
+            ]
+
 
     async def add_shipped_goods_by_id(self, data: List[ShippedGoodsByID]) -> ShipmentOfGoodsResponse:
         pprint(data)
