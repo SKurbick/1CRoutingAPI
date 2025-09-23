@@ -62,7 +62,8 @@ class ShipmentOfGoodsRepository:
                     delivery_type,
                     supply_id,
                     reserve_date,
-                    is_fulfilled
+                    is_fulfilled,
+                    wb_warehouse
                   from product_reserves WHERE 1=1""")
         params = []
         param_count = 1
@@ -73,7 +74,7 @@ class ShipmentOfGoodsRepository:
             param_count += 1
 
         if begin_date is not None:
-            print("begin_date",begin_date, type(begin_date))
+            print("begin_date", begin_date, type(begin_date))
             query += f" AND reserve_date::date >= ${param_count}::date"
             params.append(begin_date)
             param_count += 1
@@ -156,9 +157,11 @@ class ShipmentOfGoodsRepository:
                     delivery_type,
                     reserve_date,
                     supply_id,
-                    expires_at
+                    expires_at,                                        
+                    wb_warehouse
+
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 RETURNING 
                     id,
                     supply_id
@@ -174,7 +177,8 @@ class ShipmentOfGoodsRepository:
                 item.delivery_type,
                 item.reserve_date,
                 item.supply_id,
-                item.expires_at
+                item.expires_at,
+                item.wb_warehouse
             )
             for item in data
         ]

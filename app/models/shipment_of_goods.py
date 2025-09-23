@@ -60,6 +60,7 @@ class ReserveOfGoodsCreate(BaseModel):
     ordered: int
     account: str
     delivery_type: str
+    wb_warehouse: Optional[str] = None
     reserve_date: datetime.date
     supply_id: str
     expires_at: datetime.datetime
@@ -90,6 +91,7 @@ example_reserve_of_goods_data = [
         "ordered": 20,
         "account": "Тоноян",
         "delivery_type": "ФБС",
+        "wb_warehouse": "Писюлькино",
         "supply_id": "WB-GI-166715280",
         "reserve_date": "2025-07-25",
         "expires_at": "2025-08-05 16:08:57.089858",
@@ -109,6 +111,7 @@ class ReservedData(BaseModel):
     shipped: int
     account: str
     delivery_type: str
+    wb_warehouse: Optional[str] = None
     supply_id: str
     reserve_date: datetime.date
     # created_at
