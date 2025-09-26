@@ -5,12 +5,81 @@ from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool
-from app.models.return_of_goods import ReturnOfGoodsResponse, ReturnOfGoodsData, GoodsReturn, IncomingReturns, GroupDataGoodsReturns
+from app.models.return_of_goods import ReturnOfGoodsResponse, ReturnOfGoodsData, GoodsReturn, IncomingReturns, GroupDataGoodsReturns, ReturnsOneCModelAdd, \
+    OneCReturnDataByProduct
 
 
 class ReturnOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+    async def get_incoming_data_for_one_c(self, data:List[IncomingReturns]) -> List[ReturnsOneCModelAdd]:
+
+        srids: List[str] = []
+        return_date = None
+        author = None
+        for values in data:
+            return_date = str(values.return_date)
+            author = values.author
+            for is_received_data in values.is_received_data:
+                srids.append(is_received_data.srid)
+
+        select_query = """
+            SELECT 
+                sa.inn,
+                p."name",
+                COALESCE(a.local_vendor_code, 'не найден артикул продавца по артикулу wb') AS product_id,
+                grd.account,
+                COUNT(*) AS total_quantity
+            FROM goods_returns_dev grd 
+            JOIN seller_account sa ON UPPER(grd.account) = UPPER(sa.account_name)
+            JOIN article a ON grd.nm_id = a.nm_id
+            JOIN products p ON p.id = a.local_vendor_code
+           WHERE grd.srid = ANY($1::text[])
+         GROUP BY 
+                sa.inn,
+                product_id,
+                grd.account,
+                 p."name"
+            ORDER BY sa.inn,
+            grd.account,
+            p."name",
+            product_id;
+        """
+
+
+        async with self.pool.acquire() as conn:
+            records = await conn.fetch(select_query, srids)
+
+
+        # Группируем по (account, inn)
+        grouped = {}
+        for row in records:
+            key = (row['account'], row['inn'])
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(
+                OneCReturnDataByProduct(
+                    product_id=row['product_id'],
+                    product_name=row['name'],  # заглушка, т.к. нет в SQL
+                    quantity=row['total_quantity']
+                )
+            )
+
+        # Формируем результат
+        result = []
+        for (account, inn), products in grouped.items():
+            result.append(
+                ReturnsOneCModelAdd(
+                    account=account,
+                    author=author,
+                    inn=str(inn),
+                    return_date=return_date,
+                    return_data_by_product=products
+                )
+            )
+
+        return result
 
     async def get_return_of_goods(self) -> List[ReturnOfGoodsData] | ReturnOfGoodsResponse:
         select_query = """

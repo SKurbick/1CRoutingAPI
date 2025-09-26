@@ -63,3 +63,56 @@ class IncomingReturns(BaseModel):
     warehouse_id: int
     return_date: date
     is_received_data: List[IsReceived]
+
+
+# class OneCReturnData(BaseModel):
+
+class OneCReturnDataByProduct(BaseModel):
+    product_id: str
+    product_name: str
+    quantity: int
+    # return_data: List[OneCReturnData]
+
+class ReturnsOneCModelAdd(BaseModel):
+    account: str
+    author: str
+    inn: str
+    # return_date: date
+    return_date: str
+
+    return_data_by_product: List[OneCReturnDataByProduct]
+
+
+data =  [
+    {
+        "account": "Вектор",
+        "author": "Константин",
+        "inn": 123123123123,
+        "return_date": "2025-09-12",
+        "return_data_by_product":[
+            {
+                "product_id": "wild123",
+                "product_name": "название товара",
+                "quantity": 2
+            },
+            {
+                "product_id": "wild150",
+                "product_name": "название товара",
+                "quantity": 5
+            }
+        ]
+    },
+    {
+        "account": " Тоноян",
+        "inn": 123123123123,
+        "author": "Константин",
+        "return_date": "2025-09-12",
+        "return_data_by_product": [
+            {
+                "product_id": "wild123",
+                "product_name": "название товара",
+                "quantity": 2
+            }
+        ]
+    }
+]
