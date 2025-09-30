@@ -25,10 +25,10 @@ class DocsService:
         return_result = []
         tokens = await self.docs_repository.get_tokens()
         for account, token in tokens.items():
-            #
-            # if account != "СТАРТ":
-            #     continue
-            # print(account)
+
+            if account != "ДАНИЕЛЯН":
+                continue
+            print(account)
             docs_wb_api = Docs(token=token)
 
             docs_list = await docs_wb_api.get_docs_list(str(date_from), str(date_to))
@@ -342,7 +342,8 @@ class DocsService:
         df_clean['Налоговая ставка'] = df_clean['Налоговая ставка'].str.replace(r'^[aа]', '', regex=True)
 
         for col in ('Стоимость без НДС', 'Стоимость с НДС'):
-            df_clean[col] = df_clean[col].str.replace(',', '.', regex=False).astype(float)
+            # df_clean[col] = df_clean[col].str.replace(',', '.', regex=False).astype(float)
+            df_clean[col] = df_clean[col].str.extract(r'^([0-9,]+\.?[0-9]*)', expand=False).str.replace(',', '.', regex=False).astype(float)
         return df_clean.to_dict('records')
 
 
