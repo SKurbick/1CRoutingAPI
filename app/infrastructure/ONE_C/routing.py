@@ -7,7 +7,7 @@ from aiohttp import BasicAuth
 from typing import List, Dict
 from collections import defaultdict
 
-from app.models import ShipmentOfGoodsUpdate, OneCModelUpdate, ReturnsOneCModelAdd
+from app.models import ShipmentOfGoodsUpdate, OneCModelUpdate, ReturnsOneCModelAdd, ReSortingOperation
 from app.models.one_c import AccountData, Wild, Order, SupplyData
 
 
@@ -16,6 +16,20 @@ class ONECRouting:
         self.base_url = base_url
         self.login = login
         self.password = password
+
+
+    async def re_sorting_operations(self, data:ReSortingOperation):
+        url = self.base_url + "..."
+        model_dump_json_data = data.model_dump()
+
+        print(model_dump_json_data)
+        async with aiohttp.ClientSession() as session:
+            async with session.request(method="POST", url=url, json=model_dump_json_data, auth=BasicAuth(self.login, self.password)) as response:
+                print(response.status)
+                json_response = await response.text()
+                print(json_response)
+                return json_response
+
 
     async def goods_returns(self, data: List[ReturnsOneCModelAdd]):
         url = self.base_url + "goods_return/"
