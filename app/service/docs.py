@@ -26,9 +26,9 @@ class DocsService:
         tokens = await self.docs_repository.get_tokens()
         for account, token in tokens.items():
 
-            if account != "ДАНИЕЛЯН":
-                continue
-            print(account)
+            # if account != "ДАНИЕЛЯН":
+            #     continue
+            # print(account)
             docs_wb_api = Docs(token=token)
 
             docs_list = await docs_wb_api.get_docs_list(str(date_from), str(date_to))
