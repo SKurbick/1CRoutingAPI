@@ -1,5 +1,7 @@
 from typing import List
 
+from app.dependencies.config import settings
+from app.infrastructure.ONE_C import ONECRouting
 from app.models import DefectiveGoodsUpdate, AddStockByClientResponse
 from app.database.repositories import WarehouseAndBalancesRepository
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, AssemblyOrDisassemblyMetawildData, \
@@ -40,7 +42,12 @@ class WarehouseAndBalancesService:
 
     async def re_sorting_operations(self, data: ReSortingOperation) -> ReSortingOperationResponse:
         result = await self.warehouse_and_balances_repository.re_sorting_operations(data)
+        if result.code_status == 201:
+            one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
+            await one_c_connect.re_sorting_operations(data=data)
         return result
+
+
 
     async def add_stock_by_client(self,data: List[AddStockByClient]) -> AddStockByClientResponse:
         result = await self.warehouse_and_balances_repository.add_stock_by_client(data)

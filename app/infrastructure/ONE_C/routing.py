@@ -19,8 +19,8 @@ class ONECRouting:
 
 
     async def re_sorting_operations(self, data:ReSortingOperation):
-        url = self.base_url + "..."
-        model_dump_json_data = data.model_dump()
+        url = self.base_url + "goods_resorting/"
+        model_dump_json_data = data.model_dump(exclude={"warehouse_id"})
 
         print(model_dump_json_data)
         async with aiohttp.ClientSession() as session:
