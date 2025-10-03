@@ -29,7 +29,8 @@ class ReceiptOfGoodsRepository:
                 AND ogfb.is_printed_barcode = TRUE
         """
         try:
-            records = await self.pool.fetch(query, guid_data)
+            async with self.pool.acquire() as conn:
+                records = await conn.fetch(query, guid_data)
 
             result = []
             for record in records:
@@ -55,8 +56,7 @@ class ReceiptOfGoodsRepository:
         except Exception as e:
             print(f"Error fetching data: {e}")
             return []
-        finally:
-            await self.pool.close()
+
 
     async def update_data(self, data: List[ReceiptOfGoodsUpdate]):
         get_wilds_in_products = """SELECT id FROM products;"""
