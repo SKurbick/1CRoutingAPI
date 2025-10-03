@@ -206,9 +206,9 @@ class ReceiptOfGoodsRepository:
             async with self.pool.acquire() as conn:
 
                 async with conn.transaction():  # актуализация поставок для расчета остатков
-                    await conn.execute(update_is_valid_in_incoming_items, guid_data)  # по совпадению guid устанавливаем false
-                    await conn.executemany(query_to_insert_incoming_documents, data_to_update_incoming_documents)
-                    await conn.executemany(query_to_insert_incoming_items, data_to_update_incoming_items)
+                    # await conn.execute(update_is_valid_in_incoming_items, guid_data)  # по совпадению guid устанавливаем false
+                    # await conn.executemany(query_to_insert_incoming_documents, data_to_update_incoming_documents)
+                    # await conn.executemany(query_to_insert_incoming_items, data_to_update_incoming_items)
                     await conn.execute(query_update_acceptance_completed, ordered_goods_from_buyers_ids)
                     print("incoming_items data ---->")
                     print(guid_data)
