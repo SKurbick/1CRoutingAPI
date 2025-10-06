@@ -5,7 +5,7 @@ from .ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGood
     OrderedGoodsFromBuyersData, PrintedBarcodeData, OrderedGoodsAndPrintedBarcodeData
 from .local_barcode_generation import GoodsAcceptanceCertificateCreate
 from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data
-from .goods_information import MetawildsData, AllProductsData
+from .goods_information import MetawildsData, AllProductsData, GoodsResponse, ProductInfo
 from .inventory_check import InventoryCheckUpdate
 from .inventory_transactions import ITGroupData
 __all__ = [
@@ -29,5 +29,7 @@ __all__ = [
     'MetawildsData',
     'AllProductsData',
     'InventoryCheckUpdate',
-    'ITGroupData'
+    'ITGroupData',
+    'GoodsResponse',
+    'ProductInfo',
 ]

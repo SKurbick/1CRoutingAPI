@@ -59,3 +59,17 @@ class AllProductsData(BaseModel):
     share_of_kit: bool
     photo_link: Optional[str] = None
     kit_components: Optional[Dict[str, int]] = None
+
+
+class GoodsResponse(BaseModel):
+    status: int
+    message: str
+    details: Optional[str] = None
+
+
+class ProductInfo(BaseModel):
+    id: str
+    length: Optional[int] = None
+    width: Optional[int] = None
+    height: Optional[int] = None 
+    manager: Optional[str] = None
