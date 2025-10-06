@@ -12,6 +12,7 @@ from .goods_information import MetawildsData, AllProductsData, GoodsResponse, Pr
 from .inventory_check import InventoryCheckUpdate, InventoryData, InventoryDataResponse, IDGroupData
 from .inventory_transactions import ITGroupData
 from .docs import docs_data_response_example, DocsData
+from .goods_managers import GoodsManager
 
 __all__ = [
     'ReceiptOfGoodsUpdate',
@@ -56,4 +57,5 @@ __all__ = [
     'OneCReturnDataByProduct',
     'ReturnsOneCModelAdd',
     'ProductInfo',
+    'GoodsManager',
 ]
