@@ -1,8 +1,7 @@
 from typing import List
 
-from app.models import IncomeOnBankAccountUpdate, GoodsResponse
 from app.database.repositories import GoodsInformationRepository
-from app.models import MetawildsData, AllProductsData, ProductInfo
+from app.models import MetawildsData, AllProductsData, ProductInfo, GoodsResponse, ProductCreate
 
 
 class GoodsInformationService:
@@ -20,7 +19,7 @@ class GoodsInformationService:
         result = await self.goods_information_repository.get_all_products_data()
         return result
 
-    async def add_product(self, data: List[AllProductsData]) -> GoodsResponse:
+    async def add_product(self, data: List[ProductCreate]) -> GoodsResponse:
         result = await self.goods_information_repository.add_product(data)
         return result
     
