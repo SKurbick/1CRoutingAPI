@@ -58,7 +58,11 @@ class GoodsInformationRepository:
                     photo_link=res['photo_link'],
                     is_kit=res['is_kit'],
                     share_of_kit=res['share_of_kit'],
-                    kit_components=kit_components
+                    kit_components=kit_components,
+                    length=res['length'],
+                    width=res['width'],
+                    height=res['height'],
+                    manager=res['manager'],
                 )
             )
 
@@ -67,14 +71,15 @@ class GoodsInformationRepository:
     async def add_product(self, data: List[AllProductsData]) -> GoodsResponse:
         insert_data: list[Tuple] = []
         insert_query = """
-            INSERT INTO products (id, name, is_kit, share_of_kit, kit_components, photo_link)
-            VALUES ($1, $2, $3, $4, $5::jsonb, $6)
+            INSERT INTO products (id, name, is_kit, share_of_kit, kit_components, photo_link, length, width, height, manager)
+            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
         """
 
         for product in data:
             kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
             insert_data.append(
-                (product.id, product.name, product.is_kit, product.share_of_kit, kit_components_json, product.photo_link)
+                (product.id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
+                 product.photo_link, product.length, product.width, product.height, product.manager)
             )
 
         pprint(insert_data)
