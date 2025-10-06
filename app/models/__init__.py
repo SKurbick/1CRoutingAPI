@@ -8,6 +8,8 @@ from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse
 from .goods_information import MetawildsData, AllProductsData, GoodsResponse, ProductInfo
 from .inventory_check import InventoryCheckUpdate
 from .inventory_transactions import ITGroupData
+from .goods_managers import GoodsManager
+
 __all__ = [
     'ReceiptOfGoodsUpdate',
     'IncomeOnBankAccountUpdate',
@@ -32,4 +34,5 @@ __all__ = [
     'ITGroupData',
     'GoodsResponse',
     'ProductInfo',
+    'GoodsManager',
 ]

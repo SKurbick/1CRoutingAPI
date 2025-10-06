@@ -8,6 +8,8 @@ from .goods_information import get_goods_information_service
 from .inventory_check import get_inventory_check_service
 from .inventory_transactions import get_inventory_transactions_service
 from .return_of_goods import get_return_of_goods_service
+from .goods_managers import get_goods_managers_service
+
 __all__ = [
     'get_income_on_bank_account_service',
     'get_receipt_of_goods_service',
@@ -18,5 +20,11 @@ __all__ = [
     'get_goods_information_service',
     'get_inventory_check_service',
     'get_inventory_transactions_service',
+<<<<<<< HEAD
     'get_return_of_goods_service'
+=======
+    'get_return_of_goods_service',
+    'get_docs_service',
+    'get_goods_managers_service',
+>>>>>>> a8f6d06 ([+] Добавил получение списка менеджеров товаров.)
 ]
