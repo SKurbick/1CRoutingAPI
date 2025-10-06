@@ -1,3 +1,4 @@
+from pprint import pprint
 from typing import List
 
 from app.dependencies.config import settings
@@ -15,10 +16,9 @@ class WarehouseAndBalancesService:
     ):
         self.warehouse_and_balances_repository = warehouse_and_balances_repository
 
-    async def get_historical_stocks(self, data:HistoricalStockBody) -> List[HistoricalStockData]:
+    async def get_historical_stocks(self, data: HistoricalStockBody) -> List[HistoricalStockData]:
         result = await self.warehouse_and_balances_repository.get_historical_stocks(data)
         return result
-
 
     async def add_defective_goods(self, data: List[DefectiveGoodsUpdate]) -> DefectiveGoodsResponse:
         result = await self.warehouse_and_balances_repository.add_defective_goods(data)
@@ -38,6 +38,13 @@ class WarehouseAndBalancesService:
 
     async def assembly_or_disassembly_metawild(self, data: AssemblyOrDisassemblyMetawildData) -> AssemblyMetawildResponse:
         result = await self.warehouse_and_balances_repository.assembly_or_disassembly_metawild(data)
+
+        if result.code_status == 201:
+            kit_components = await self.warehouse_and_balances_repository.kit_components_by_product_id(data.metawild)
+            print(data)
+            print(kit_components)
+            data.kit_komponents = kit_components
+            pprint(data.model_dump(exclude={"warehouse_id"}))
         return result
 
     async def re_sorting_operations(self, data: ReSortingOperation) -> ReSortingOperationResponse:
@@ -47,8 +54,6 @@ class WarehouseAndBalancesService:
             await one_c_connect.re_sorting_operations(data=data)
         return result
 
-
-
-    async def add_stock_by_client(self,data: List[AddStockByClient]) -> AddStockByClientResponse:
+    async def add_stock_by_client(self, data: List[AddStockByClient]) -> AddStockByClientResponse:
         result = await self.warehouse_and_balances_repository.add_stock_by_client(data)
         return result

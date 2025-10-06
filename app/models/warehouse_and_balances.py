@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List, Literal
 
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, field_validator, Field, ConfigDict
 from datetime import datetime, date
 
 example_defective_goods_data = [
@@ -68,6 +68,7 @@ class AssemblyMetawild(BaseModel):
 
 
 class AssemblyOrDisassemblyMetawildData(AssemblyMetawild):
+    model_config = ConfigDict(extra='allow')
     operation_type: Literal["assembly", "disassembly"]  # только эти значения
 
 

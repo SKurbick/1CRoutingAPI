@@ -17,6 +17,23 @@ class WarehouseAndBalancesRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
+
+    async def kit_components_by_product_id(self, product_id:str):
+        select_query = """
+        SELECT  kit_components FROM products WHERE id = $1
+        """
+        kit_components = {}
+
+        async with self.pool.acquire() as conn:
+
+            result = await conn.fetch(select_query, product_id)
+            print(result)
+        try:
+            kit_components = json.loads(result[0]['kit_components'])
+        except (json.JSONDecodeError, TypeError) as e:
+                print(str(e))
+        return kit_components
+
     async def get_historical_stocks(self, data: HistoricalStockBody) -> List[HistoricalStockData]:
         select_query = """
         SELECT * FROM get_daily_balances_paginated(
