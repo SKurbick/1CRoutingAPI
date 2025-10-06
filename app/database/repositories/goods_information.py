@@ -99,7 +99,7 @@ class GoodsInformationRepository:
             )
         return result
     
-    async def add_product_info(self, data: ProductInfo) -> GoodsResponse:
+    async def update_product_info(self, data: ProductInfo) -> GoodsResponse:
         insert_data = data.model_dump(exclude_unset=True)
         product_id = insert_data.pop("id")
 
@@ -112,7 +112,8 @@ class GoodsInformationRepository:
         
         columns_for_query = ', '.join(columns_for_update)
 
-        query = (
+        check_query = "SELECT id FROM products WHERE id = $1;"
+        update_query = (
             "UPDATE products "
             f"SET {columns_for_query} "
             f"WHERE id = ${len(values) + 1};"
@@ -121,7 +122,16 @@ class GoodsInformationRepository:
         try:
             async with self.pool.acquire() as conn:
                 async with conn.transaction():
-                    await conn.execute(query, *values, product_id)
+                    # проверяем, есть ли товар с таким id.
+                    existing_product = await conn.fetchrow(check_query, product_id)
+
+                    if not existing_product:
+                        return GoodsResponse(
+                            status=404,
+                            message=f"Product data not found. id: {product_id}"
+                        )
+
+                    await conn.execute(update_query, *values, product_id)
 
             result = GoodsResponse(
                 status=200,
