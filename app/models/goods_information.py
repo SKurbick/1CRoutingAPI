@@ -46,7 +46,6 @@ all_products_data_example = {
 }
 
 
-
 class MetawildsData(BaseModel):
     id: str
     name: str
@@ -66,3 +65,11 @@ class GoodsResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None
+
+
+class ProductInfo(BaseModel):
+    id: str
+    length: Optional[int] = None
+    width: Optional[int] = None
+    height: Optional[int] = None 
+    manager: Optional[str] = None

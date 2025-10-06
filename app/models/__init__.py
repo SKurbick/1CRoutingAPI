@@ -8,7 +8,7 @@ from .ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGood
 from .local_barcode_generation import GoodsAcceptanceCertificateCreate
 from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, ReSortingOperation, ReSortingOperationResponse, \
     AddStockByClient, AddStockByClientResponse, StockData, HistoricalStockData, HistoricalStockBody
-from .goods_information import MetawildsData, AllProductsData, GoodsResponse
+from .goods_information import MetawildsData, AllProductsData, GoodsResponse, ProductInfo
 from .inventory_check import InventoryCheckUpdate, InventoryData, InventoryDataResponse, IDGroupData
 from .inventory_transactions import ITGroupData
 from .docs import docs_data_response_example, DocsData
@@ -54,5 +54,6 @@ __all__ = [
     'SummReserveData',
     'DeliveryTypeData',
     'OneCReturnDataByProduct',
-    'ReturnsOneCModelAdd'
+    'ReturnsOneCModelAdd',
+    'ProductInfo',
 ]
