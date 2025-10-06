@@ -20,11 +20,6 @@ __all__ = [
     'get_goods_information_service',
     'get_inventory_check_service',
     'get_inventory_transactions_service',
-<<<<<<< HEAD
-    'get_return_of_goods_service'
-=======
     'get_return_of_goods_service',
-    'get_docs_service',
     'get_goods_managers_service',
->>>>>>> a8f6d06 ([+] Добавил получение списка менеджеров товаров.)
 ]

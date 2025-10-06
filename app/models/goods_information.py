@@ -60,8 +60,7 @@ class MetawildsData(BaseModel):
     kit_components: Dict[str, int]
 
 
-class AllProductsData(BaseModel):
-    id: str
+class ProductBase(BaseModel):
     name: str
     is_kit: bool
     share_of_kit: bool
@@ -71,6 +70,14 @@ class AllProductsData(BaseModel):
     width: Optional[int] = None
     height: Optional[int] = None
     manager: Optional[str] = None
+
+
+class AllProductsData(ProductBase):
+    id: str
+
+
+class ProductCreate(ProductBase):
+    pass
 
 
 class GoodsResponse(BaseModel):
