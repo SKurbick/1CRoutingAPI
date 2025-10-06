@@ -24,6 +24,6 @@ class GoodsInformationService:
         result = await self.goods_information_repository.add_product(data)
         return result
     
-    async def add_product_info(self, data: ProductInfo) -> GoodsResponse:
-        result = await self.goods_information_repository.add_product_info(data)
+    async def update_product_info(self, data: ProductInfo) -> GoodsResponse:
+        result = await self.goods_information_repository.update_product_info(data)
         return result

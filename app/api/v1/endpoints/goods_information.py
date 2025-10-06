@@ -31,9 +31,9 @@ async def add_product(
     return await service.add_product(data)
 
 
-@router.post("/add_product_info", response_model=GoodsResponse, status_code=status.HTTP_200_OK)
-async def add_product_info(
+@router.post("/update_product_info", response_model=GoodsResponse, status_code=status.HTTP_200_OK)
+async def update_product_info(
         data: ProductInfo,
         service: GoodsInformationService = Depends(get_goods_information_service)
 ):
-    return await service.add_product_info(data)
+    return await service.update_product_info(data)
