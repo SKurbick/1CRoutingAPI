@@ -11,8 +11,18 @@ class Settings(BaseSettings):
     APP_PORT: int
     INITIAL_SERVICE_TOKEN: str
     TOKEN_HEADER: str = "X-Service-Token"
+    ONE_C_LOGIN: str
+    ONE_C_PASSWORD: str
+    ONE_C_BASE_URL: str
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-
+account_inn_map = data = {
+            "Вектор": "9715401127",
+            "Тоноян": "503822685772",
+            "Даниелян": "615490441596",
+            "Лопатина": "771575954343",
+            "Оганесян": "774308962107",
+            "Хачатрян": "771675966776"
+        }
 settings: Settings = Settings()
 

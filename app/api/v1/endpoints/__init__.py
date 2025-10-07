@@ -8,6 +8,7 @@ from .goods_information import router as goods_information_router
 from .inventory_check import router as inventory_check_router
 from .inventory_transactions import router as inventory_transactions_router
 from .return_of_goods import router as return_of_goods_router
+from .docs import router as docs_router
 __all__ = [
     'receipt_of_goods_router',
     'income_on_bank_account_router',
@@ -18,5 +19,6 @@ __all__ = [
     'goods_information_router',
     'inventory_check_router',
     'inventory_transactions_router',
-    'return_of_goods_router'
+    'return_of_goods_router',
+    'docs_router'
 ]

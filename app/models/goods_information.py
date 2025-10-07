@@ -46,6 +46,7 @@ all_products_data_example = {
 }
 
 
+
 class MetawildsData(BaseModel):
     id: str
     name: str
@@ -59,3 +60,9 @@ class AllProductsData(BaseModel):
     share_of_kit: bool
     photo_link: Optional[str] = None
     kit_components: Optional[Dict[str, int]] = None
+
+
+class GoodsResponse(BaseModel):
+    status: int
+    message: str
+    details: Optional[str] = None
