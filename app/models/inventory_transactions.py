@@ -118,9 +118,32 @@ class KitOperations(BaseModel):
     author: str
     created_at: datetime.datetime
 
+
 class KitOperationsGroupData(BaseModel):
     date: date
     product_group_data: List[KitOperations]
+
+
+class GoodsReturn(BaseModel):
+    # Поля из goods_returns_dev
+    srid: str
+    account: Optional[str] = None
+    barcode: Optional[str] = None
+    brand: Optional[str] = None
+    dst_office_address: Optional[str] = None
+    dst_office_id: Optional[int] = None
+    nm_id: Optional[int] = None
+    order_dt: Optional[date] = None  # тип DATE в БД
+    order_id: Optional[int] = None
+    return_type: Optional[str] = None
+    shk_id: Optional[int] = None
+    sticker_id: Optional[str] = None  # в БД — varchar, не int!
+    subject_name: Optional[str] = None
+    tech_size: Optional[str] = None  # в БД — varchar(255), например '42', 'L', 'XL'
+    reason: Optional[str] = None
+    is_status_active: Optional[int] = None  # в БД — int4, не bool
+    goods_created_at: Optional[datetime.datetime] = None  # renamed from `created_at` → `goods_created_at`
+    is_received: Optional[bool] = None
 
 
 class IncomingReturnsTable(BaseModel):
@@ -130,6 +153,8 @@ class IncomingReturnsTable(BaseModel):
     warehouse_id: int
     quantity: int
     created_at: datetime.datetime
+    goods_return_data: Optional[List[GoodsReturn]] = None
+
 
 class IncomingReturnsGroupData(BaseModel):
     date: date
@@ -146,6 +171,7 @@ class ReSortingOperation(BaseModel):
     created_at: datetime.datetime
     author: str
     operation_status: str
+
 
 class ReSortingOperationGroupData(BaseModel):
     date: date
