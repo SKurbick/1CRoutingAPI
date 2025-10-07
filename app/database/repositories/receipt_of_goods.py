@@ -4,12 +4,59 @@ from typing import List, Tuple
 import asyncpg
 from asyncpg import Pool
 from app.models import ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate
-from app.models.receipt_of_goods import ReceiptOfGoodsResponse
+from app.models.receipt_of_goods import ReceiptOfGoodsResponse, OneCModelUpdate, SupplyData
 
 
 class ReceiptOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+
+    async def get_one_c_model_data(self, guid_data) -> List[OneCModelUpdate]:
+        query = """
+            SELECT 
+                ogfb.guid,
+                ogfb.local_vendor_code,
+                ogfb.product_name,
+                gac.sum_real_quantity as quantity,
+                ogfb.amount_with_vat,
+                ogfb.amount_without_vat
+            FROM ordered_goods_from_buyers AS ogfb
+            JOIN goods_acceptance_certificate AS gac ON gac.ordered_goods_from_buyers_id = ogfb.id
+            WHERE ogfb.guid = ANY($1::text[]) 
+                AND ogfb.is_valid = TRUE 
+                AND ogfb.in_acceptance = TRUE 
+                AND ogfb.is_printed_barcode = TRUE
+        """
+        try:
+            async with self.pool.acquire() as conn:
+                records = await conn.fetch(query, guid_data)
+
+            result = []
+            for record in records:
+                # Создаем SupplyData
+                supply_data = SupplyData(
+                    local_vendor_code=record['local_vendor_code'],
+                    product_name=record['product_name'],
+                    quantity=record['quantity'],
+                    amount_with_vat=record['amount_with_vat'],
+                    amount_without_vat=record['amount_without_vat']
+                )
+
+                # Создаем OneCModelUpdate
+                one_c_model = OneCModelUpdate(
+                    guid=record['guid'],
+                    supply_data=[supply_data]  # список с одним элементом
+                )
+
+                result.append(one_c_model)
+
+            return result
+
+        except Exception as e:
+            print(f"Error fetching data: {e}")
+            return []
+
 
     async def update_data(self, data: List[ReceiptOfGoodsUpdate]):
         get_wilds_in_products = """SELECT id FROM products;"""
@@ -159,9 +206,9 @@ class ReceiptOfGoodsRepository:
             async with self.pool.acquire() as conn:
 
                 async with conn.transaction():  # актуализация поставок для расчета остатков
-                    await conn.execute(update_is_valid_in_incoming_items, guid_data)  # по совпадению guid устанавливаем false
-                    await conn.executemany(query_to_insert_incoming_documents, data_to_update_incoming_documents)
-                    await conn.executemany(query_to_insert_incoming_items, data_to_update_incoming_items)
+                    # await conn.execute(update_is_valid_in_incoming_items, guid_data)  # по совпадению guid устанавливаем false
+                    # await conn.executemany(query_to_insert_incoming_documents, data_to_update_incoming_documents)
+                    # await conn.executemany(query_to_insert_incoming_items, data_to_update_incoming_items)
                     await conn.execute(query_update_acceptance_completed, ordered_goods_from_buyers_ids)
                     print("incoming_items data ---->")
                     print(guid_data)

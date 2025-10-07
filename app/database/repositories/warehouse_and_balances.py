@@ -1,18 +1,140 @@
 import json
+from collections import defaultdict
+from decimal import Decimal
 from pprint import pprint
 from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool, UniqueViolationError
-from app.models import DefectiveGoodsUpdate
+from app.models import DefectiveGoodsUpdate, AddStockByClient
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, ComponentsInfo, \
     AssemblyOrDisassemblyMetawildData, \
-    AssemblyMetawildResponse, WarehouseAndBalanceResponse
+    AssemblyMetawildResponse, WarehouseAndBalanceResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClientResponse, HistoricalStockBody, \
+    HistoricalStockData, StockData
 
 
 class WarehouseAndBalancesRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+
+    async def kit_components_by_product_id(self, product_id:str):
+        select_query = """
+        SELECT  kit_components FROM products WHERE id = $1
+        """
+        kit_components = {}
+
+        async with self.pool.acquire() as conn:
+
+            result = await conn.fetch(select_query, product_id)
+            print(result)
+        try:
+            kit_components = json.loads(result[0]['kit_components'])
+        except (json.JSONDecodeError, TypeError) as e:
+                print(str(e))
+        return kit_components
+
+    async def get_historical_stocks(self, data: HistoricalStockBody) -> List[HistoricalStockData]:
+        select_query = """
+        SELECT * FROM get_daily_balances_paginated(
+            $1, $2, $3, $4, $5, $6
+        );
+        """
+        async with self.pool.acquire() as conn:
+            result = await conn.fetch(
+                select_query,
+                data.page_size,
+                data.page_num,
+                data.date_from,
+                data.date_to,
+                data.product_id,
+                data.warehouse_id
+            )
+
+        # Группируем данные по product_id
+        grouped_data = defaultdict(list)
+
+        for row in result:
+            balance = row['end_of_day_balance']
+            if isinstance(balance, Decimal):
+                balance = int(balance)
+
+            stock_data = StockData(
+                transaction_date=row['transaction_date'],
+                end_of_day_balance=balance
+            )
+
+            grouped_data[row['product_id']].append(stock_data)
+
+        # Создаем список HistoricalStockData для каждого product_id
+        historical_stocks_list = []
+        for product_id, stock_data_list in grouped_data.items():
+            historical_stocks_list.append(
+                HistoricalStockData(
+                    product_id=product_id,
+                    data=stock_data_list
+                )
+            )
+
+        return historical_stocks_list
+
+    async def add_stock_by_client(self, data: List[AddStockByClient]) -> AddStockByClientResponse:
+        data_to_insert: List[Tuple] = []
+        for value in data:
+            data_to_insert.append(
+                (value.product_id, value.quantity, value.warehouse_id, value.author, value.comment, value.transaction_type)
+            )
+        query = """
+        INSERT INTO inventory_transactions (product_id, quantity, warehouse_id, author, correction_comment, transaction_type, status_id)
+        VALUES ($1, $2, $3, $4, $5, $6, 1)
+        """
+        pprint(data_to_insert)
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    await conn.executemany(query, data_to_insert)
+
+            result = AddStockByClientResponse(
+                status=201,
+                message="Данные успешно обновлены"
+            )
+            return result
+        except asyncpg.PostgresError as e:
+            return AddStockByClientResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
+
+    async def re_sorting_operations(self, data: ReSortingOperation) -> ReSortingOperationResponse:
+        data_to_insert = (data.from_product_id, data.to_product_id, data.warehouse_id, data.quantity, data.reason, data.author)
+        try:
+            insert_query = """
+            INSERT INTO re_sorting_operations 
+                (from_product_id, to_product_id, warehouse_id, quantity, reason, author)
+                VALUES 
+                ($1, $2, $3, $4, $5, $6)
+            RETURNING id;
+            """
+            select_query = """
+            SELECT operation_status,  error_message FROM re_sorting_operations
+                WHERE id = $1;
+            """
+
+            async with self.pool.acquire() as conn:
+                result_id = await conn.fetchrow(insert_query, *data_to_insert)
+                while True:
+                    check_status = await conn.fetchrow(select_query, result_id['id'])
+                    pprint(check_status)
+                    if check_status['operation_status'] not in ('pending', 'processing'):
+                        break
+                return ReSortingOperationResponse(**check_status, code_status=201)
+        except asyncpg.PostgresError as e:
+            return ReSortingOperationResponse(
+                code_status=422,
+                operation_status="PostgresError",
+                error_message=str(e)
+            )
 
     async def add_defective_goods(self, data: List[DefectiveGoodsUpdate]) -> DefectiveGoodsResponse:
         data_to_update: List[Tuple] = []
@@ -113,9 +235,9 @@ class WarehouseAndBalancesRepository:
                 while True:
                     check_status = await conn.fetchrow(select_query, result_id['id'])
                     pprint(check_status)
-                    if check_status['operation_status'] != 'pending':
+                    if check_status['operation_status'] not in ('pending', 'processing'):
                         break
-                return AssemblyMetawildResponse(**check_status,code_status=201)
+                return AssemblyMetawildResponse(**check_status, code_status=201)
         except asyncpg.PostgresError as e:
             return AssemblyMetawildResponse(
                 product_id=data.metawild,

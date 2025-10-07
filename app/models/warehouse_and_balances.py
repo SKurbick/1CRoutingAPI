@@ -1,7 +1,7 @@
 from typing import Optional, Dict, List, Literal
 
-from pydantic import BaseModel, field_validator
-from datetime import datetime
+from pydantic import BaseModel, field_validator, Field, ConfigDict
+from datetime import datetime, date
 
 example_defective_goods_data = [
     {
@@ -19,6 +19,16 @@ add_defective_goods_description = """
 status_id = 1, при условии что товар переносится из брака в валидный остаток. status_id = 3, при условии что товар переносится
 из валидного остатка в склад брака.
 """
+re_sorting_operations_description = "Метод для операции пересортицы"
+example_re_sorting_operations = {
+    'from_product_id': "testwild",
+    'to_product_id': "testwild2",
+    'warehouse_id': 1,
+    'quantity': 10,
+    'reason': "Поставщик перепутал цвет товара",
+    'author': "Зина"
+}
+
 example_assembly_metawild_data = {
     "metawild": "metawild_test",
     "count": 3,
@@ -26,6 +36,28 @@ example_assembly_metawild_data = {
     "warehouse_id": 1,
     "operation_type": "assembly"
 }
+
+
+
+
+class StockData(BaseModel):
+    transaction_date: date
+    end_of_day_balance: int
+
+class HistoricalStockData(BaseModel):
+    product_id: str
+    data: List[StockData]
+
+
+
+class HistoricalStockBody(BaseModel):
+    date_from: Optional[date] = None
+    date_to: Optional[date] = None
+    product_id: Optional[str] = None
+    warehouse_id: int = Field(default=1, ge=1)
+    page_size: int = Field(default=100, ge=1, le=5000)
+    page_num: int = Field(default=1, ge=1)
+
 
 
 class AssemblyMetawild(BaseModel):
@@ -36,6 +68,7 @@ class AssemblyMetawild(BaseModel):
 
 
 class AssemblyOrDisassemblyMetawildData(AssemblyMetawild):
+    model_config = ConfigDict(extra='allow')
     operation_type: Literal["assembly", "disassembly"]  # только эти значения
 
 
@@ -56,6 +89,7 @@ class DefectiveGoodsUpdate(BaseModel):
     correction_comment: Optional[str] = None
 
 
+
 class DefectiveGoodsResponse(BaseModel):
     status: int
     message: str
@@ -71,7 +105,9 @@ class Warehouse(BaseModel):
 class CurrentBalances(BaseModel):
     product_id: str
     warehouse_id: int
+    reserved_quantity: int
     physical_quantity: int
+    available_quantity: int
 
 
 class ComponentsInfo(BaseModel):
@@ -91,6 +127,35 @@ class ValidStockData(BaseModel):
 
 
 class WarehouseAndBalanceResponse(BaseModel):
+    status: int
+    message: str
+    details: Optional[str] = None
+
+
+class ReSortingOperation(BaseModel):
+    from_product_id: str
+    to_product_id: str
+    warehouse_id: int
+    quantity: int
+    reason: str
+    author: str
+
+
+class ReSortingOperationResponse(BaseModel):
+    operation_status: str
+    code_status: int
+    error_message: Optional[str] = None
+
+
+class AddStockByClient(BaseModel):
+    product_id: str
+    quantity: int
+    warehouse_id: int
+    author: str
+    comment: str
+    transaction_type: Literal['add_stock_by_client'] = 'add_stock_by_client'
+
+class AddStockByClientResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None
