@@ -1,4 +1,5 @@
 import json
+from pprint import pprint
 from typing import List, Tuple
 
 import asyncpg
@@ -68,12 +69,13 @@ class GoodsInformationRepository:
 
         return all_products_data
 
+
     async def add_product(self, data: List[ProductCreate]) -> GoodsResponse:
         insert_query = """
             INSERT INTO products (id, name, is_kit, share_of_kit, kit_components, photo_link, length, width, height, manager)
             VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
         """
-        max_id_query = """
+        max_id_query = r"""
             SELECT id
             FROM products
             WHERE id ~ '^wild\d+$'
@@ -100,6 +102,8 @@ class GoodsInformationRepository:
                             (product_id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
                             product.photo_link, product.length, product.width, product.height, product.manager)
                         )
+
+                    pprint(insert_data)
 
                     await conn.executemany(insert_query, insert_data)
 

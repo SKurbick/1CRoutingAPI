@@ -1,5 +1,6 @@
 from typing import List
 
+from app.models import IncomeOnBankAccountUpdate, GoodsResponse
 from app.database.repositories import GoodsInformationRepository
 from app.models import MetawildsData, AllProductsData, ProductInfo, GoodsResponse, ProductCreate, ProductUpdate
 

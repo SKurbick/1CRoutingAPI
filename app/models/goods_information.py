@@ -54,6 +54,7 @@ all_products_data_example = {
 }
 
 
+
 class MetawildsData(BaseModel):
     id: str
     name: str

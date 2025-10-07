@@ -1,8 +1,12 @@
+from pprint import pprint
 from typing import List
 
-from app.models import DefectiveGoodsUpdate
+from app.dependencies.config import settings
+from app.infrastructure.ONE_C import ONECRouting
+from app.models import DefectiveGoodsUpdate, AddStockByClientResponse
 from app.database.repositories import WarehouseAndBalancesRepository
-from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, AssemblyOrDisassemblyMetawildData, AssemblyMetawildResponse
+from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, AssemblyOrDisassemblyMetawildData, \
+    AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClient, HistoricalStockBody, HistoricalStockData
 
 
 class WarehouseAndBalancesService:
@@ -11,6 +15,10 @@ class WarehouseAndBalancesService:
             warehouse_and_balances_repository: WarehouseAndBalancesRepository,
     ):
         self.warehouse_and_balances_repository = warehouse_and_balances_repository
+
+    async def get_historical_stocks(self, data: HistoricalStockBody) -> List[HistoricalStockData]:
+        result = await self.warehouse_and_balances_repository.get_historical_stocks(data)
+        return result
 
     async def add_defective_goods(self, data: List[DefectiveGoodsUpdate]) -> DefectiveGoodsResponse:
         result = await self.warehouse_and_balances_repository.add_defective_goods(data)
@@ -30,4 +38,22 @@ class WarehouseAndBalancesService:
 
     async def assembly_or_disassembly_metawild(self, data: AssemblyOrDisassemblyMetawildData) -> AssemblyMetawildResponse:
         result = await self.warehouse_and_balances_repository.assembly_or_disassembly_metawild(data)
+
+        if result.code_status == 201:
+            kit_components = await self.warehouse_and_balances_repository.kit_components_by_product_id(data.metawild)
+            print(data)
+            print(kit_components)
+            data.kit_komponents = kit_components
+            pprint(data.model_dump(exclude={"warehouse_id"}))
+        return result
+
+    async def re_sorting_operations(self, data: ReSortingOperation) -> ReSortingOperationResponse:
+        result = await self.warehouse_and_balances_repository.re_sorting_operations(data)
+        if result.code_status == 201:
+            one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
+            await one_c_connect.re_sorting_operations(data=data)
+        return result
+
+    async def add_stock_by_client(self, data: List[AddStockByClient]) -> AddStockByClientResponse:
+        result = await self.warehouse_and_balances_repository.add_stock_by_client(data)
         return result

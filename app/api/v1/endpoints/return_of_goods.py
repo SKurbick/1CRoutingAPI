@@ -5,7 +5,7 @@ from app.models.return_of_goods import ReturnOfGoodsData, ReturnOfGoodsResponse,
 from app.service.return_of_goods import ReturnOfGoodsService
 from app.dependencies import get_return_of_goods_service
 
-router = APIRouter(prefix="/shipment_of_goods", tags=["Возвраты товаров от клиента WB"])
+router = APIRouter(prefix="/returns", tags=["Возвраты товаров от клиента WB"])
 
 
 @router.get("/get_return_of_goods", response_model=List[ReturnOfGoodsData] | ReturnOfGoodsResponse, status_code=status.HTTP_200_OK)

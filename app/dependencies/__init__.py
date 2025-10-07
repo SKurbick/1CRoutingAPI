@@ -1,3 +1,4 @@
+from .docs import get_docs_service
 from .receipt_of_goods import get_receipt_of_goods_service
 from .income_on_bank_account import get_income_on_bank_account_service
 from .shipment_of_goods import get_shipment_of_goods_service
@@ -21,5 +22,6 @@ __all__ = [
     'get_inventory_check_service',
     'get_inventory_transactions_service',
     'get_return_of_goods_service',
+    'get_docs_service',
     'get_goods_managers_service',
 ]
