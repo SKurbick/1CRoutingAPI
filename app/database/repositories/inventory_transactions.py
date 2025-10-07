@@ -5,7 +5,7 @@ from typing import List, Tuple, Any, Coroutine
 import asyncpg
 from asyncpg import Pool, UniqueViolationError
 from app.models.inventory_transactions import ITGroupData, InventoryTransactionsResponse, ProductGroupData, AddStockByClientGroupData, AddStockByClient, \
-    KitOperationsGroupData, KitOperations, IncomingReturnsTable, IncomingReturnsGroupData, ReSortingOperationGroupData, ReSortingOperation
+    KitOperationsGroupData, KitOperations, IncomingReturnsTable, IncomingReturnsGroupData, ReSortingOperationGroupData, ReSortingOperation, GoodsReturn
 
 
 class InventoryTransactionsRepository:
@@ -74,51 +74,107 @@ class InventoryTransactionsRepository:
 
     async def get_incoming_returns(self, date_from, date_to) -> List[IncomingReturnsGroupData] | InventoryTransactionsResponse:
         try:
-            datetime_from = datetime.datetime.combine(date_from, datetime.time.min)  # 2025-04-06 00:00:00
-            datetime_to = datetime.datetime.combine(date_to, datetime.time.max)  # 2025-04-06 23:59:59.999999
+            datetime_from = datetime.datetime.combine(date_from, datetime.time.min)
+            datetime_to = datetime.datetime.combine(date_to, datetime.time.max)
 
             query = """
-                        SELECT 
-                            id,
-                            product_id,
-                            warehouse_id,
-                            quantity,
-                            author,
-                            created_at,
-                            DATE(created_at) as "date"
-                        FROM 
-                            incoming_returns
-                        WHERE 
-                            created_at BETWEEN $1 AND $2 
-                        ORDER BY 
-                            DATE(created_at), product_id;
-                """
+                SELECT 
+                    ir.id,
+                    ir.product_id,
+                    ir.warehouse_id,
+                    ir.quantity,
+                    ir.author,
+                    ir.created_at,
+                    DATE(ir.created_at) as "date",
+                    gr.srid,
+                    gr.account,
+                    gr.barcode,
+                    gr.brand,
+                    gr.dst_office_address,
+                    gr.dst_office_id,
+                    gr.nm_id,
+                    gr.order_dt,
+                    gr.order_id,
+                    gr.return_type,
+                    gr.shk_id,
+                    gr.sticker_id,
+                    gr.subject_name,
+                    gr.tech_size,
+                    gr.reason,
+                    gr.is_status_active,
+                    gr.created_at as goods_created_at,
+                    gr.is_received
+                FROM 
+                    incoming_returns ir
+                LEFT JOIN 
+                    goods_returns_dev gr ON ir.id = gr.incoming_return_id
+                WHERE 
+                    ir.created_at BETWEEN $1 AND $2 
+                ORDER BY 
+                    DATE(ir.created_at), ir.product_id, ir.id;
+            """
 
             async with self.pool.acquire() as conn:
                 records = await conn.fetch(query, datetime_from, datetime_to)
-                # Группируем данные по дате
+
+                # Группируем данные по дате и operation_id
                 grouped_data = {}
+                current_operation_id = None
+                current_product_data = None
+
                 for record in records:
                     date = record["date"]
-                    product_data = IncomingReturnsTable(
-                        operation_id=record['id'],
-                        product_id=record['product_id'],
-                        warehouse_id=record['warehouse_id'],
-                        quantity=record['quantity'],
-                        author=record['author'],
-                        created_at=record['created_at']
-                    )
+                    operation_id = record["id"]
 
-                    if date not in grouped_data:
-                        grouped_data[date] = IncomingReturnsGroupData(
-                            date=date,
-                            product_group_data=[]
+                    # Создаем новый IncomingReturnsTable при смене operation_id
+                    if operation_id != current_operation_id:
+                        current_operation_id = operation_id
+
+                        current_product_data = IncomingReturnsTable(
+                            operation_id=record['id'],
+                            product_id=record['product_id'],
+                            warehouse_id=record['warehouse_id'],
+                            quantity=record['quantity'],
+                            author=record['author'],
+                            created_at=record['created_at'],
+                            goods_return_data=[]
                         )
-                    grouped_data[date].product_group_data.append(product_data)
 
-                # Преобразуем словарь в список ITGroupData
+                        if date not in grouped_data:
+                            grouped_data[date] = IncomingReturnsGroupData(
+                                date=date,
+                                product_group_data=[]
+                            )
+                        grouped_data[date].product_group_data.append(current_product_data)
+
+                    # Добавляем GoodsReturn если есть данные из joined таблицы
+                    if record['srid'] is not None:
+                        goods_return = GoodsReturn(
+                            srid=record['srid'],
+                            account=record['account'],
+                            barcode=record['barcode'],
+                            brand=record['brand'],
+                            dst_office_address=record['dst_office_address'],
+                            dst_office_id=record['dst_office_id'],
+                            nm_id=record['nm_id'],
+                            order_dt=record['order_dt'],
+                            order_id=record['order_id'],
+                            return_type=record['return_type'],
+                            shk_id=record['shk_id'],
+                            sticker_id=record['sticker_id'],
+                            subject_name=record['subject_name'],
+                            tech_size=record['tech_size'],
+                            reason=record['reason'],
+                            is_status_active=record['is_status_active'],
+                            goods_created_at=record['goods_created_at'],
+                            is_received=record['is_received']
+                        )
+                        current_product_data.goods_return_data.append(goods_return)
+
+                # Преобразуем словарь в список
                 result = list(grouped_data.values())
                 return result
+
         except UniqueViolationError as e:
             return InventoryTransactionsResponse(
                 status=422,

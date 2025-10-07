@@ -51,6 +51,7 @@ class ONECRouting:
             async with session.request(method="POST", url=url, json=model_dump_json_data, auth=BasicAuth(self.login, self.password)) as response:
                 print(response.status)
                 json_response = await response.text()
+                print(json_response)
                 return json_response
 
     async def commission_sales_fbo_add(self, data):
@@ -59,6 +60,7 @@ class ONECRouting:
             async with session.request(method="POST", url=url, json=data, auth=BasicAuth(self.login, self.password)) as response:
                 print(response.status)
                 json_response = await response.text()
+                print(json_response)
                 return json_response
 
     @staticmethod
@@ -100,6 +102,6 @@ class ONECRouting:
                 account=account,
                 inn=inn,
                 data=supply_data_list
-            ).model_dump_json())
+            ).model_dump())
 
         return result
