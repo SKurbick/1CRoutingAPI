@@ -8,13 +8,159 @@ import asyncpg
 from asyncpg import Pool
 from app.models import ShipmentOfGoodsUpdate
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsCreate, ReserveOfGoodsResponse, ShippedGoods, ReservedData, \
-    DeliveryType, ShippedGoodsByID, SummReserveData, DeliveryTypeData
+    DeliveryType, ShippedGoodsByID, SummReserveData, DeliveryTypeData, CreationWithMovement
 
 
 class ShipmentOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
+    async def creation_reserve_with_movement(self, data: List[CreationWithMovement]) -> ShipmentOfGoodsResponse:
+        insert_query = """
+        WITH source_reserves AS (
+            -- Находим исходные резервы (только существующие)
+            SELECT 
+                pr.id as source_id,
+                pr.ordered as current_ordered,
+                mv.quantity_to_move as requested_quantity,
+                mv.product_id,
+                mv.warehouse_id as target_warehouse_id,
+                mv.account,
+                mv.delivery_type,
+                mv.wb_warehouse,
+                mv.reserve_date,
+                mv.supply_id as target_supply_id,
+                mv.expires_at,
+                mv.is_hanging,
+                -- Проверяем достаточность количества
+                CASE 
+                    WHEN pr.ordered >= mv.quantity_to_move THEN mv.quantity_to_move
+                    ELSE NULL  -- Если недостаточно - будет ошибка
+                END as actual_moved_quantity
+            FROM UNNEST(
+                $1::varchar[],      -- product_id
+                $2::varchar[],      -- move_from_supply  
+                $3::integer[],      -- quantity_to_move
+                $4::integer[],      -- warehouse_id
+                $5::integer[],      -- ordered (из ReserveOfGoodsCreate, но не используется)
+                $6::varchar[],      -- account
+                $7::varchar[],      -- delivery_type
+                $8::varchar[],      -- wb_warehouse
+                $9::date[],         -- reserve_date
+                $10::varchar[],     -- supply_id (target)
+                $11::timestamptz[], -- expires_at
+                $12::boolean[]      -- is_hanging
+            ) AS mv(
+                product_id, move_from_supply, quantity_to_move, warehouse_id, 
+                ordered, account, delivery_type, wb_warehouse, reserve_date, 
+                supply_id, expires_at, is_hanging
+            )
+            INNER JOIN product_reserves pr ON pr.product_id = mv.product_id 
+                AND pr.supply_id = mv.move_from_supply
+                AND pr.ordered >= mv.quantity_to_move  -- Только если хватает количества!
+        ),
+        updated_sources AS (
+            -- Обновляем исходные резервы (вычитаем перемещенное количество)
+            UPDATE product_reserves 
+            SET ordered = ordered - sr.actual_moved_quantity
+            FROM source_reserves sr
+            WHERE product_reserves.id = sr.source_id
+            RETURNING product_reserves.id as updated_source_id
+        ),
+        new_reserves AS (
+            -- Создаем новые резервы с ссылкой на источник
+            INSERT INTO product_reserves (
+                product_id, warehouse_id, ordered, account, delivery_type,
+                wb_warehouse, reserve_date, supply_id, expires_at, is_fulfilled,
+                source_reserve_id, is_hanging
+            )
+            SELECT 
+                sr.product_id,
+                sr.target_warehouse_id,
+                sr.actual_moved_quantity,  -- Используем перемещенное количество, а не ordered из входных данных
+                sr.account,
+                sr.delivery_type,
+                sr.wb_warehouse,
+                sr.reserve_date,
+                sr.target_supply_id,
+                sr.expires_at,
+                false,  -- is_fulfilled всегда false для новых резервов
+                sr.source_id,
+                sr.is_hanging
+            FROM source_reserves sr
+            RETURNING id as new_reserve_id, source_reserve_id
+        )
+        -- Проверяем, что все записи обработаны
+        SELECT 
+            COUNT(*) as processed_count,
+            (SELECT COUNT(*) FROM UNNEST($1::varchar[]) as t) as total_count
+        FROM source_reserves;
+        """
+
+        # Подготавливаем данные для UNNEST в правильном порядке
+        product_ids = [item.product_id for item in data]
+        move_from_supplies = [item.move_from_supply for item in data]
+        quantities_to_move = [item.quantity_to_move for item in data]
+        warehouse_ids = [item.warehouse_id for item in data]
+        ordered_values = [item.ordered for item in data]  # Из ReserveOfGoodsCreate, но не используется в логике
+        accounts = [item.account for item in data]
+        delivery_types = [item.delivery_type for item in data]
+        wb_warehouses = [item.wb_warehouse for item in data]
+        reserve_dates = [item.reserve_date for item in data]
+        supply_ids = [item.supply_id for item in data]  # Целевой supply_id для нового резерва
+        expires_ats = [item.expires_at for item in data]
+        is_hangings = [item.is_hanging for item in data]
+
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                result = await conn.fetchrow(
+                    insert_query,
+                    product_ids,
+                    move_from_supplies,
+                    quantities_to_move,
+                    warehouse_ids,
+                    ordered_values,  # ordered из базовой модели
+                    accounts,
+                    delivery_types,
+                    wb_warehouses,
+                    reserve_dates,
+                    supply_ids,
+                    expires_ats,
+                    is_hangings
+                )
+
+                processed_count = result['processed_count']
+                total_count = result['total_count']
+
+                # Если обработано не все - вызываем ошибку (транзакция откатится)
+                if processed_count != total_count:
+                    # raise Exception(
+                    #     f"Не найдены исходные резервы для всех записей или недостаточно количества. "
+                    #     f"Обработано: {processed_count}/{total_count}. "
+                    #     f"Транзакция откачена."
+                    # )
+                    return ShipmentOfGoodsResponse(
+                        status = 404,
+                        message = "Не найдены исходные резервы для всех записей или недостаточно количества",
+                        details =f"Обработано: {processed_count}/{total_count}. Запрос не выполнен"
+                    )
+
+                # Возвращаем ID созданных записей
+                new_reserves = await conn.fetch("""
+                    SELECT id as new_reserve_id, source_reserve_id
+                    FROM product_reserves 
+                    WHERE source_reserve_id IS NOT NULL
+                    ORDER BY id DESC 
+                    LIMIT $1
+                """, processed_count)
+
+                result = [dict(row) for row in new_reserves]
+                return ShipmentOfGoodsResponse(
+                    status=201,
+                    message="Успешно",
+                    details=f"Обработано: {processed_count}/{total_count}. Успешно",
+                    data = result
+                )
 
     async def get_summ_reserve_data(self) -> List[SummReserveData]:
 

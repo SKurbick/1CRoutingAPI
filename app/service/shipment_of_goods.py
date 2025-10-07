@@ -6,7 +6,7 @@ from app.infrastructure.ONE_C import ONECRouting
 from app.models import ShipmentOfGoodsUpdate, ShippedGoodsByID
 from app.database.repositories import ShipmentOfGoodsRepository
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsResponse, ReserveOfGoodsCreate, ShippedGoods, DeliveryType, \
-    ReservedData
+    ReservedData, CreationWithMovement
 
 
 class ShipmentOfGoodsService:
@@ -15,6 +15,10 @@ class ShipmentOfGoodsService:
             shipment_of_goods_repository: ShipmentOfGoodsRepository,
     ):
         self.shipment_of_goods_repository = shipment_of_goods_repository
+
+    async def creation_reserve_with_movement(self, data: List[CreationWithMovement], delivery_type) -> ShipmentOfGoodsResponse:
+        result = await self.shipment_of_goods_repository.creation_reserve_with_movement(data)
+        return result
 
     async def get_summ_reserve_data(self):
 

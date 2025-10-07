@@ -29,6 +29,7 @@ class ShipmentOfGoodsResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None
+    data: Optional[List[dict]] = None
 
 
 class ShipmentOfGoodsUpdate(BaseModel):
@@ -64,6 +65,7 @@ class ReserveOfGoodsCreate(BaseModel):
     reserve_date: datetime.date
     supply_id: str
     expires_at: datetime.datetime
+    is_hanging: Optional[bool] = None
 
 
 class ShippedGoods(BaseModel):
@@ -117,8 +119,7 @@ class ReservedData(BaseModel):
     # created_at
     # expires_at
     is_fulfilled: bool
-
-
+    is_hanging: Optional[bool] = None
 
 
 data = [
@@ -136,10 +137,17 @@ data = [
     }
 ]
 
+
 class DeliveryTypeData(BaseModel):
     reserve_type: str
     current_reserve: int
 
+
 class SummReserveData(BaseModel):
     product_id: str
     delivery_type_data: List[DeliveryTypeData]
+
+
+class CreationWithMovement(ReserveOfGoodsCreate):
+    move_from_supply: str
+    quantity_to_move: int
