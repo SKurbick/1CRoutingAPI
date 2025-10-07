@@ -6,16 +6,10 @@ from .shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsResponse, e
 from .ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, example_ordered_goods_from_buyers_data, \
     OrderedGoodsFromBuyersData, PrintedBarcodeData, OrderedGoodsAndPrintedBarcodeData
 from .local_barcode_generation import GoodsAcceptanceCertificateCreate
-<<<<<<< HEAD
-from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data
-from .goods_information import MetawildsData, AllProductsData, GoodsResponse, ProductInfo, ProductCreate, ProductUpdate
-from .inventory_check import InventoryCheckUpdate
-=======
 from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, ReSortingOperation, ReSortingOperationResponse, \
     AddStockByClient, AddStockByClientResponse, StockData, HistoricalStockData, HistoricalStockBody
-from .goods_information import MetawildsData, AllProductsData, GoodsResponse, ProductInfo, ProductCreate
+from .goods_information import MetawildsData, AllProductsData, GoodsResponse, ProductInfo, ProductCreate, ProductUpdate
 from .inventory_check import InventoryCheckUpdate, InventoryData, InventoryDataResponse, IDGroupData
->>>>>>> add-goods-info-to-dev
 from .inventory_transactions import ITGroupData
 from .docs import docs_data_response_example, DocsData
 from .goods_managers import GoodsManager

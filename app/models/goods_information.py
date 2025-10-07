@@ -62,7 +62,6 @@ class MetawildsData(BaseModel):
 
 
 class ProductBase(BaseModel):
-    name: str
     is_kit: bool
     share_of_kit: bool
     photo_link: Optional[str] = None
@@ -71,18 +70,18 @@ class ProductBase(BaseModel):
 
 class AllProductsData(ProductBase):
     id: str
-    length: Optional[int] = None
-    width: Optional[int] = None
-    height: Optional[int] = None
-    manager: Optional[str] = None
+    name: str
+    length: Optional[int]
+    width: Optional[int]
+    height: Optional[int]
+    manager: Optional[str]
 
 
 class ProductCreate(ProductBase):
-    pass
+    name: str
 
 
 class ProductUpdate(ProductBase):
-    name: Optional[str] = None
     is_kit: Optional[bool] = None
     share_of_kit: Optional[bool] = None
 
