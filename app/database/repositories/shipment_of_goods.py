@@ -339,10 +339,11 @@ class ShipmentOfGoodsRepository:
                     reserve_date,
                     supply_id,
                     expires_at,                                        
-                    wb_warehouse
+                    wb_warehouse,
+                    is_hanging
 
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 RETURNING 
                     id,
                     supply_id
@@ -359,7 +360,8 @@ class ShipmentOfGoodsRepository:
                 item.reserve_date,
                 item.supply_id,
                 item.expires_at,
-                item.wb_warehouse
+                item.wb_warehouse,
+                item.is_hanging
             )
             for item in data
         ]
