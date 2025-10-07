@@ -1,7 +1,7 @@
 from typing import List
 
 from app.database.repositories import GoodsInformationRepository
-from app.models import MetawildsData, AllProductsData, ProductInfo, GoodsResponse, ProductCreate
+from app.models import MetawildsData, AllProductsData, ProductInfo, GoodsResponse, ProductCreate, ProductUpdate
 
 
 class GoodsInformationService:
@@ -22,6 +22,12 @@ class GoodsInformationService:
     async def add_product(self, data: List[ProductCreate]) -> GoodsResponse:
         result = await self.goods_information_repository.add_product(data)
         return result
+    
+    async def update_product(self, id: str, data: ProductUpdate) -> GoodsResponse:
+        return await self.goods_information_repository.update_product(id, data)
+
+    async def delete_product(self, id: str) -> None:
+        return await self.goods_information_repository.delete_product(id)
     
     async def update_product_info(self, data: ProductInfo) -> GoodsResponse:
         result = await self.goods_information_repository.update_product_info(data)

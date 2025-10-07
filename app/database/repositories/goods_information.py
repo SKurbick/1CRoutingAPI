@@ -3,13 +3,13 @@ from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool
-from app.models import MetawildsData, AllProductsData, GoodsResponse, ProductInfo, ProductCreate
+from app.models import (MetawildsData, AllProductsData, GoodsResponse, 
+                        ProductInfo, ProductCreate, ProductUpdate)
 
 
 class GoodsInformationRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
-        
 
     async def get_metawilds_data(self) -> List[MetawildsData]:
         query = """
@@ -113,15 +113,30 @@ class GoodsInformationRepository:
                 details=str(e)
             )
         return result
-    
+
+    async def update_product(self, id: str, data: ProductUpdate) -> GoodsResponse:
+        insert_data = data.model_dump(exclude_unset=True)
+
+        return await self.update_data_to_db(id, insert_data)
+
+    async def delete_product(self, id: str) -> None:
+        query = """
+        DELETE FROM products WHERE id = $1;
+        """
+        async with self.pool.acquire() as conn:
+            await conn.execute(query, id)
+
     async def update_product_info(self, data: ProductInfo) -> GoodsResponse:
         insert_data = data.model_dump(exclude_unset=True)
         product_id = insert_data.pop("id")
 
+        return await self.update_data_to_db(product_id, insert_data)
+
+    async def update_data_to_db(self, id, data) -> GoodsResponse:
         columns_for_update = []
         values = []
 
-        for i, (key, value) in enumerate(insert_data.items(), start=1):
+        for i, (key, value) in enumerate(data.items(), start=1):
             columns_for_update.append(f"{key} = ${i}")
             values.append(value)
         
@@ -138,23 +153,22 @@ class GoodsInformationRepository:
             async with self.pool.acquire() as conn:
                 async with conn.transaction():
                     # проверяем, есть ли товар с таким id.
-                    existing_product = await conn.fetchrow(check_query, product_id)
+                    existing_product = await conn.fetchrow(check_query, id)
 
                     if not existing_product:
                         return GoodsResponse(
                             status=404,
-                            message=f"Product data not found. id: {product_id}"
+                            message=f"Product data not found. id: {id}"
                         )
 
-                    await conn.execute(update_query, *values, product_id)
+                    await conn.execute(update_query, *values, id)
 
-            result = GoodsResponse(
-                status=200,
-                message="Успешно")
+                    return GoodsResponse(
+                    status=200,
+                    message="Успешно")
         except asyncpg.PostgresError as e:
-            result = GoodsResponse(
+            return GoodsResponse(
                 status=422,
                 message="PostgresError",
                 details=str(e)
             )
-        return result

@@ -66,18 +66,24 @@ class ProductBase(BaseModel):
     share_of_kit: bool
     photo_link: Optional[str] = None
     kit_components: Optional[Dict[str, int]] = None
+
+
+class AllProductsData(ProductBase):
+    id: str
     length: Optional[int] = None
     width: Optional[int] = None
     height: Optional[int] = None
     manager: Optional[str] = None
 
 
-class AllProductsData(ProductBase):
-    id: str
-
-
 class ProductCreate(ProductBase):
     pass
+
+
+class ProductUpdate(ProductBase):
+    name: Optional[str] = None
+    is_kit: Optional[bool] = None
+    share_of_kit: Optional[bool] = None
 
 
 class GoodsResponse(BaseModel):
