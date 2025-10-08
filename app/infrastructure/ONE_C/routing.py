@@ -17,8 +17,17 @@ class ONECRouting:
         self.login = login
         self.password = password
 
+    async def assembly_or_disassembly_metawild(self, data):
+        url = self.base_url + "ass_disass/"
 
-    async def re_sorting_operations(self, data:ReSortingOperation):
+        async with aiohttp.ClientSession() as session:
+            async with session.request(method="POST", url=url, json=data, auth=BasicAuth(self.login, self.password)) as response:
+                print(response.status)
+                json_response = await response.text()
+                print(json_response)
+                return json_response
+
+    async def re_sorting_operations(self, data: ReSortingOperation):
         url = self.base_url + "goods_resorting/"
         model_dump_json_data = data.model_dump(exclude={"warehouse_id"})
 
@@ -29,7 +38,6 @@ class ONECRouting:
                 json_response = await response.text()
                 print(json_response)
                 return json_response
-
 
     async def goods_returns(self, data: List[ReturnsOneCModelAdd]):
         url = self.base_url + "goods_return/"

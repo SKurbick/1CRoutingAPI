@@ -40,11 +40,38 @@ class WarehouseAndBalancesService:
         result = await self.warehouse_and_balances_repository.assembly_or_disassembly_metawild(data)
 
         if result.code_status == 201:
-            kit_components = await self.warehouse_and_balances_repository.kit_components_by_product_id(data.metawild)
-            print(data)
-            print(kit_components)
-            data.kit_komponents = kit_components
-            pprint(data.model_dump(exclude={"warehouse_id"}))
+            pass
+            # kit_components = await self.warehouse_and_balances_repository.kit_components_by_product_id(data.metawild)
+            #
+            # data.kit_komponents = kit_components
+            #
+            # refactor_kit_components = self.refactor_kit_components(data.model_dump(exclude={"warehouse_id"}))
+            # pprint(refactor_kit_components)
+            # one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
+            # await one_c_connect.assembly_or_disassembly_metawild(data=refactor_kit_components)
+
+
+        return result
+
+    @staticmethod
+    def refactor_kit_components(data):
+        """
+        Преобразует содержимое kit_komponents в список словарей,
+        где каждый словарь содержит product_id и quantity
+        """
+        # Создаем копию исходных данных, чтобы не изменять оригинал
+        result = data.copy()
+
+        # Преобразуем kit_komponents в список словарей
+        if 'kit_komponents' in result and isinstance(result['kit_komponents'], dict):
+            kit_components_list = []
+            for product_id, quantity in result['kit_komponents'].items():
+                kit_components_list.append({
+                    'product_id': product_id,
+                    'quantity': quantity
+                })
+            result['kit_komponents'] = kit_components_list
+
         return result
 
     async def re_sorting_operations(self, data: ReSortingOperation) -> ReSortingOperationResponse:
