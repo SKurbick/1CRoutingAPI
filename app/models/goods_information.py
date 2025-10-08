@@ -66,6 +66,10 @@ class ProductBase(BaseModel):
     share_of_kit: bool
     photo_link: Optional[str] = None
     kit_components: Optional[Dict[str, int]] = None
+    length: Optional[int] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+    manager: Optional[str] = None
 
 
 class AllProductsData(ProductBase):
