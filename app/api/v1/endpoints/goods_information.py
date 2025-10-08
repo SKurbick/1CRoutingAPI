@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
-from app.models.goods_information import MetawildsData, metawilds_data_example, AllProductsData, all_products_data_example, GoodsResponse
+from app.models.goods_information import MetawildsData, metawilds_data_example, AllProductsData, all_products_data_example, GoodsResponse, ProductInfo, ProductCreate
 from app.service.goods_information import GoodsInformationService
 from app.dependencies import get_goods_information_service
 
@@ -25,7 +25,15 @@ async def get_all_products_data(
 
 @router.post("/add_product", response_model=GoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_product(
-        data: List[AllProductsData] ,
+        data: List[ProductCreate] ,
         service: GoodsInformationService = Depends(get_goods_information_service)
 ):
     return await service.add_product(data)
+
+
+@router.post("/update_product_info", response_model=GoodsResponse, status_code=status.HTTP_200_OK)
+async def update_product_info(
+        data: ProductInfo,
+        service: GoodsInformationService = Depends(get_goods_information_service)
+):
+    return await service.update_product_info(data)

@@ -1,6 +1,6 @@
 from typing import Optional, Dict
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 from pydantic.v1 import Field
@@ -30,7 +30,11 @@ all_products_data_example = {
                     "photo_link": "https://histrf.ru/images/common/19/RJ1SavyfUXRPzURBLqpSqmryu8mP1jl08kYToYWd.jpg",
                     "is_kit": True,
                     "share_of_kit": False,
-                    "kit_components": {"testwild": 2, "testwild2": 1}
+                    "kit_components": {"testwild": 2, "testwild2": 1},
+                    "length": 20,
+                    "width": 30,
+                    "height": 15,
+                    "manager": "Арсеньев Ф.А."
                 },
                 {
                     "id": "wild1523",
@@ -38,7 +42,11 @@ all_products_data_example = {
                     "is_kit": False,
                     "share_of_kit": False,
                     "photo_link": None,
-                    "kit_components": {}
+                    "kit_components": {},
+                    "length": None,
+                    "width": None,
+                    "height": None,
+                    "manager": None
                 },
             ]
         }
@@ -53,16 +61,49 @@ class MetawildsData(BaseModel):
     kit_components: Dict[str, int]
 
 
-class AllProductsData(BaseModel):
-    id: str
+class ProductBase(BaseModel):
     name: str
     is_kit: bool
     share_of_kit: bool
     photo_link: Optional[str] = None
     kit_components: Optional[Dict[str, int]] = None
+    length: Optional[int] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+    manager: Optional[str] = None
+
+
+class AllProductsData(ProductBase):
+    id: str
+
+
+class ProductCreate(ProductBase):
+    pass
 
 
 class GoodsResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None
+
+
+class ProductInfo(BaseModel):
+    id: str
+    length: Optional[int] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+    manager: Optional[str] = None
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "wild1234",
+                    "length": 25,
+                    "width": 80,
+                    "height": 16,
+                    "manager": "Артём Валенкин",
+                },
+            ]
+        }
+    )
