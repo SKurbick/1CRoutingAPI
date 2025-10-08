@@ -75,10 +75,6 @@ class ProductBase(BaseModel):
 class AllProductsData(ProductBase):
     id: str
     name: str
-    length: Optional[int]
-    width: Optional[int]
-    height: Optional[int]
-    manager: Optional[str]
 
 
 class ProductCreate(ProductBase):

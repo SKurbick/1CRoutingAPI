@@ -20,10 +20,14 @@ class GoodsInformationService:
         result = await self.goods_information_repository.get_all_products_data()
         return result
 
-    async def add_product(self, data: List[ProductCreate]) -> GoodsResponse:
-        result = await self.goods_information_repository.add_product(data)
+    async def add_products_with_id(self, data: List[AllProductsData]) -> GoodsResponse:
+        result = await self.goods_information_repository.add_products_auto_id(data, auto_id=False)
         return result
-    
+
+    async def add_products_without_id(self, data: ProductCreate) -> GoodsResponse:
+        result = await self.goods_information_repository.add_products_auto_id(data, auto_id=True)
+        return result
+
     async def update_product(self, id: str, data: ProductUpdate) -> GoodsResponse:
         return await self.goods_information_repository.update_product(id, data)
 

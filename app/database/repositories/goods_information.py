@@ -68,14 +68,10 @@ class GoodsInformationRepository:
             )
 
         return all_products_data
-
-
-    async def add_product(self, data: List[ProductCreate]) -> GoodsResponse:
-        insert_query = """
-            INSERT INTO products (id, name, is_kit, share_of_kit, kit_components, photo_link, length, width, height, manager)
-            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
-        """
-        max_id_query = r"""
+    
+    @staticmethod
+    async def get_max_id(conn: asyncpg.Connection) -> int:
+        query = r"""
             SELECT id
             FROM products
             WHERE id ~ '^wild\d+$'
@@ -83,29 +79,46 @@ class GoodsInformationRepository:
             LIMIT 1;
         """
 
-        insert_data: list[Tuple] = []
+        # получаем наибольший id в формате "wild1234"
+        max_id_row = await conn.fetchrow(query)
+        # преобразуем в число. если данных нет, то max_id = 0
+        return int(max_id_row["id"].replace("wild", "")) if max_id_row else 0
+
+    async def add_products_auto_id(self, data: List[ProductCreate | AllProductsData], auto_id: bool = False) -> GoodsResponse:
+        insert_query = """
+            INSERT INTO products (id, name, is_kit, share_of_kit, kit_components, photo_link, length, width, height, manager)
+            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
+        """
 
         try:
             async with self.pool.acquire() as conn:
                 async with conn.transaction() as transaction:
-                    # получаем наибольший id в формате "wild1234"
-                    max_id_row = await conn.fetchrow(max_id_query)
-                    # преобразуем в число. если данных нет, то max_id = 0
-                    max_id = int(max_id_row["id"].replace("wild", "")) if max_id_row else 0
+                    insert_data: List[Tuple] = []
+                    
+                    if not auto_id:
+                        for product in data:
+                            kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
 
-                    for product in data:
-                        max_id += 1
-                        product_id = f"wild{max_id}"
-                        kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
+                            insert_data.append(
+                                (product.id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
+                                product.photo_link, product.length, product.width, product.height, product.manager)
+                            )
+                    else:
+                        max_id = await self.get_max_id(conn)
 
-                        insert_data.append(
-                            (product_id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
-                            product.photo_link, product.length, product.width, product.height, product.manager)
-                        )
+                        for product in data:
+                            max_id += 1
+                            product_id = f"wild{max_id}"
+                            kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
 
-                    pprint(insert_data)
+                            insert_data.append(
+                                (product_id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
+                                product.photo_link, product.length, product.width, product.height, product.manager)
+                            )
 
                     await conn.executemany(insert_query, insert_data)
+
+                    pprint(insert_data)
 
             result = GoodsResponse(
                 status=201,
