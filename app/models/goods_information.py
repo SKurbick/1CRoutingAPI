@@ -52,8 +52,46 @@ all_products_data_example = {
         }
     },
 }
-
-
+delete_info_example = {
+    "products": 1,
+    "re_sorting_operations": 0,
+    "current_balances": 2,
+    "kit_operations": 0,
+    "product_reserves": 15,
+    "incoming_items": 12,
+    "incoming_returns": 13,
+    "inventory_checks": 9,
+    "shipment_of_goods": 453,
+    "inventory_transactions": 514
+}
+delete_products_preview_example = {
+    "description": "Список всех активных товаров, включая и наборы ",
+    "content": {
+        "application/json": {
+            "example": [
+                {
+                    "status": 200,
+                    "message": "Product and all related data that will be deleted",
+                    "details": delete_info_example
+                },
+            ]
+        }
+    }
+}
+delete_products_success_example = {
+    "description": "Список всех активных товаров, включая и наборы ",
+    "content": {
+        "application/json": {
+            "example": [
+                {
+                    "status": 200,
+                    "message": "Product and all related data successfully deleted",
+                    "details": delete_info_example
+                },
+            ]
+        }
+    }
+}
 
 class MetawildsData(BaseModel):
     id: str

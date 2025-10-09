@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
 from app.models.goods_information import (MetawildsData, metawilds_data_example, AllProductsData, all_products_data_example, 
-                                          GoodsResponse, ProductInfo, ProductUpdate)
+                                          GoodsResponse, ProductInfo, ProductUpdate, delete_products_preview_example, delete_products_success_example)
 from app.service.goods_information import GoodsInformationService
 from app.dependencies import get_goods_information_service
 
@@ -41,7 +41,7 @@ async def update_product(
     return await service.update_product(id, data)
 
 
-@router.delete("/{id}/delete_product", response_model=GoodsResponse)
+@router.delete("/{id}/delete_product", response_model=GoodsResponse, responses={200: delete_products_success_example})
 async def delete_product(
         id: str,
         service: GoodsInformationService = Depends(get_goods_information_service)
@@ -49,7 +49,7 @@ async def delete_product(
     return await service.delete_product(id)
 
 
-@router.get("/{id}/delete_preview", response_model=GoodsResponse)
+@router.get("/{id}/delete_preview", response_model=GoodsResponse, responses={200: delete_products_preview_example})
 async def get_delete_preview(
         id: str,
         service: GoodsInformationService = Depends(get_goods_information_service)

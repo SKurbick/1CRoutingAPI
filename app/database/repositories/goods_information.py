@@ -69,22 +69,9 @@ class GoodsInformationRepository:
 
         return all_products_data
 
-    @staticmethod
-    async def get_max_id(conn: asyncpg.Connection) -> int:
-        query = r"""
-            SELECT id
-            FROM products
-            WHERE id ~ '^wild\d+$'
-            ORDER BY CAST(substring(id, 5) AS INTEGER) DESC
-            LIMIT 1;
-        """
-
-        # получаем наибольший id в формате "wild1234"
-        max_id_row = await conn.fetchrow(query)
-        # преобразуем в число. если данных нет, то max_id = 0
-        return int(max_id_row["id"].replace("wild", "")) if max_id_row else 0
-
-    async def add_products_auto_id(self, data: List[ProductCreate | AllProductsData], auto_id: bool = False) -> GoodsResponse:
+    async def add_products_auto_id(
+        self, data: List[ProductCreate | AllProductsData], auto_id: bool = False
+    ) -> GoodsResponse:
         insert_query = """
             INSERT INTO products (id, name, is_kit, share_of_kit, kit_components, photo_link, length, width, height, manager)
             VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
@@ -94,7 +81,7 @@ class GoodsInformationRepository:
             async with self.pool.acquire() as conn:
                 async with conn.transaction() as transaction:
                     insert_data: List[Tuple] = []
-                    
+
                     if not auto_id:
                         for product in data:
                             kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
@@ -131,69 +118,6 @@ class GoodsInformationRepository:
             )
         return result
 
-    async def delete_product(self, id: str) -> GoodsResponse:
-        dependent_tables = [
-            ("inventory_transactions", "product_id"),
-            ("shipment_of_goods", "product_id"),
-            ("product_reserves", "product_id"),
-            ("incoming_items", "product_id"),
-            ("incoming_returns", "product_id"),
-            ("kit_operations", "kit_product_id"),
-            ("inventory_checks", "product_id"),
-            ("re_sorting_operations", "from_product_id"),
-            ("re_sorting_operations", "to_product_id"),
-            ("current_balances", "product_id"),
-            ("products", "id"),
-        ]
-
-        try:
-            deleted_counts = {}
-
-            async with self.pool.acquire() as conn:
-                async with conn.transaction():
-                    check_query = "SELECT id FROM products WHERE id = $1;" 
-                    existing_product = await conn.fetchrow(check_query, id)
-
-                    if not existing_product:
-                        return GoodsResponse(
-                            status=404,
-                            message=f"Product data not found",
-                            details=f"id: {id}",
-                        )
-
-                    for table, column in dependent_tables:
-                        query = f"""
-                        DELETE FROM {table}
-                        WHERE {column} = $1 RETURNING {column};
-                        """
-                        row = await conn.fetch(query, id)
-                        deleted_counts[table] = len(row)
-
-            return GoodsResponse(
-                status=200,
-                message="Product and all related data successfully deleted",
-                details={"deleted_from": deleted_counts}
-            )
-        except asyncpg.ForeignKeyViolationError as e:
-            return GoodsResponse(
-                status=409,
-                message="Cannot delete product due to existing references",
-                details={"error": str(e)}
-        )
-        except asyncpg.PostgresError as e:
-            return GoodsResponse(
-                status=422,
-                message="Database error occurred",
-                details={"error": str(e)}
-            )
-        except Exception as e:
-            pprint(e)
-            return GoodsResponse(
-                status=500,
-                message="Internal server error",
-                details={"error": "An unexpected error occurred"}
-            )
-
     async def update_product_info(self, data: ProductInfo) -> GoodsResponse:
         insert_data = data.model_dump(exclude_unset=True)
         product_id = insert_data.pop("id")
@@ -215,7 +139,6 @@ class GoodsInformationRepository:
         
         columns_for_query = ', '.join(columns_for_update)
 
-        check_query = "SELECT id FROM products WHERE id = $1;"
         update_query = (
             "UPDATE products "
             f"SET {columns_for_query} "
@@ -225,15 +148,8 @@ class GoodsInformationRepository:
         try:
             async with self.pool.acquire() as conn:
                 async with conn.transaction():
-                    # проверяем, есть ли товар с таким id.
-                    existing_product = await conn.fetchrow(check_query, id)
-
-                    if not existing_product:
-                        return GoodsResponse(
-                            status=404,
-                            message=f"Product data not found",
-                            details=f"id: {id}",
-                        )
+                    if not await self.product_is_exists(id, conn):
+                        return await self.make_goods_response_not_found(id)
 
                     await conn.execute(update_query, *values, id)
 
@@ -247,41 +163,90 @@ class GoodsInformationRepository:
                 details=str(e)
             )
 
+    async def delete_product(self, id: str) -> GoodsResponse:
+        dependent_tables = [
+            ("inventory_transactions", "product_id = $1"),
+            ("shipment_of_goods", "product_id = $1"),
+            ("product_reserves", "product_id = $1"),
+            ("incoming_items", "product_id = $1"),
+            ("incoming_returns", "product_id = $1"),
+            ("kit_operations", "kit_product_id = $1"),
+            ("inventory_checks", "product_id = $1"),
+            ("re_sorting_operations", "from_product_id = $1 OR to_product_id = $1"),
+            ("current_balances", "product_id = $1"),
+            ("products", "id = $1"),
+        ]
+
+        try:
+            deleted_counts = {}
+
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    if not await self.product_is_exists(id, conn):
+                        return await self.make_goods_response_not_found(id)
+
+                    for table, conditions in dependent_tables:
+                        query = f"""
+                        DELETE FROM {table}
+                        WHERE {conditions} RETURNING *;
+                        """
+                        rows = await conn.fetch(query, id)
+                        deleted_counts[table] = len(rows)
+
+            return GoodsResponse(
+                status=200,
+                message="Product and all related data successfully deleted",
+                details={"deleted_from": deleted_counts}
+            )
+        except asyncpg.ForeignKeyViolationError as e:
+            pprint(e)
+            return GoodsResponse(
+                status=409,
+                message="Cannot delete product due to existing references",
+                details={"error": str(e)}
+        )
+        except asyncpg.PostgresError as e:
+            pprint(e)
+            return GoodsResponse(
+                status=422,
+                message="Database error occurred",
+                details={"error": str(e)}
+            )
+        except Exception as e:
+            pprint(e)
+            return GoodsResponse(
+                status=500,
+                message="Internal server error",
+                details={"error": "An unexpected error occurred"}
+            )
+
     async def get_delete_preview(self, id) -> GoodsResponse:
         dependent_tables = [
-            ("inventory_transactions", "product_id"),
-            ("shipment_of_goods", "product_id"),
-            ("product_reserves", "product_id"),
-            ("incoming_items", "product_id"),
-            ("incoming_returns", "product_id"),
-            ("kit_operations", "kit_product_id"),
-            ("inventory_checks", "product_id"),
-            ("re_sorting_operations", "from_product_id"),
-            ("re_sorting_operations", "to_product_id"),
-            ("current_balances", "product_id"),
-            ("products", "id"),
+            ("inventory_transactions", "product_id = $1"),
+            ("shipment_of_goods", "product_id = $1"),
+            ("product_reserves", "product_id = $1"),
+            ("incoming_items", "product_id = $1"),
+            ("incoming_returns", "product_id = $1"),
+            ("kit_operations", "kit_product_id = $1"),
+            ("inventory_checks", "product_id = $1"),
+            ("re_sorting_operations", "from_product_id = $1 OR to_product_id = $1"),
+            ("current_balances", "product_id = $1"),
+            ("products", "id = $1"),
         ]
 
         async with self.pool.acquire() as conn:
-            check_query = "SELECT id FROM products WHERE id = $1;" 
-            existing_product = await conn.fetchrow(check_query, id)
-
-            if not existing_product:
-                return GoodsResponse(
-                    status=404,
-                    message="Product data not found",
-                    details=f"id: {id}",
-                )
+            if not await self.product_is_exists(id, conn):
+                return await self.make_goods_response_not_found(id)
 
             union_parts = []
 
-            for table, column in dependent_tables:
+            for table, conditions in dependent_tables:
                 union_parts.append(f"""
                     SELECT '{table}' as table_name, COUNT(*) as record_count 
                     FROM {table} 
-                    WHERE {column} = $1
+                    WHERE {conditions}
                 """)
-            
+
             union_query = " UNION ALL ".join(union_parts)
 
             results = await conn.fetch(union_query, id)
@@ -290,6 +255,35 @@ class GoodsInformationRepository:
 
         return GoodsResponse(
             status=200,
-            message="Product and all related data",
+            message="Product and all related data that will be deleted",
             details=deleted_counts,
+        )
+    
+    @staticmethod
+    async def get_max_id(conn: asyncpg.Connection) -> int:
+        query = r"""
+            SELECT id
+            FROM products
+            WHERE id ~ '^wild\d+$'
+            ORDER BY CAST(substring(id, 5) AS INTEGER) DESC
+            LIMIT 1;
+        """
+
+        # получаем наибольший id в формате "wild1234"
+        max_id_row = await conn.fetchrow(query)
+
+        return int(max_id_row["id"].replace("wild", "")) if max_id_row else 0
+
+    @staticmethod
+    async def product_is_exists(id, conn: asyncpg.Connection) -> bool:
+        return await conn.fetchrow(
+            "SELECT id FROM products WHERE id = $1;", id
+        ) is not None
+
+    @staticmethod
+    async def make_goods_response_not_found(id):
+        return GoodsResponse(
+            status=404,
+            message="Product data not found",
+            details=f"id: {id}",
         )
