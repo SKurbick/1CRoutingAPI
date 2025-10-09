@@ -21,17 +21,17 @@ class GoodsInformationService:
         return result
 
     async def add_products_with_id(self, data: List[AllProductsData]) -> GoodsResponse:
-        return await self.goods_information_repository.add_products_auto_id(data, auto_id=False)
+        return await self.goods_information_repository.add_products_with_id(data)
 
-    async def add_products_without_id(self, data: ProductCreate) -> GoodsResponse:
-        return await self.goods_information_repository.add_products_auto_id(data, auto_id=True)
+    async def add_products_without_id(self, data: List[ProductCreate]) -> GoodsResponse:
+        return await self.goods_information_repository.add_products_without_id(data)
 
     async def update_product(self, id: str, data: ProductUpdate) -> GoodsResponse:
         return await self.goods_information_repository.update_product(id, data)
 
     async def delete_product(self, id: str) -> GoodsResponse:
         return await self.goods_information_repository.delete_product(id)
-    
+
     async def get_delete_preview(self, id: str) -> GoodsResponse:
         return await self.goods_information_repository.get_delete_preview(id)
 

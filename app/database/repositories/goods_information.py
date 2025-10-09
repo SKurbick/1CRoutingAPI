@@ -1,10 +1,10 @@
 import json
 from pprint import pprint
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import asyncpg
 
-from app.models import (MetawildsData, AllProductsData, GoodsResponse, 
+from app.models import (MetawildsData, AllProductsData, GoodsResponse,
                         ProductInfo, ProductCreate, ProductUpdate)
 
 
@@ -69,43 +69,11 @@ class GoodsInformationRepository:
 
         return all_products_data
 
-    async def add_products_auto_id(
-        self, data: List[ProductCreate | AllProductsData], auto_id: bool = False
-    ) -> GoodsResponse:
-        insert_query = """
-            INSERT INTO products (id, name, is_kit, share_of_kit, kit_components, photo_link, length, width, height, manager)
-            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
-        """
-
+    async def add_products_with_id(self, data: List[AllProductsData]) -> GoodsResponse:
         try:
             async with self.pool.acquire() as conn:
                 async with conn.transaction() as transaction:
-                    insert_data: List[Tuple] = []
-
-                    if not auto_id:
-                        for product in data:
-                            kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
-
-                            insert_data.append(
-                                (product.id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
-                                product.photo_link, product.length, product.width, product.height, product.manager)
-                            )
-                    else:
-                        max_id = await self.get_max_id(conn)
-
-                        for product in data:
-                            max_id += 1
-                            product_id = f"wild{max_id}"
-                            kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
-
-                            insert_data.append(
-                                (product_id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
-                                product.photo_link, product.length, product.width, product.height, product.manager)
-                            )
-
-                    await conn.executemany(insert_query, insert_data)
-
-                    pprint(insert_data)
+                    await self.add_products_to_db(data=data, auto_id=False, conn=conn)
 
             result = GoodsResponse(
                 status=201,
@@ -116,7 +84,64 @@ class GoodsInformationRepository:
                 message="PostgresError",
                 details=str(e)
             )
+
         return result
+
+    async def add_products_without_id(self, data: List[ProductCreate]) -> GoodsResponse:
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction() as transaction:
+                    await self.add_products_to_db(data=data, auto_id=True, conn=conn)
+
+            result = GoodsResponse(
+                status=201,
+                message="Успешно")
+        except asyncpg.PostgresError as e:
+            result = GoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
+
+        return result
+
+    async def add_products_to_db(
+        self,
+        data: List[Union[AllProductsData, ProductCreate]],
+        auto_id: bool,
+        conn: asyncpg.Connection
+    ) -> None:
+        insert_query = """
+            INSERT INTO products (id, name, is_kit, share_of_kit, kit_components, photo_link, length, width, height, manager)
+            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
+        """
+
+        insert_data: List[Tuple] = []
+
+        if not auto_id:
+            for product in data:
+                kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
+
+                insert_data.append(
+                    (product.id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
+                    product.photo_link, product.length, product.width, product.height, product.manager)
+                )
+        else:
+            max_id = await self.get_max_id(conn)
+
+            for product in data:
+                max_id += 1
+                product_id = f"wild{max_id}"
+                kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
+
+                insert_data.append(
+                    (product_id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
+                    product.photo_link, product.length, product.width, product.height, product.manager)
+                )
+
+        await conn.executemany(insert_query, insert_data)
+
+        pprint(insert_data)
 
     async def update_product_info(self, data: ProductInfo) -> GoodsResponse:
         insert_data = data.model_dump(exclude_unset=True)
