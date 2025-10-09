@@ -1,14 +1,15 @@
 import json
 from pprint import pprint
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import asyncpg
-from asyncpg import Pool
-from app.models import MetawildsData, AllProductsData, GoodsResponse, ProductInfo, ProductCreate
+
+from app.models import (MetawildsData, AllProductsData, GoodsResponse,
+                        ProductInfo, ProductCreate, ProductUpdate)
 
 
 class GoodsInformationRepository:
-    def __init__(self, pool: Pool):
+    def __init__(self, pool: asyncpg.Pool):
         self.pool = pool
 
     async def get_metawilds_data(self) -> List[MetawildsData]:
@@ -68,43 +69,11 @@ class GoodsInformationRepository:
 
         return all_products_data
 
-
-    async def add_product(self, data: List[ProductCreate]) -> GoodsResponse:
-        insert_query = """
-            INSERT INTO products (id, name, is_kit, share_of_kit, kit_components, photo_link, length, width, height, manager)
-            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
-        """
-        max_id_query = r"""
-            SELECT id
-            FROM products
-            WHERE id ~ '^wild\d+$'
-            ORDER BY CAST(substring(id, 5) AS INTEGER) DESC
-            LIMIT 1;
-        """
-
-        insert_data: list[Tuple] = []
-
+    async def add_products_with_id(self, data: List[AllProductsData]) -> GoodsResponse:
         try:
             async with self.pool.acquire() as conn:
                 async with conn.transaction() as transaction:
-                    # получаем наибольший id в формате "wild1234"
-                    max_id_row = await conn.fetchrow(max_id_query)
-                    # преобразуем в число. если данных нет, то max_id = 0
-                    max_id = int(max_id_row["id"].replace("wild", "")) if max_id_row else 0
-
-                    for product in data:
-                        max_id += 1
-                        product_id = f"wild{max_id}"
-                        kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
-
-                        insert_data.append(
-                            (product_id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
-                            product.photo_link, product.length, product.width, product.height, product.manager)
-                        )
-
-                    pprint(insert_data)
-
-                    await conn.executemany(insert_query, insert_data)
+                    await self.add_products_to_db(data=data, auto_id=False, conn=conn)
 
             result = GoodsResponse(
                 status=201,
@@ -115,22 +84,86 @@ class GoodsInformationRepository:
                 message="PostgresError",
                 details=str(e)
             )
+
         return result
+
+    async def add_products_without_id(self, data: List[ProductCreate]) -> GoodsResponse:
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction() as transaction:
+                    await self.add_products_to_db(data=data, auto_id=True, conn=conn)
+
+            result = GoodsResponse(
+                status=201,
+                message="Успешно")
+        except asyncpg.PostgresError as e:
+            result = GoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
+
+        return result
+
+    async def add_products_to_db(
+        self,
+        data: List[Union[AllProductsData, ProductCreate]],
+        auto_id: bool,
+        conn: asyncpg.Connection
+    ) -> None:
+        insert_query = """
+            INSERT INTO products (id, name, is_kit, share_of_kit, kit_components, photo_link, length, width, height, manager)
+            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
+        """
+
+        insert_data: List[Tuple] = []
+
+        if not auto_id:
+            for product in data:
+                kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
+
+                insert_data.append(
+                    (product.id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
+                    product.photo_link, product.length, product.width, product.height, product.manager)
+                )
+        else:
+            max_id = await self.get_max_id(conn)
+
+            for product in data:
+                max_id += 1
+                product_id = f"wild{max_id}"
+                kit_components_json = json.dumps(product.kit_components) if product.kit_components else None
+
+                insert_data.append(
+                    (product_id, product.name, product.is_kit, product.share_of_kit, kit_components_json, 
+                    product.photo_link, product.length, product.width, product.height, product.manager)
+                )
+
+        await conn.executemany(insert_query, insert_data)
+
+        pprint(insert_data)
 
     async def update_product_info(self, data: ProductInfo) -> GoodsResponse:
         insert_data = data.model_dump(exclude_unset=True)
         product_id = insert_data.pop("id")
 
+        return await self.update_data_to_db(product_id, insert_data)
+
+    async def update_product(self, id: str, data: ProductUpdate) -> GoodsResponse:
+        insert_data = data.model_dump(exclude_unset=True)
+
+        return await self.update_data_to_db(id, insert_data)
+
+    async def update_data_to_db(self, id, data) -> GoodsResponse:
         columns_for_update = []
         values = []
 
-        for i, (key, value) in enumerate(insert_data.items(), start=1):
+        for i, (key, value) in enumerate(data.items(), start=1):
             columns_for_update.append(f"{key} = ${i}")
             values.append(value)
         
         columns_for_query = ', '.join(columns_for_update)
 
-        check_query = "SELECT id FROM products WHERE id = $1;"
         update_query = (
             "UPDATE products "
             f"SET {columns_for_query} "
@@ -140,24 +173,142 @@ class GoodsInformationRepository:
         try:
             async with self.pool.acquire() as conn:
                 async with conn.transaction():
-                    # проверяем, есть ли товар с таким id.
-                    existing_product = await conn.fetchrow(check_query, product_id)
+                    if not await self.product_is_exists(id, conn):
+                        return await self.make_goods_response_not_found(id)
 
-                    if not existing_product:
-                        return GoodsResponse(
-                            status=404,
-                            message=f"Product data not found. id: {product_id}"
-                        )
+                    await conn.execute(update_query, *values, id)
 
-                    await conn.execute(update_query, *values, product_id)
-
-            result = GoodsResponse(
-                status=200,
-                message="Успешно")
+                    return GoodsResponse(
+                    status=200,
+                    message="Успешно")
         except asyncpg.PostgresError as e:
-            result = GoodsResponse(
+            return GoodsResponse(
                 status=422,
                 message="PostgresError",
                 details=str(e)
             )
-        return result
+
+    async def delete_product(self, id: str) -> GoodsResponse:
+        dependent_tables = [
+            ("inventory_transactions", "product_id = $1"),
+            ("shipment_of_goods", "product_id = $1"),
+            ("product_reserves", "product_id = $1"),
+            ("incoming_items", "product_id = $1"),
+            ("incoming_returns", "product_id = $1"),
+            ("kit_operations", "kit_product_id = $1"),
+            ("inventory_checks", "product_id = $1"),
+            ("re_sorting_operations", "from_product_id = $1 OR to_product_id = $1"),
+            ("current_balances", "product_id = $1"),
+            ("products", "id = $1"),
+        ]
+
+        try:
+            deleted_counts = {}
+
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    if not await self.product_is_exists(id, conn):
+                        return await self.make_goods_response_not_found(id)
+
+                    for table, conditions in dependent_tables:
+                        query = f"""
+                        DELETE FROM {table}
+                        WHERE {conditions} RETURNING *;
+                        """
+                        rows = await conn.fetch(query, id)
+                        deleted_counts[table] = len(rows)
+
+            return GoodsResponse(
+                status=200,
+                message="Product and all related data successfully deleted",
+                details={"deleted_from": deleted_counts}
+            )
+        except asyncpg.ForeignKeyViolationError as e:
+            pprint(e)
+            return GoodsResponse(
+                status=409,
+                message="Cannot delete product due to existing references",
+                details={"error": str(e)}
+        )
+        except asyncpg.PostgresError as e:
+            pprint(e)
+            return GoodsResponse(
+                status=422,
+                message="Database error occurred",
+                details={"error": str(e)}
+            )
+        except Exception as e:
+            pprint(e)
+            return GoodsResponse(
+                status=500,
+                message="Internal server error",
+                details={"error": "An unexpected error occurred"}
+            )
+
+    async def get_delete_preview(self, id) -> GoodsResponse:
+        dependent_tables = [
+            ("inventory_transactions", "product_id = $1"),
+            ("shipment_of_goods", "product_id = $1"),
+            ("product_reserves", "product_id = $1"),
+            ("incoming_items", "product_id = $1"),
+            ("incoming_returns", "product_id = $1"),
+            ("kit_operations", "kit_product_id = $1"),
+            ("inventory_checks", "product_id = $1"),
+            ("re_sorting_operations", "from_product_id = $1 OR to_product_id = $1"),
+            ("current_balances", "product_id = $1"),
+            ("products", "id = $1"),
+        ]
+
+        async with self.pool.acquire() as conn:
+            if not await self.product_is_exists(id, conn):
+                return await self.make_goods_response_not_found(id)
+
+            union_parts = []
+
+            for table, conditions in dependent_tables:
+                union_parts.append(f"""
+                    SELECT '{table}' as table_name, COUNT(*) as record_count 
+                    FROM {table} 
+                    WHERE {conditions}
+                """)
+
+            union_query = " UNION ALL ".join(union_parts)
+
+            results = await conn.fetch(union_query, id)
+
+        deleted_counts = {row["table_name"]: row["record_count"] for row in results}
+
+        return GoodsResponse(
+            status=200,
+            message="Product and all related data that will be deleted",
+            details=deleted_counts,
+        )
+    
+    @staticmethod
+    async def get_max_id(conn: asyncpg.Connection) -> int:
+        query = r"""
+            SELECT id
+            FROM products
+            WHERE id ~ '^wild\d+$'
+            ORDER BY CAST(substring(id, 5) AS INTEGER) DESC
+            LIMIT 1;
+        """
+
+        # получаем наибольший id в формате "wild1234"
+        max_id_row = await conn.fetchrow(query)
+
+        return int(max_id_row["id"].replace("wild", "")) if max_id_row else 0
+
+    @staticmethod
+    async def product_is_exists(id, conn: asyncpg.Connection) -> bool:
+        return await conn.fetchrow(
+            "SELECT id FROM products WHERE id = $1;", id
+        ) is not None
+
+    @staticmethod
+    async def make_goods_response_not_found(id):
+        return GoodsResponse(
+            status=404,
+            message="Product data not found",
+            details=f"id: {id}",
+        )

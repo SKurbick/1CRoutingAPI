@@ -1,6 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
-from app.models.goods_information import MetawildsData, metawilds_data_example, AllProductsData, all_products_data_example, GoodsResponse, ProductInfo, ProductCreate
+from app.models.goods_information import (MetawildsData, metawilds_data_example, AllProductsData, all_products_data_example, 
+                                          GoodsResponse, ProductInfo, ProductUpdate, delete_products_preview_example, delete_products_success_example)
 from app.service.goods_information import GoodsInformationService
 from app.dependencies import get_goods_information_service
 
@@ -25,13 +26,38 @@ async def get_all_products_data(
 
 @router.post("/add_product", response_model=GoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_product(
-        data: List[ProductCreate] ,
+        data: List[AllProductsData],
         service: GoodsInformationService = Depends(get_goods_information_service)
 ):
-    return await service.add_product(data)
+    return await service.add_products_with_id(data)
 
 
-@router.post("/update_product_info", response_model=GoodsResponse, status_code=status.HTTP_200_OK)
+@router.patch("/{id}/update_product", response_model=GoodsResponse, status_code=status.HTTP_200_OK)
+async def update_product(
+        id: str,
+        data: ProductUpdate,
+        service: GoodsInformationService = Depends(get_goods_information_service)
+):
+    return await service.update_product(id, data)
+
+
+@router.delete("/{id}/delete_product", response_model=GoodsResponse, responses={200: delete_products_success_example})
+async def delete_product(
+        id: str,
+        service: GoodsInformationService = Depends(get_goods_information_service)
+):
+    return await service.delete_product(id)
+
+
+@router.get("/{id}/delete_preview", response_model=GoodsResponse, responses={200: delete_products_preview_example})
+async def get_delete_preview(
+        id: str,
+        service: GoodsInformationService = Depends(get_goods_information_service)
+):
+    return await service.get_delete_preview(id)
+
+
+@router.patch("/update_product_info", response_model=GoodsResponse, status_code=status.HTTP_200_OK)
 async def update_product_info(
         data: ProductInfo,
         service: GoodsInformationService = Depends(get_goods_information_service)
