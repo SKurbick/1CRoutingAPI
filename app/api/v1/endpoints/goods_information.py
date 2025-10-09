@@ -45,8 +45,16 @@ async def update_product(
 async def delete_product(
         id: str,
         service: GoodsInformationService = Depends(get_goods_information_service)
-) -> GoodsResponse:
+):
     return await service.delete_product(id)
+
+
+@router.get("/{id}/delete_preview", response_model=GoodsResponse)
+async def get_delete_preview(
+        id: str,
+        service: GoodsInformationService = Depends(get_goods_information_service)
+):
+    return await service.get_delete_preview(id)
 
 
 @router.patch("/update_product_info", response_model=GoodsResponse, status_code=status.HTTP_200_OK)

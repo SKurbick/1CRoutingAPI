@@ -132,7 +132,7 @@ class GoodsInformationRepository:
         return result
 
     async def delete_product(self, id: str) -> GoodsResponse:
-        dependent_table = [
+        dependent_tables = [
             ("inventory_transactions", "product_id"),
             ("shipment_of_goods", "product_id"),
             ("product_reserves", "product_id"),
@@ -161,7 +161,7 @@ class GoodsInformationRepository:
                             details=f"id: {id}",
                         )
 
-                    for table, column in dependent_table:
+                    for table, column in dependent_tables:
                         query = f"""
                         DELETE FROM {table}
                         WHERE {column} = $1 RETURNING {column};
@@ -246,3 +246,50 @@ class GoodsInformationRepository:
                 message="PostgresError",
                 details=str(e)
             )
+
+    async def get_delete_preview(self, id) -> GoodsResponse:
+        dependent_tables = [
+            ("inventory_transactions", "product_id"),
+            ("shipment_of_goods", "product_id"),
+            ("product_reserves", "product_id"),
+            ("incoming_items", "product_id"),
+            ("incoming_returns", "product_id"),
+            ("kit_operations", "kit_product_id"),
+            ("inventory_checks", "product_id"),
+            ("re_sorting_operations", "from_product_id"),
+            ("re_sorting_operations", "to_product_id"),
+            ("current_balances", "product_id"),
+            ("products", "id"),
+        ]
+
+        async with self.pool.acquire() as conn:
+            check_query = "SELECT id FROM products WHERE id = $1;" 
+            existing_product = await conn.fetchrow(check_query, id)
+
+            if not existing_product:
+                return GoodsResponse(
+                    status=404,
+                    message="Product data not found",
+                    details=f"id: {id}",
+                )
+
+            union_parts = []
+
+            for table, column in dependent_tables:
+                union_parts.append(f"""
+                    SELECT '{table}' as table_name, COUNT(*) as record_count 
+                    FROM {table} 
+                    WHERE {column} = $1
+                """)
+            
+            union_query = " UNION ALL ".join(union_parts)
+
+            results = await conn.fetch(union_query, id)
+
+        deleted_counts = {row["table_name"]: row["record_count"] for row in results}
+
+        return GoodsResponse(
+            status=200,
+            message="Product and all related data",
+            details=deleted_counts,
+        )
