@@ -31,7 +31,7 @@ class GoodsInformationService:
     async def update_product(self, id: str, data: ProductUpdate) -> GoodsResponse:
         return await self.goods_information_repository.update_product(id, data)
 
-    async def delete_product(self, id: str) -> None:
+    async def delete_product(self, id: str) -> GoodsResponse:
         return await self.goods_information_repository.delete_product(id)
 
     async def update_product_info(self, data: ProductInfo) -> GoodsResponse:

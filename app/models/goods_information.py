@@ -89,7 +89,7 @@ class ProductUpdate(ProductBase):
 class GoodsResponse(BaseModel):
     status: int
     message: str
-    details: Optional[str] = None
+    details: Optional[str | dict] = None
 
 
 class ProductInfo(BaseModel):
