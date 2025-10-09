@@ -40,15 +40,14 @@ class WarehouseAndBalancesService:
         result = await self.warehouse_and_balances_repository.assembly_or_disassembly_metawild(data)
 
         if result.code_status == 201:
-            pass
-            # kit_components = await self.warehouse_and_balances_repository.kit_components_by_product_id(data.metawild)
-            #
-            # data.kit_komponents = kit_components
-            #
-            # refactor_kit_components = self.refactor_kit_components(data.model_dump(exclude={"warehouse_id"}))
-            # pprint(refactor_kit_components)
-            # one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
-            # await one_c_connect.assembly_or_disassembly_metawild(data=refactor_kit_components)
+            kit_components = await self.warehouse_and_balances_repository.kit_components_by_product_id(data.metawild)
+
+            data.kit_komponents = kit_components
+
+            refactor_kit_components = self.refactor_kit_components(data.model_dump(exclude={"warehouse_id"}))
+            pprint(refactor_kit_components)
+            one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
+            await one_c_connect.assembly_or_disassembly_metawild(data=refactor_kit_components)
 
 
         return result

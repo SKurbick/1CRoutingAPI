@@ -79,7 +79,6 @@ class ReturnsOneCModelAdd(BaseModel):
     inn: str
     # return_date: date
     return_date: str
-
     return_data_by_product: List[OneCReturnDataByProduct]
 
 
