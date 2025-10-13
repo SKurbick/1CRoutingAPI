@@ -2,7 +2,7 @@ from typing import List
 
 from app.models import IncomeOnBankAccountUpdate, GoodsResponse
 from app.database.repositories import GoodsInformationRepository
-from app.models import MetawildsData, AllProductsData, ProductInfo, GoodsResponse, ProductCreate
+from app.models import MetawildsData, AllProductsData, ProductInfo, GoodsResponse, ProductCreate, ProductUpdate
 
 
 class GoodsInformationService:
@@ -20,10 +20,20 @@ class GoodsInformationService:
         result = await self.goods_information_repository.get_all_products_data()
         return result
 
-    async def add_product(self, data: List[ProductCreate]) -> GoodsResponse:
-        result = await self.goods_information_repository.add_product(data)
-        return result
-    
+    async def add_products_with_id(self, data: List[AllProductsData]) -> GoodsResponse:
+        return await self.goods_information_repository.add_products_with_id(data)
+
+    async def add_products_without_id(self, data: List[ProductCreate]) -> GoodsResponse:
+        return await self.goods_information_repository.add_products_without_id(data)
+
+    async def update_product(self, id: str, data: ProductUpdate) -> GoodsResponse:
+        return await self.goods_information_repository.update_product(id, data)
+
+    async def delete_product(self, id: str) -> GoodsResponse:
+        return await self.goods_information_repository.delete_product(id)
+
+    async def get_delete_preview(self, id: str) -> GoodsResponse:
+        return await self.goods_information_repository.get_delete_preview(id)
+
     async def update_product_info(self, data: ProductInfo) -> GoodsResponse:
-        result = await self.goods_information_repository.update_product_info(data)
-        return result
+        return await self.goods_information_repository.update_product_info(data)

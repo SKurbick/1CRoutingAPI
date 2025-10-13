@@ -1,10 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.db_connect import init_db, close_db
-from app.api.v1.endpoints import (receipt_of_goods_router, income_on_bank_account_router, shipment_of_goods_router,
-                                  ordered_goods_from_buyers_router, local_barcode_generation_router, warehouse_and_balances_router,
-                                  goods_information_router, inventory_check_router, inventory_transactions_router, 
-                                  return_of_goods_router, docs_router, goods_managers_router)
+from app.api.v1 import router as router_v1
+from app.api.v2 import router as router_v2
 
 from contextlib import asynccontextmanager
 import uvicorn
@@ -39,18 +37,9 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-app.include_router(receipt_of_goods_router, prefix="/api")
-app.include_router(income_on_bank_account_router, prefix="/api")
-app.include_router(shipment_of_goods_router, prefix="/api")
-app.include_router(ordered_goods_from_buyers_router, prefix="/api")
-app.include_router(local_barcode_generation_router, prefix="/api")
-app.include_router(warehouse_and_balances_router, prefix="/api")
-app.include_router(goods_information_router, prefix="/api")
-app.include_router(inventory_check_router, prefix="/api")
-app.include_router(inventory_transactions_router, prefix="/api")
-app.include_router(return_of_goods_router, prefix="/api")
-app.include_router(docs_router, prefix="/api")
-app.include_router(goods_managers_router, prefix="/api")
+app.include_router(router_v1, prefix="/api/v1")
+app.include_router(router_v2, prefix="/api/v2")
+
 
 origins = [
     "*",  # временное решение
