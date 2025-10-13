@@ -52,7 +52,7 @@ class ShipmentOfGoodsService:
         result = await self.shipment_of_goods_repository.get_shipment_params()
         return result
 
-    async def create_reserve(self, data: List[ReserveOfGoodsCreate]) -> List[ReserveOfGoodsResponse]:
+    async def create_reserve(self, data: List[ReserveOfGoodsCreate]) -> List[ReserveOfGoodsResponse]| ShipmentOfGoodsResponse:
         result = await self.shipment_of_goods_repository.create_reserve(data)
         return result
 

@@ -55,7 +55,7 @@ async def shipment_params_data(
     return await service.get_shipment_params()
 
 
-@router.post("/create_reserve", response_model=List[ReserveOfGoodsResponse], status_code=status.HTTP_201_CREATED)
+@router.post("/create_reserve", response_model=List[ReserveOfGoodsResponse]|ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def create_reserve(
         data: List[ReserveOfGoodsCreate], #= Body(example=example_reserve_of_goods_data)
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)

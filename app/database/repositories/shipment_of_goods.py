@@ -140,9 +140,9 @@ class ShipmentOfGoodsRepository:
                     #     f"Транзакция откачена."
                     # )
                     return ShipmentOfGoodsResponse(
-                        status = 404,
-                        message = "Не найдены исходные резервы для всех записей или недостаточно количества",
-                        details =f"Обработано: {processed_count}/{total_count}. Запрос не выполнен"
+                        status=404,
+                        message="Не найдены исходные резервы для всех записей или недостаточно количества",
+                        details=f"Обработано: {processed_count}/{total_count}. Запрос не выполнен"
                     )
 
                 # Возвращаем ID созданных записей
@@ -159,7 +159,7 @@ class ShipmentOfGoodsRepository:
                     status=201,
                     message="Успешно",
                     details=f"Обработано: {processed_count}/{total_count}. Успешно",
-                    data = result
+                    data=result
                 )
 
     async def get_summ_reserve_data(self) -> List[SummReserveData]:
@@ -193,7 +193,6 @@ class ShipmentOfGoodsRepository:
                 )
                 for product_id, delivery_type_data in grouped_data.items()
             ]
-
 
     async def add_shipped_goods_by_id(self, data: List[ShippedGoodsByID]) -> ShipmentOfGoodsResponse:
         pprint(data)
@@ -329,7 +328,7 @@ class ShipmentOfGoodsRepository:
             )
         return result
 
-    async def create_reserve(self, data: List[ReserveOfGoodsCreate]) -> List[ReserveOfGoodsResponse]:
+    async def create_reserve(self, data: List[ReserveOfGoodsCreate]) -> List[ReserveOfGoodsResponse]| ShipmentOfGoodsResponse:
         insert_query = """
                 INSERT INTO product_reserves (
                     product_id,
@@ -367,22 +366,30 @@ class ShipmentOfGoodsRepository:
             for item in data
         ]
         records = []
-        async with self.pool.acquire() as conn:
-            async with conn.transaction():
-                # Выполняем запрос с возвратом данных
-                for value in values:
-                    record = await conn.fetchrow(insert_query, *value)
-                    records.append(record)
-        # Преобразуем результат в список ReserveOfGoodsResponse
-        result = [
-            ReserveOfGoodsResponse(
-                product_reserves_id=return_data["id"],
-                supply_id=return_data["supply_id"]  # Добавляем supply_id из связанной транзакции
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    # Выполняем запрос с возвратом данных
+                    for value in values:
+                        record = await conn.fetchrow(insert_query, *value)
+                        records.append(record)
+            # Преобразуем результат в список ReserveOfGoodsResponse
+            result = [
+                ReserveOfGoodsResponse(
+                    product_reserves_id=return_data["id"],
+                    supply_id=return_data["supply_id"]  # Добавляем supply_id из связанной транзакции
+                )
+                for return_data in records
+            ]
+            print(result)
+            return result
+        except asyncpg.PostgresError as e:
+            result = ShipmentOfGoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
             )
-            for return_data in records
-        ]
-        print(result)
-        return result
+            return result
 
     async def add_shipped_goods(self, data: List[ShippedGoods]) -> List[ReserveOfGoodsResponse]:
         pprint(data)
