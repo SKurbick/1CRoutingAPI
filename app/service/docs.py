@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Dict
 
 from app.models import DocsData
@@ -22,28 +23,63 @@ class DocsService:
         self.docs_repository = docs_repository
 
     async def get_docs(self,account_name: str, date_from: datetime.date, date_to: datetime.date) -> List[Dict]:
-        return_result = []
+        # return_result = []
         tokens = await self.docs_repository.get_tokens()
         token = tokens[account_name.upper()]
 
         docs_wb_api = Docs(token=token)
+        #
+        # docs_list = await docs_wb_api.get_docs_list(str(date_from), str(date_to))
+        #
+        # upd_docs_names = self.get_upd_doc_names(docs_list['data']['documents'])
+        # if len(upd_docs_names['params']) == 0:
+        #     # continue # пропуск аккаунтов у которых нет документов за период
+        #     return [{"code":200, "message": "Нет документов по заданному периоду"}]
+        #
+        # pprint(upd_docs_names)
+        # upd_docs_per_client_zip = await docs_wb_api.get_upd_docs_per_client(upd_docs_names)
+        # raw_text = self.extract_and_process_pdfs_from_zip(upd_docs_per_client_zip)
+        # final_data = self.merge_invoice_data(raw_text)
+        # pprint(final_data)
+        #
+        # return_result.extend(final_data)
+        #
+        # return return_result
 
-        docs_list = await docs_wb_api.get_docs_list(str(date_from), str(date_to))
+        docs_list = await docs_wb_api.get_docs_list(begin_date=str(date_from), end_date=str(date_to), category='upd')
 
-        upd_docs_names = self.get_upd_doc_names(docs_list['data']['documents'])
-        if len(upd_docs_names['params']) == 0:
-            # continue  # пропуск аккаунтов у которых нет документов за период
-            return [{"code":200, "message": "Нет документов по заданному периоду"}]
+        if not docs_list:
+            return []
 
-        pprint(upd_docs_names)
-        upd_docs_per_client_zip = await docs_wb_api.get_upd_docs_per_client(upd_docs_names)
-        raw_text = self.extract_and_process_pdfs_from_zip(upd_docs_per_client_zip)
-        final_data = self.merge_invoice_data(raw_text)
-        pprint(final_data)
+        result = []
+        batch_size = 50
 
-        return_result.extend(final_data)
+        for i in range(0, len(docs_list), batch_size):
 
-        return return_result
+            batch = docs_list[i:i + batch_size]
+            print(f"Загрузка и обработка {i // batch_size + 1} из {len(batch)} документов")
+
+            client_binary_zip = await docs_wb_api.download_documents(doc_names=batch)
+            raw_text = self.extract_and_process_pdfs_from_zip(client_binary_zip)
+            final_data = self.merge_invoice_data(raw_text)
+
+            result.extend(final_data)
+
+            if i + batch_size < len(docs_list):
+                print("Ограничение API WB - ожидание 5 минут...")
+                await asyncio.sleep(60 * 5)
+
+        return result
+
+
+
+
+
+
+
+
+
+
 
     def get_upd_doc_names(self, docs_list_data):
         '''

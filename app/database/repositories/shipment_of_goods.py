@@ -244,7 +244,8 @@ class ShipmentOfGoodsRepository:
                     supply_id,
                     reserve_date,
                     is_fulfilled,
-                    wb_warehouse
+                    wb_warehouse,
+                    expires_at
                   from product_reserves WHERE 1=1""")
         params = []
         param_count = 1

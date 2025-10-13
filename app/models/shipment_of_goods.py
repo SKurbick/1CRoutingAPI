@@ -117,7 +117,7 @@ class ReservedData(BaseModel):
     supply_id: str
     reserve_date: datetime.date
     # created_at
-    # expires_at
+    expires_at:Optional[datetime.datetime] = None
     is_fulfilled: bool
     is_hanging: Optional[bool] = None
 
