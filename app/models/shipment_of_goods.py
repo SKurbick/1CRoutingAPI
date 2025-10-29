@@ -71,6 +71,7 @@ class ReserveOfGoodsCreate(BaseModel):
 class ShippedGoods(BaseModel):
     supply_id: str
     quantity_shipped: int
+    product_id:str
 
 
 class ShippedGoodsByID(BaseModel):
@@ -82,7 +83,8 @@ class ShippedGoodsByID(BaseModel):
 example_shipped_goods_data = [
     {
         "supply_id": "WB-GI-166715280",
-        "quantity_shipped": 5
+        "quantity_shipped": 5,
+        "product_id": "wild123"
     }
 ]
 

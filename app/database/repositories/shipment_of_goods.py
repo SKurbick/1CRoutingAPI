@@ -396,14 +396,15 @@ class ShipmentOfGoodsRepository:
         update_query = """
             UPDATE product_reserves as pr
             SET shipped =  pr.shipped + $2
-            WHERE supply_id = $1
+            WHERE supply_id = $1 and product_id = $3
             RETURNING id, supply_id;
         """
 
         values = [
             (
                 item.supply_id,
-                item.quantity_shipped
+                item.quantity_shipped,
+                item.product_id
             )
             for item in data
         ]
