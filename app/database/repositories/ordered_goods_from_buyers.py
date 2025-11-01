@@ -26,6 +26,14 @@ class OrderedGoodsFromBuyersRepository:
             supply_date = document_data.supply_date
             supplier_name = document_data.supplier_name
             supplier_code = document_data.supplier_code
+            expected_receipt_date = document_data.expected_receipt_date
+            currency = document_data.currency
+            shipment_date = document_data.shipment_date
+            payment_document_number = document_data.payment_document_number
+            payment_indicator = document_data.payment_indicator
+            receipt_transaction_number = document_data.receipt_transaction_number
+            comment = document_data.comment
+
             guid_data.append(guid)
             for supply_data in document_data.supply_data:
                 local_vendor_code = supply_data.local_vendor_code
@@ -33,9 +41,21 @@ class OrderedGoodsFromBuyersRepository:
                 amount_with_vat = supply_data.amount_with_vat
                 amount_without_vat = supply_data.amount_without_vat
                 product_name = supply_data.product_name
-                data_to_update.append((guid, document_number, document_created_at, update_document_datetime, event_status,
-                                       author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
-                                       quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name))
+                actual_quantity = supply_data.actual_quantity
+                unit_price = supply_data.unit_price
+                last_purchase_supplier = supply_data.last_purchase_supplier
+                last_purchase_price = supply_data.last_purchase_price
+                cancelled_due_to = supply_data.cancelled_due_to
+
+                data_to_update.append(
+                    (guid, document_number, document_created_at, update_document_datetime, event_status,
+                     author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
+                     quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name,
+                     expected_receipt_date, currency, shipment_date, payment_document_number, payment_indicator,
+                     receipt_transaction_number, comment, actual_quantity, unit_price, last_purchase_supplier,
+                     last_purchase_price, cancelled_due_to
+                     )
+                )
 
         query_update_is_valid = """
         UPDATE ordered_goods_from_buyers
@@ -45,9 +65,13 @@ class OrderedGoodsFromBuyersRepository:
         """
         query_to_insert = """
         INSERT INTO ordered_goods_from_buyers (guid, document_number, document_created_at, update_document_datetime, event_status,
-                               author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
-                               quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, warehouse_id,is_valid)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, 1, True); """  # по умолчанию передаём основной склад
+                           author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
+                           quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, warehouse_id,is_valid,
+                           expected_receipt_date, currency, shipment_date, payment_document_number, payment_indicator,
+                           receipt_transaction_number, comment, actual_quantity, unit_price, last_purchase_supplier,
+                           last_purchase_price, cancelled_due_to)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, 1, True,
+                $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27 ); """  # по умолчанию передаём основной склад
 
         try:
             async with self.pool.acquire() as conn:
@@ -91,7 +115,7 @@ class OrderedGoodsFromBuyersRepository:
         return [OrderedGoodsFromBuyersData(**record) for record in records]
 
     async def get_printed_barcodes(self) -> List[PrintedBarcodeData]:
-            query = """
+        query = """
                 SELECT  gac.*,
                  ogfb.product_name, ogfb.guid, ogfb.document_number, ogfb.document_created_at, ogfb.amount_with_vat, ogfb.amount_without_vat, ogfb.supplier_code,
                   gac.declared_order_quantity , gac.sum_real_quantity,  nb.*  FROM ordered_goods_from_buyers as ogfb 
@@ -100,40 +124,39 @@ class OrderedGoodsFromBuyersRepository:
                 WHERE 
                 ogfb.in_acceptance = TRUE and ogfb.is_valid = TRUE and ogfb.is_printed_barcode = TRUE and ogfb.acceptance_completed = FALSE;
             """
-            async with self.pool.acquire() as conn:
-                records = await conn.fetch(query)
+        async with self.pool.acquire() as conn:
+            records = await conn.fetch(query)
 
-                certs = {}
-                for record in records:
-                    cert_id = record['ordered_goods_from_buyers_id']
-                    if cert_id not in certs:
-                        certs[cert_id] = {
-                            "ordered_goods_from_buyers_id": record["ordered_goods_from_buyers_id"],
-                            "product": record["product"],
-                            "product_name": record["product_name"],
-                            "declared_order_quantity": int(record["declared_order_quantity"]),
-                            "sum_real_quantity": int(record["sum_real_quantity"]),
-                            "acceptance_author": record["acceptance_author"],
-                            "warehouse_id": record["warehouse_id"],
-                            "added_photo_link": record["added_photo_link"],  # photo_link на верхнем уровне
-                            "guid": record["guid"],
-                            "document_number": record["document_number"],
-                            "document_created_at": record["document_created_at"],
-                            "amount_with_vat": record["amount_with_vat"],
-                            "amount_without_vat": record["amount_without_vat"],
-                            "supplier_code": record["supplier_code"],
-                            "nested_box_data": []
-                        }
+            certs = {}
+            for record in records:
+                cert_id = record['ordered_goods_from_buyers_id']
+                if cert_id not in certs:
+                    certs[cert_id] = {
+                        "ordered_goods_from_buyers_id": record["ordered_goods_from_buyers_id"],
+                        "product": record["product"],
+                        "product_name": record["product_name"],
+                        "declared_order_quantity": int(record["declared_order_quantity"]),
+                        "sum_real_quantity": int(record["sum_real_quantity"]),
+                        "acceptance_author": record["acceptance_author"],
+                        "warehouse_id": record["warehouse_id"],
+                        "added_photo_link": record["added_photo_link"],  # photo_link на верхнем уровне
+                        "guid": record["guid"],
+                        "document_number": record["document_number"],
+                        "document_created_at": record["document_created_at"],
+                        "amount_with_vat": record["amount_with_vat"],
+                        "amount_without_vat": record["amount_without_vat"],
+                        "supplier_code": record["supplier_code"],
+                        "nested_box_data": []
+                    }
 
-                    certs[cert_id]["nested_box_data"].append({
-                        "quantity_of_boxes": int(record["quantity_of_boxes"]),
-                        "quantity_in_a_box": int(record["quantity_in_a_box"]),
-                        "is_box": record["is_box"]
-                        # photo_link НЕ добавляем сюда
-                    })
+                certs[cert_id]["nested_box_data"].append({
+                    "quantity_of_boxes": int(record["quantity_of_boxes"]),
+                    "quantity_in_a_box": int(record["quantity_in_a_box"]),
+                    "is_box": record["is_box"]
+                    # photo_link НЕ добавляем сюда
+                })
 
-                return [PrintedBarcodeData(**cert) for cert in certs.values()]
-
+            return [PrintedBarcodeData(**cert) for cert in certs.values()]
 
     async def get_photo_link_by_wilds(self, vendor_codes: List[str]):
 

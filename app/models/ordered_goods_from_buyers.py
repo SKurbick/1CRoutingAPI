@@ -29,6 +29,13 @@ example_ordered_goods_from_buyers_data = [
      "supply_date": "2025-04-16 15:22:37",
      "supplier_name": "Никола Тесла",
      "supplier_code": "7355608",
+    "expected_receipt_date":datetime.today() ,
+    "currency": "string" ,
+    "shipment_date":datetime.today() ,
+    "payment_document_number": "string",
+    "payment_indicator":"string" ,
+    "receipt_transaction_number": "string",
+    "comment": "string",
      "supply_data": [
          {
              "local_vendor_code": "wild123",
@@ -36,6 +43,11 @@ example_ordered_goods_from_buyers_data = [
              "quantity": 123,
              "amount_with_vat": 123,
              "amount_without_vat": 123,
+             "actual_quantity": 123,
+             "unit_price": 123.2,
+             "last_purchase_supplier": "string",
+             "last_purchase_price": 123.1,
+             "cancelled_due_to": "string"
          },
          {
              "local_vendor_code": "wild123",
@@ -128,6 +140,11 @@ class SupplyData(BaseModel):
     amount_with_vat: float
     amount_without_vat: Optional[float] = None
     photo_link: Optional[str] = None
+    actual_quantity: Optional[int] = None
+    unit_price: Optional[float] = None
+    last_purchase_supplier: Optional[str] = None
+    last_purchase_price: Optional[float] = None
+    cancelled_due_to: Optional[str] = None
 
 
 class DocumentData1C(BaseModel):
@@ -141,6 +158,13 @@ class DocumentData1C(BaseModel):
     update_document_datetime: datetime
     author_of_the_change: str
     our_organizations_name: str
+    expected_receipt_date: Optional[datetime] = None
+    currency: Optional[str] = None
+    shipment_date: Optional[datetime] = None
+    payment_document_number: Optional[str] = None
+    payment_indicator: Optional[str] = None
+    receipt_transaction_number: Optional[str] = None
+    comment: Optional[str] = None
 
 
 class OrderedGoodsFromBuyersUpdate(DocumentData1C):
