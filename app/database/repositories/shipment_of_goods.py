@@ -391,7 +391,7 @@ class ShipmentOfGoodsRepository:
             )
             return result
 
-    async def add_shipped_goods(self, data: List[ShippedGoods]) -> List[ReserveOfGoodsResponse]:
+    async def add_shipped_goods(self, data: List[ShippedGoods]) -> List[ReserveOfGoodsResponse]| ShipmentOfGoodsResponse:
         pprint(data)
         update_query = """
             UPDATE product_reserves as pr
@@ -409,20 +409,29 @@ class ShipmentOfGoodsRepository:
             for item in data
         ]
         records = []
-        async with self.pool.acquire() as conn:
-            async with conn.transaction():
-                # Выполняем запрос с возвратом данных
-                for value in values:
-                    record = await conn.fetchrow(update_query, *value)
-                    records.append(record)
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    # Выполняем запрос с возвратом данных
+                    for value in values:
+                        record = await conn.fetchrow(update_query, *value)
+                        records.append(record)
 
-        print(records)
-        updated_supplies = {r["supply_id"]: r["id"] for r in records if r is not None}
+            print(records)
+            updated_supplies = {r["supply_id"]: r["id"] for r in records if r is not None}
 
-        return [
-            ReserveOfGoodsResponse(
-                product_reserves_id=updated_supplies.get(item.supply_id, None),
-                supply_id=item.supply_id
+            return [
+                ReserveOfGoodsResponse(
+                    product_reserves_id=updated_supplies.get(item.supply_id, None),
+                    supply_id=item.supply_id
+                )
+                for item in data
+            ]
+
+        except asyncpg.PostgresError as e:
+            result = ShipmentOfGoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
             )
-            for item in data
-        ]
+            return result

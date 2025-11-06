@@ -93,7 +93,7 @@ async def add_shipped_goods_by_id(
     return result
 
 
-@router.post("/add_shipped_goods", response_model=List[ReserveOfGoodsResponse], status_code=status.HTTP_201_CREATED)
+@router.post("/add_shipped_goods", response_model=List[ReserveOfGoodsResponse]|ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_shipped_goods(
         data: List[ShippedGoods] = Body(example=example_shipped_goods_data),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)

@@ -56,6 +56,6 @@ class ShipmentOfGoodsService:
         result = await self.shipment_of_goods_repository.create_reserve(data)
         return result
 
-    async def add_shipped_goods(self, data: List[ShippedGoods]) -> List[ReserveOfGoodsResponse]:
+    async def add_shipped_goods(self, data: List[ShippedGoods]) -> List[ReserveOfGoodsResponse]| ShipmentOfGoodsResponse:
         result = await self.shipment_of_goods_repository.add_shipped_goods(data)
         return result
