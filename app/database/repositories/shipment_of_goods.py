@@ -164,14 +164,71 @@ class ShipmentOfGoodsRepository:
 
     async def get_summ_reserve_data(self) -> List[SummReserveData]:
 
+        # old
+        # query = """
+        # SELECT
+        #     product_id,
+        #     delivery_type,
+        #     SUM(ordered - shipped) as current_reserve
+        # FROM public.product_reserves
+        # GROUP BY product_id, delivery_type
+        # ORDER BY product_id, delivery_type;
+        # """
+        # new
         query = """
-        SELECT 
-            product_id,
-            delivery_type,
-            SUM(ordered - shipped) as current_reserve
-        FROM public.product_reserves
-        GROUP BY product_id, delivery_type
-        ORDER BY product_id, delivery_type;
+                    WITH last_statuses AS (
+                SELECT DISTINCT ON (osl.order_id)
+                    osl.order_id,
+                    osl.status
+                FROM public.order_status_log osl
+                ORDER BY osl.order_id, osl.created_at DESC
+            ),
+            valid_tasks AS (
+                SELECT 
+                    at.task_id,
+                    at.article_id,
+                    ls.status,
+                    EXISTS (
+                        SELECT 1 
+                        FROM public.historical_statuses_of_assembly_tasks hsat 
+                        WHERE hsat.assembly_task_id = at.task_id 
+                        AND hsat.wb_status = 'canceled'
+                    ) as is_canceled
+                FROM public.assembly_task at
+                INNER JOIN last_statuses ls ON at.task_id = ls.order_id
+                WHERE ls.status IN ('FICTITIOUS_DELIVERED', 'IN_HANGING_SUPPLY', 'IN_TECHNICAL_SUPPLY')
+            ),
+            fbs_reserves AS (
+                SELECT 
+                    a.local_vendor_code as product_id,
+                    COUNT(*) as current_reserve
+                FROM public.article a
+                INNER JOIN valid_tasks vt ON a.nm_id = vt.article_id
+                WHERE NOT vt.is_canceled
+                GROUP BY a.local_vendor_code
+                HAVING COUNT(*) > 0
+            ),
+            fbo_reserves AS (
+                SELECT 
+                    product_id,
+                    SUM(ordered - shipped) as current_reserve
+                FROM public.product_reserves
+                WHERE delivery_type = 'ФБО'
+                GROUP BY product_id
+                HAVING SUM(ordered - shipped) > 0
+            )
+            SELECT 
+                product_id,
+                'ФБО' as delivery_type,
+                current_reserve
+            FROM fbo_reserves
+            UNION ALL
+            SELECT 
+                product_id,
+                'ФБС' as delivery_type,
+                current_reserve
+            FROM fbs_reserves
+            ORDER BY product_id, delivery_type;
         """
         async with self.pool.acquire() as connection:
             rows = await connection.fetch(query)

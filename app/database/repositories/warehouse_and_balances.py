@@ -173,9 +173,63 @@ class WarehouseAndBalancesRepository:
         return [Warehouse(**res) for res in result]
 
     async def get_all_product_current_balances(self) -> List[CurrentBalances]:
+        # old
+        # select_query = """
+        # SELECT * FROM current_balances;
+        # """
+        # new
         select_query = """
-        SELECT * FROM current_balances;
+                    WITH last_statuses AS (
+                SELECT DISTINCT ON (osl.order_id)
+                    osl.order_id,
+                    osl.status
+                FROM public.order_status_log osl
+                ORDER BY osl.order_id, osl.created_at DESC
+            ),
+            task_counts AS (
+                SELECT 
+                    at.task_id,
+                    at.article_id,
+                    ls.status,
+                    CASE WHEN EXISTS (
+                        SELECT 1 
+                        FROM public.historical_statuses_of_assembly_tasks hsat 
+                        WHERE hsat.assembly_task_id = at.task_id 
+                        AND hsat.wb_status = 'canceled'
+                    ) THEN 1 ELSE 0 END as is_canceled
+                FROM public.assembly_task at
+                INNER JOIN last_statuses ls ON at.task_id = ls.order_id
+                WHERE ls.status IN ('FICTITIOUS_DELIVERED', 'IN_HANGING_SUPPLY', 'IN_TECHNICAL_SUPPLY')
+            ),
+            fbs_reserves AS (
+                SELECT 
+                    a.local_vendor_code as product_id,
+                    COUNT(*) as total_count,
+                    SUM(tc.is_canceled) as canceled_count,
+                    COUNT(*) - SUM(tc.is_canceled) as actual_count
+                FROM public.article a
+                INNER JOIN task_counts tc ON a.nm_id = tc.article_id
+                GROUP BY a.local_vendor_code
+            )
+            SELECT 
+                cb.product_id,
+                cb.warehouse_id,
+                cb.physical_quantity,
+                CASE 
+                    WHEN cb.warehouse_id = 1 THEN cb.reserved_quantity + COALESCE(fbs.actual_count, 0)
+                    ELSE cb.reserved_quantity
+                END as reserved_quantity,
+                CASE 
+                    WHEN cb.warehouse_id = 1 THEN cb.available_quantity - COALESCE(fbs.actual_count, 0)
+                    ELSE cb.available_quantity
+                END as available_quantity
+            --    COALESCE(fbs.actual_count, 0) as fbs_reserve
+            FROM public.current_balances cb
+            LEFT JOIN fbs_reserves fbs ON cb.product_id = fbs.product_id
+            ORDER BY cb.product_id, cb.warehouse_id;
         """
+
+
         async with self.pool.acquire() as conn:
             result = await conn.fetch(select_query)
         pprint(result)
