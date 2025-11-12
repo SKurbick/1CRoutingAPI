@@ -3,10 +3,11 @@ from typing import List
 
 from app.dependencies.config import settings
 from app.infrastructure.ONE_C import ONECRouting
-from app.models import DefectiveGoodsUpdate, AddStockByClientResponse
+from app.models import DefectiveGoodsUpdate, AddStockByClientResponse, StatusStats
 from app.database.repositories import WarehouseAndBalancesRepository
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, AssemblyOrDisassemblyMetawildData, \
-    AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClient, HistoricalStockBody, HistoricalStockData
+    AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClient, HistoricalStockBody, HistoricalStockData, ProductStats, \
+    WarehouseAndBalanceResponse
 
 
 class WarehouseAndBalancesService:
@@ -15,6 +16,11 @@ class WarehouseAndBalancesService:
             warehouse_and_balances_repository: WarehouseAndBalancesRepository,
     ):
         self.warehouse_and_balances_repository = warehouse_and_balances_repository
+
+    async def get_statuses_for_products_in_reserve(self) -> List[ProductStats]| WarehouseAndBalanceResponse:
+        result = await self.warehouse_and_balances_repository.get_statuses_for_products_in_reserve()
+        return result
+
 
     async def get_historical_stocks(self, data: HistoricalStockBody) -> List[HistoricalStockData]:
         result = await self.warehouse_and_balances_repository.get_historical_stocks(data)

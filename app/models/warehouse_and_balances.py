@@ -159,3 +159,18 @@ class AddStockByClientResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None
+
+
+class StatusStats(BaseModel):
+    fictitious_delivered: int
+    in_hanging_supply: int
+    in_technical_supply: int
+    new: int
+    total_count: int
+    canceled_count: int
+    actual_count: int
+
+# Основная модель для продукта
+class ProductStats(BaseModel):
+    product_id: str  # local_vendor_code
+    status_stats: StatusStats
