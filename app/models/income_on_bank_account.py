@@ -26,10 +26,72 @@ Payment number
 1C document number
 
 """
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, field_validator
 from datetime import datetime
+
+
+
+write_off_of_non_cash_funds_example = [
+    {
+        "guid": "b7dd5f60-be16-11f0-84f3-50ebf6b2ce7c",
+        "counterparty_name": "ТАХОСЕРВИС ООО",
+        "counterparty_inn": "5029256188",
+        "our_organizations_name": "СТАРТ ООО",
+        "our_organizations_inn": "5029275624",
+        "operation_type": "Оплата поставщику",
+        "event_status": "Проведён",
+        "document_number_1c": "СТУТ-П000405",
+        "document_created_at": "2025-11-10 12:22:07",
+        "payment_receipt_date": "2025-11-10 12:22:07",
+        "payment_number": "405",
+        "payment_date": "2025-11-10 00:00:00",
+        "bank_event_status": False,
+        "our_organizations_account": "40702810200000000753",
+        "receipt_account": "40702810402500066905",
+        "payment_request_number": None,
+        "currency": "643",
+        "payment_purpose": "Оплата по счету № 4172 от 10.09.2025г. за оформление пропусков, внесенных в реестр действующих пропусков. В т.ч. НДС (20%) 1816-67 руб.",
+        "author": "Лазаренко Юлия",
+        "payment_descriptions": [
+            {
+                "payment_object": "Списание безналичных ДС СТУТ-П000405 от 10.11.2025 12:22:07",
+                "amount": 10900,
+                "vat_rate": "20%",
+                "vat": 1816.67
+            }
+        ]
+    }
+]
+
+class PaymentDescription(BaseModel):
+    payment_object: str
+    amount: float
+    vat_rate: str
+    vat: float
+
+class WriteOffOfNonCashFunds(BaseModel):
+    guid: str
+    counterparty_name: str
+    counterparty_inn: str
+    our_organizations_name: str
+    our_organizations_inn: str
+    operation_type: str
+    event_status: str
+    document_number_1c: str
+    document_created_at: datetime
+    payment_receipt_date: datetime
+    payment_number: str
+    payment_date: datetime
+    bank_event_status: bool
+    our_organizations_account: str
+    receipt_account: str
+    payment_request_number: Optional[str] = None
+    currency: str
+    payment_purpose: str
+    author: str
+    payment_descriptions: List[PaymentDescription]
 
 
 class IncomeOnBankAccountUpdate(BaseModel):
