@@ -13,8 +13,10 @@ class IncomeOnBankAccountRepository:
 
     async def update_data(self, data: List[IncomeOnBankAccountUpdate]) -> IncomeOnBankAccountResponse:
         data_to_update: List[Tuple] = []
+        guid_data: List[str] = []
 
         for res_data in data:
+            guid_data.append(res_data.guid)
             data_to_update.append(
                 (res_data.guid,
                  res_data.payment_receipt_date,
@@ -31,6 +33,15 @@ class IncomeOnBankAccountRepository:
                  res_data.document_number_1c))
 
         pprint(data_to_update)
+
+        query_update_is_valid = """
+        UPDATE income_on_bank_account
+        SET is_valid = False
+        WHERE guid = ANY($1::varchar[])
+        AND is_valid = True
+        """
+
+
         query = """
         INSERT INTO income_on_bank_account    ( guid,
                                                 payment_receipt_date,
@@ -44,17 +55,20 @@ class IncomeOnBankAccountRepository:
                                                 vat,
                                                 payment_purpose,
                                                 payment_number,
-                                                document_number_1c)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                                                document_number_1c,
+                                                is_valid)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, True)
         """
         try:
             async with self.pool.acquire() as conn:
+                await conn.execute(query_update_is_valid, guid_data)
                 await conn.executemany(query, data_to_update)
                 result = IncomeOnBankAccountResponse(
                     status=201,
                     message="Данные успешно обновлены",
 
                 )
+                return result
 
         except UniqueViolationError as e:
             result = IncomeOnBankAccountResponse(
@@ -62,11 +76,12 @@ class IncomeOnBankAccountRepository:
                 message="UniqueViolationError",
                 details=str(e)
             )
+            return result
         except asyncpg.PostgresError as e:
             result = IncomeOnBankAccountResponse(
                 status=422,
                 message="PostgresError",
                 details=str(e)
             )
-        print(result)
-        return result
+            print(result)
+            return result
