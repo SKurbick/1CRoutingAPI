@@ -1,5 +1,5 @@
 from .receipt_of_goods import ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate, OneCModelUpdate
-from .income_on_bank_account import IncomeOnBankAccountUpdate, WriteOffOfNonCashFunds
+from .financial_transactions import IncomeOnBankAccountUpdate, WriteOffOfNonCashFunds, CashDisbursementOrder
 from .return_of_goods import ReturnsOneCModelAdd, OneCReturnDataByProduct
 from .shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsResponse, example_shipment_of_goods_data, ShipmentParamsData, ReservedData, \
     ShippedGoodsByID, SummReserveData, DeliveryTypeData, CreationWithMovement
@@ -58,5 +58,6 @@ __all__ = [
     'CreationWithMovement',
     'StatusStats',
     'ProductStats',
-    'WriteOffOfNonCashFunds'
+    'WriteOffOfNonCashFunds',
+    'CashDisbursementOrder'
 ]

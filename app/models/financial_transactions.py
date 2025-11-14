@@ -31,7 +31,37 @@ from typing import Optional, List
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 
-
+cash_disbursement_order_example = [
+    {
+        "guid": "8e9b0761-bae2-11f0-84f3-50ebf6b2ce7c",
+        "counterparty_name": "Володя Садовод",
+        "counterparty_inn": "",
+        "our_organizations_name": "КОНСОЛИДАЦИЯ",
+        "our_organizations_inn": "7868976987",
+        "operation_type": "Оплата поставщику",
+        "event_status": "Проведён",
+        "document_number_1c": "К1УТ-003172",
+        "document_created_at": "2025-11-06 10:31:07",
+        "payment_receipt_date": "2025-11-06 10:31:07",
+        "payment_request_number": None,
+        "currency": "643",
+        "author": "Пчелинцева Светлана",
+        "payment_descriptions": [
+            {
+                "payment_object": "Заказ поставщику К1УТ-001561 от 02.08.2025 0:00:00",
+                "amount": 579600,
+                "vat_rate": "Без НДС",
+                "vat": 0
+            },
+            {
+                "payment_object": "Заказ поставщику К1УТ-001588 от 08.08.2025 0:00:00",
+                "amount": 420400,
+                "vat_rate": "Без НДС",
+                "vat": 0
+            }
+        ]
+    }
+]
 
 write_off_of_non_cash_funds_example = [
     {
@@ -65,11 +95,13 @@ write_off_of_non_cash_funds_example = [
     }
 ]
 
+
 class PaymentDescription(BaseModel):
     payment_object: str
     amount: float
     vat_rate: str
     vat: float
+
 
 class WriteOffOfNonCashFunds(BaseModel):
     guid: str
@@ -93,6 +125,22 @@ class WriteOffOfNonCashFunds(BaseModel):
     author: str
     payment_descriptions: List[PaymentDescription]
 
+
+class CashDisbursementOrder(BaseModel):
+    guid: str
+    counterparty_name: str
+    counterparty_inn: str
+    our_organizations_name: str
+    our_organizations_inn: str
+    operation_type: str
+    event_status: str
+    document_number_1c: str
+    document_created_at: datetime
+    payment_receipt_date: datetime
+    payment_request_number: Optional[str] = None
+    currency: str
+    author: str
+    payment_descriptions: List[PaymentDescription]
 
 class IncomeOnBankAccountUpdate(BaseModel):
     guid: str
@@ -127,7 +175,7 @@ class IncomeOnBankAccountUpdate(BaseModel):
         return value
 
 
-class IncomeOnBankAccountResponse(BaseModel):
+class FinancialTransactionsResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None

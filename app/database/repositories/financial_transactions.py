@@ -4,14 +4,99 @@ from typing import List, Tuple
 import asyncpg
 from asyncpg import Pool, UniqueViolationError
 from app.models import IncomeOnBankAccountUpdate
-from app.models.income_on_bank_account import IncomeOnBankAccountResponse, WriteOffOfNonCashFunds
+from app.models.financial_transactions import FinancialTransactionsResponse, WriteOffOfNonCashFunds, CashDisbursementOrder
 
 
-class IncomeOnBankAccountRepository:
+class FinancialTransactionsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
-    async def add_data_by_write_off_of_non_cash_funds(self, data: List[WriteOffOfNonCashFunds]) -> IncomeOnBankAccountResponse:
+    async def add_data_cash_disbursement_order(self, data: List[CashDisbursementOrder]) -> FinancialTransactionsResponse:
+        data_to_update: List[Tuple] = []
+        guid_data: List[str] = []
+
+        for cash_disbursement_order in data:
+            for payment_descriptions in cash_disbursement_order.payment_descriptions:
+                guid_data.append(cash_disbursement_order.guid)
+                data_to_update.append(
+                    (
+                        cash_disbursement_order.guid,
+                        cash_disbursement_order.counterparty_name,
+                        cash_disbursement_order.counterparty_inn,
+                        cash_disbursement_order.our_organizations_name,
+                        cash_disbursement_order.our_organizations_inn,
+                        cash_disbursement_order.operation_type,
+                        cash_disbursement_order.event_status,
+                        cash_disbursement_order.document_number_1c,
+                        cash_disbursement_order.document_created_at,
+                        cash_disbursement_order.payment_receipt_date,
+                        cash_disbursement_order.payment_request_number,
+                        cash_disbursement_order.currency,
+                        cash_disbursement_order.author,
+                        payment_descriptions.payment_object,
+                        payment_descriptions.amount,
+                        payment_descriptions.vat_rate,
+                        payment_descriptions.vat)
+                )
+
+        pprint(data_to_update)
+
+        query_update_is_valid = """
+        UPDATE cash_disbursement_order
+        SET is_valid = False
+        WHERE guid = ANY($1::varchar[])
+        AND is_valid = True
+        """
+        query = """
+        INSERT INTO cash_disbursement_order (
+                                                guid,
+                                                counterparty_name,
+                                                counterparty_inn,
+                                                our_organizations_name,
+                                                our_organizations_inn,
+                                                operation_type,
+                                                event_status,
+                                                document_number_1c,
+                                                document_created_at,
+                                                payment_receipt_date,
+                                                payment_request_number,
+                                                currency,
+                                                author,
+                                                payment_object,
+                                                amount,
+                                                vat_rate,
+                                                vat,
+                                                is_valid)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,  True)
+        """
+        try:
+            async with self.pool.acquire() as conn:
+                await conn.execute(query_update_is_valid, guid_data)
+                await conn.executemany(query, data_to_update)
+                result = FinancialTransactionsResponse(
+                    status=201,
+                    message="Данные успешно обновлены",
+
+                )
+                return result
+
+        except UniqueViolationError as e:
+            result = FinancialTransactionsResponse(
+                status=422,
+                message="UniqueViolationError",
+                details=str(e)
+            )
+            return result
+        except asyncpg.PostgresError as e:
+            result = FinancialTransactionsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
+            print(result)
+            return result
+
+    async def add_data_by_write_off_of_non_cash_funds(self, data: List[WriteOffOfNonCashFunds]) -> FinancialTransactionsResponse:
         data_to_update: List[Tuple] = []
         guid_data: List[str] = []
 
@@ -85,7 +170,7 @@ class IncomeOnBankAccountRepository:
             async with self.pool.acquire() as conn:
                 await conn.execute(query_update_is_valid, guid_data)
                 await conn.executemany(query, data_to_update)
-                result = IncomeOnBankAccountResponse(
+                result = FinancialTransactionsResponse(
                     status=201,
                     message="Данные успешно обновлены",
 
@@ -93,14 +178,14 @@ class IncomeOnBankAccountRepository:
                 return result
 
         except UniqueViolationError as e:
-            result = IncomeOnBankAccountResponse(
+            result = FinancialTransactionsResponse(
                 status=422,
                 message="UniqueViolationError",
                 details=str(e)
             )
             return result
         except asyncpg.PostgresError as e:
-            result = IncomeOnBankAccountResponse(
+            result = FinancialTransactionsResponse(
                 status=422,
                 message="PostgresError",
                 details=str(e)
@@ -108,7 +193,7 @@ class IncomeOnBankAccountRepository:
             print(result)
             return result
 
-    async def update_data(self, data: List[IncomeOnBankAccountUpdate]) -> IncomeOnBankAccountResponse:
+    async def update_data(self, data: List[IncomeOnBankAccountUpdate]) -> FinancialTransactionsResponse:
         data_to_update: List[Tuple] = []
         guid_data: List[str] = []
 
@@ -159,7 +244,7 @@ class IncomeOnBankAccountRepository:
             async with self.pool.acquire() as conn:
                 await conn.execute(query_update_is_valid, guid_data)
                 await conn.executemany(query, data_to_update)
-                result = IncomeOnBankAccountResponse(
+                result = FinancialTransactionsResponse(
                     status=201,
                     message="Данные успешно обновлены",
 
@@ -167,14 +252,14 @@ class IncomeOnBankAccountRepository:
                 return result
 
         except UniqueViolationError as e:
-            result = IncomeOnBankAccountResponse(
+            result = FinancialTransactionsResponse(
                 status=422,
                 message="UniqueViolationError",
                 details=str(e)
             )
             return result
         except asyncpg.PostgresError as e:
-            result = IncomeOnBankAccountResponse(
+            result = FinancialTransactionsResponse(
                 status=422,
                 message="PostgresError",
                 details=str(e)
