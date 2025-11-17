@@ -1,4 +1,4 @@
-from typing import Optional, Dict, List, Literal
+from typing import Optional, Dict, List, Literal, Union
 
 from pydantic import BaseModel, field_validator, Field, ConfigDict
 from datetime import datetime, date
@@ -36,6 +36,42 @@ example_assembly_metawild_data = {
     "warehouse_id": 1,
     "operation_type": "assembly"
 }
+
+from pydantic import model_validator
+
+
+class ProductQuantityCheck(BaseModel):
+    product_id: str
+    expected_physical_quantity: Optional[int] = None
+    expected_available_quantity: Optional[int] = None
+
+    @model_validator(mode='after')
+    def validate_at_least_one_quantity_field(self) -> 'ProductQuantityCheck':
+        if (self.expected_physical_quantity is None and
+                self.expected_available_quantity is None):
+            raise ValueError(
+                'Must provide either expected_physical_quantity or expected_available_quantity'
+            )
+        return self
+
+
+
+class PhysicalQuantityCheck(BaseModel):
+    current_physical_quantity: int
+    enough: bool
+
+class AvailableQuantityCheck(BaseModel):
+    current_available_quantity: int
+    enough: bool
+
+class ProductCheckResult(BaseModel):
+    product_id: str
+    quantity_checks: List[Union[PhysicalQuantityCheck, AvailableQuantityCheck]]
+
+class ProductQuantityCheckResult(BaseModel):
+    drawback: bool  # один раз для всего ответа
+    results: List[ProductCheckResult]  # список результатов по продуктам
+
 
 
 

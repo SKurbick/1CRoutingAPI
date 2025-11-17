@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, status, Body, HTTPException
 from app.models.warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, Warehouse, CurrentBalances, \
     ValidStockData, example_assembly_metawild_data, AssemblyOrDisassemblyMetawildData, AssemblyMetawildResponse, assembly_or_disassembly_metawild_description, \
     add_defective_goods_description, ReSortingOperationResponse, ReSortingOperation, re_sorting_operations_description, example_re_sorting_operations, \
-    AddStockByClient, AddStockByClientResponse, HistoricalStockData, HistoricalStockBody, StatusStats, ProductStats, WarehouseAndBalanceResponse
+    AddStockByClient, AddStockByClientResponse, HistoricalStockData, HistoricalStockBody, StatusStats, ProductStats, WarehouseAndBalanceResponse, \
+    ProductQuantityCheck, ProductQuantityCheckResult
 from app.service.warehouse_and_balances import WarehouseAndBalancesService
 from app.dependencies import get_warehouse_and_balances_service
 
@@ -117,4 +118,14 @@ async def get_historical_stocks(
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
     result = await service.get_historical_stocks(data)
+    return result
+
+
+@router.post("/product_quantity_check", response_model=ProductQuantityCheckResult)
+async def product_quantity_check(
+        warehouse_id:int,
+        data: List[ProductQuantityCheck],
+        service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
+):
+    result = await service.product_quantity_check(warehouse_id=warehouse_id,data= data)
     return result

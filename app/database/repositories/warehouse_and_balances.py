@@ -10,12 +10,18 @@ from app.models import DefectiveGoodsUpdate, AddStockByClient
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, ComponentsInfo, \
     AssemblyOrDisassemblyMetawildData, \
     AssemblyMetawildResponse, WarehouseAndBalanceResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClientResponse, HistoricalStockBody, \
-    HistoricalStockData, StockData, ProductStats, StatusStats
+    HistoricalStockData, StockData, ProductStats, StatusStats, ProductQuantityCheckResult, ProductQuantityCheck
 
 
 class WarehouseAndBalancesRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+
+    async def product_quantity_check(self, data:List[ProductQuantityCheck]) -> List[ProductQuantityCheckResult]:
+        select_query = """
+        
+        """
 
     async def get_statuses_for_products_in_reserve(self) -> List[ProductStats]|WarehouseAndBalanceResponse:
 

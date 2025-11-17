@@ -7,7 +7,8 @@ from .ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGood
     OrderedGoodsFromBuyersData, PrintedBarcodeData, OrderedGoodsAndPrintedBarcodeData
 from .local_barcode_generation import GoodsAcceptanceCertificateCreate
 from .warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, ReSortingOperation, ReSortingOperationResponse, \
-    AddStockByClient, AddStockByClientResponse, StockData, HistoricalStockData, HistoricalStockBody, StatusStats, ProductStats
+    AddStockByClient, AddStockByClientResponse, StockData, HistoricalStockData, HistoricalStockBody, StatusStats, ProductStats, ProductQuantityCheck, \
+     ProductQuantityCheckResult, ProductCheckResult, PhysicalQuantityCheck, AvailableQuantityCheck
 from .goods_information import MetawildsData, AllProductsData, GoodsResponse
 from .inventory_check import InventoryCheckUpdate, InventoryData, InventoryDataResponse, IDGroupData
 from .inventory_transactions import ITGroupData
@@ -59,5 +60,10 @@ __all__ = [
     'StatusStats',
     'ProductStats',
     'WriteOffOfNonCashFunds',
-    'CashDisbursementOrder'
+    'CashDisbursementOrder',
+    'ProductQuantityCheck',
+    'PhysicalQuantityCheck',
+    'AvailableQuantityCheck',
+    'ProductCheckResult',
+    'ProductQuantityCheckResult',
 ]
