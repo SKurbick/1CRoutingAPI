@@ -65,7 +65,7 @@ class ONECRouting:
     async def commission_sales_fbo_add(self, data):
         url = self.base_url + "commission_sales_fbo/"
         async with aiohttp.ClientSession() as session:
-            async with session.request(method="POST", url=url, json=data, auth=BasicAuth(self.login, self.password)) as response:
+            async with session.request(method="POST", url=url, json=data, auth=BasicAuth(self.login, self.password), timeout=60) as response:
                 print(response.status)
                 json_response = await response.text()
                 print(json_response)
