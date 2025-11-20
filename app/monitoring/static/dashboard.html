@@ -1,32 +1,3 @@
-from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
-from .models import api_metrics
-
-router = APIRouter(tags=["Monitoring"])
-
-
-@router.get("/health", summary="Health check")
-async def health_check():
-    """Проверка здоровья приложения"""
-    return {
-        "status": "healthy",
-        "service": "1CRoutingAPI"
-    }
-
-
-@router.get("/metrics", summary="Метрики API")
-async def get_metrics():
-    """Получение метрик производительности API"""
-    return api_metrics.get_metrics()
-
-
-@router.get("/dashboard", response_class=HTMLResponse, summary="Dashboard мониторинга")
-async def metrics_dashboard():
-    """HTML дашборд для мониторинга в реальном времени"""
-
-    metrics = api_metrics.get_metrics()
-
-    html_content = f"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -252,9 +223,9 @@ async def metrics_dashboard():
                 '''
                 # Сортируем эндпоинты по количеству запросов (от большего к меньшему)
                 for endpoint, stats in sorted(
-                    metrics['endpoints'].items(), 
-                    key=lambda x: x[1]['total_requests'], 
-                    reverse=True
+                metrics['endpoints'].items(),
+                key=lambda x: x[1]['total_requests'],
+                reverse=True
                 )
                 ]) if metrics['endpoints'] else '<p>Нет данных об эндпоинтах</p>'}
             </div>
@@ -289,6 +260,3 @@ async def metrics_dashboard():
 </script>
 </body>
 </html>
-    """
-
-    return HTMLResponse(content=html_content)
