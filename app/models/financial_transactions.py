@@ -97,9 +97,9 @@ write_off_of_non_cash_funds_example = [
 
 
 class PaymentDescription(BaseModel):
-    payment_object: str
+    payment_object: Optional[str] = None
     amount: float
-    vat_rate: str
+    vat_rate: Optional[str] = None
     vat: float
 
 
