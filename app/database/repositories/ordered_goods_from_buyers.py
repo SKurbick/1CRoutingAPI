@@ -134,7 +134,7 @@ class OrderedGoodsFromBuyersRepository:
             from ordered_goods_from_buyers ogfb 
             left join receipts_for_ordered_goods_from_buyers rfogfb on ogfb.id = rfogfb.ordered_goods_from_buyers_id 
             where
-            ogfb.in_acceptance = true and
+            ogfb.in_acceptance = false and
             ogfb.is_valid = true and
             ogfb.is_printed_barcode = false and 
             ogfb.acceptance_completed = false and 
