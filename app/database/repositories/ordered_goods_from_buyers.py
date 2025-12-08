@@ -138,7 +138,7 @@ class OrderedGoodsFromBuyersRepository:
             ogfb.is_valid = true and
             ogfb.is_printed_barcode = false and 
             ogfb.acceptance_completed = false and 
-            ogfb.supply_date BETWEEN $1 AND $2
+            supply_data BETWEEN $1 AND $2
             group by 
             ogfb.id;
             """
