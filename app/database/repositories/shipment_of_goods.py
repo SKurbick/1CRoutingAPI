@@ -27,8 +27,7 @@ class ShipmentOfGoodsRepository:
             UPDATE product_reserves as pr
             SET shipped = pr.shipped + $2,
                 is_fulfilled = $3 
-            WHERE id = $1
-            RETURNING id, supply_id;
+            WHERE id = $1;
         """
 
         # Подготовка данных для вставки отгрузок
@@ -71,15 +70,11 @@ class ShipmentOfGoodsRepository:
         try:
             async with self.pool.acquire() as conn:
                 async with conn.transaction():
-                    # 1. Сначала обновляем резервы
-                    reserve_records = []
-                    for value in reserve_values:
-                        if value[0]:  # Проверяем наличие product_reserves_id
-                            record = await conn.fetchrow(update_reserve_query, *value)
-                            reserve_records.append(record)
+                    if shipment_values and reserve_values:
+                        # 1. Сначала обновляем резервы
+                        await conn.executemany(update_reserve_query, reserve_values)
 
-                    # 2. Затем вставляем записи об отгрузках
-                    if shipment_values:
+                        # 2. Затем вставляем записи об отгрузках
                         await conn.executemany(insert_shipment_query, shipment_values)
 
                     return ShipmentOfGoodsResponse(
@@ -93,7 +88,6 @@ class ShipmentOfGoodsRepository:
                 message="PostgresError",
                 details=str(e)
             )
-
 
     async def creation_reserve_with_movement(self, data: List[CreationWithMovement]) -> ShipmentOfGoodsResponse:
         insert_query = """
@@ -465,7 +459,7 @@ class ShipmentOfGoodsRepository:
             )
         return result
 
-    async def create_reserve(self, data: List[ReserveOfGoodsCreate]) -> List[ReserveOfGoodsResponse]| ShipmentOfGoodsResponse:
+    async def create_reserve(self, data: List[ReserveOfGoodsCreate]) -> List[ReserveOfGoodsResponse] | ShipmentOfGoodsResponse:
         insert_query = """
                 INSERT INTO product_reserves (
                     product_id,
@@ -528,7 +522,7 @@ class ShipmentOfGoodsRepository:
             )
             return result
 
-    async def add_shipped_goods(self, data: List[ShippedGoods]) -> List[ReserveOfGoodsResponse]| ShipmentOfGoodsResponse:
+    async def add_shipped_goods(self, data: List[ShippedGoods]) -> List[ReserveOfGoodsResponse] | ShipmentOfGoodsResponse:
         pprint(data)
         update_query = """
             UPDATE product_reserves as pr
