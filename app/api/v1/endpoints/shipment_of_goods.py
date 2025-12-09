@@ -6,11 +6,21 @@ from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
 from app.models import ShippedGoodsByID
 from app.models.shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsResponse, example_shipment_of_goods_data, ShipmentParamsData, \
     ReserveOfGoodsResponse, ReserveOfGoodsCreate, example_reserve_of_goods_data, ShippedGoods, example_shipped_goods_data, DeliveryType, ReservedData, \
-    SummReserveData, CreationWithMovement
+    SummReserveData, CreationWithMovement, ShipmentWithReserveUpdating
 from app.service.shipment_of_goods import ShipmentOfGoodsService
 from app.dependencies import get_shipment_of_goods_service
 
 router = APIRouter(prefix="/shipment_of_goods", tags=["Отгрузка со склада продавца"])
+
+
+@router.post("/shipment_with_reserve_updating", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
+async def shipment_with_reserve_updating(
+        data: List[ShipmentWithReserveUpdating],
+        delivery_type: DeliveryType = Query(..., description="принимает ФБС или ФБО"),
+        service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
+):
+    result = await service.shipment_with_reserve_updating(data, delivery_type)
+    return result
 
 
 

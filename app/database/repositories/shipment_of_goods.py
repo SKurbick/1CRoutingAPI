@@ -8,12 +8,92 @@ import asyncpg
 from asyncpg import Pool
 from app.models import ShipmentOfGoodsUpdate
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsCreate, ReserveOfGoodsResponse, ShippedGoods, ReservedData, \
-    DeliveryType, ShippedGoodsByID, SummReserveData, DeliveryTypeData, CreationWithMovement
+    DeliveryType, ShippedGoodsByID, SummReserveData, DeliveryTypeData, CreationWithMovement, ShipmentWithReserveUpdating
 
 
 class ShipmentOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+    async def shipment_with_reserve_updating(
+            self,
+            data: List[ShipmentWithReserveUpdating]
+    ) -> ShipmentOfGoodsResponse:
+        """
+        Обновляет резервы и создает записи о отгрузке в одной транзакции
+        """
+        # Подготовка данных для обновления резервов
+        update_reserve_query = """
+            UPDATE product_reserves as pr
+            SET shipped = pr.shipped + $2,
+                is_fulfilled = $3 
+            WHERE id = $1
+            RETURNING id, supply_id;
+        """
+
+        # Подготовка данных для вставки отгрузок
+        insert_shipment_query = """
+            INSERT INTO shipment_of_goods 
+                (author, supply_id, product_id, warehouse_id, delivery_type,
+                 wb_warehouse, account, quantity, shipment_date, 
+                 share_of_kit, metawild, product_reserves_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+        """
+
+        # Подготавливаем значения для обоих запросов
+        reserve_values = []
+        shipment_values = []
+
+        for item in data:
+            # Для обновления резервов
+            reserve_values.append((
+                item.product_reserves_id,
+                item.quantity,
+                item.is_fulfilled
+            ))
+
+            # Для вставки отгрузок
+            shipment_values.append((
+                item.author,
+                item.supply_id,
+                item.product_id,
+                item.warehouse_id,
+                item.delivery_type,
+                item.wb_warehouse,
+                item.account,
+                item.quantity,
+                item.shipment_date,
+                False,  # share_of_kit
+                None,  # metawild
+                item.product_reserves_id
+            ))
+
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    # 1. Сначала обновляем резервы
+                    reserve_records = []
+                    for value in reserve_values:
+                        if value[0]:  # Проверяем наличие product_reserves_id
+                            record = await conn.fetchrow(update_reserve_query, *value)
+                            reserve_records.append(record)
+
+                    # 2. Затем вставляем записи об отгрузках
+                    if shipment_values:
+                        await conn.executemany(insert_shipment_query, shipment_values)
+
+                    return ShipmentOfGoodsResponse(
+                        status=201,
+                        message="Успешно обновлены резервы и созданы записи об отгрузке"
+                    )
+
+        except asyncpg.PostgresError as e:
+            return ShipmentOfGoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
+
 
     async def creation_reserve_with_movement(self, data: List[CreationWithMovement]) -> ShipmentOfGoodsResponse:
         insert_query = """
