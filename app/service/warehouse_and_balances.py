@@ -3,10 +3,12 @@ from typing import List
 
 from app.dependencies.config import settings
 from app.infrastructure.ONE_C import ONECRouting
-from app.models import DefectiveGoodsUpdate, AddStockByClientResponse
+from app.models import DefectiveGoodsUpdate, AddStockByClientResponse, StatusStats
 from app.database.repositories import WarehouseAndBalancesRepository
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, AssemblyOrDisassemblyMetawildData, \
-    AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClient, HistoricalStockBody, HistoricalStockData
+    AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClient, HistoricalStockBody, HistoricalStockData, ProductStats, \
+    WarehouseAndBalanceResponse, ProductQuantityCheckResult, ProductQuantityCheck, PhysicalQuantityCheck, AvailableQuantityCheck, \
+    ProductCheckResult
 
 
 class WarehouseAndBalancesService:
@@ -15,6 +17,10 @@ class WarehouseAndBalancesService:
             warehouse_and_balances_repository: WarehouseAndBalancesRepository,
     ):
         self.warehouse_and_balances_repository = warehouse_and_balances_repository
+
+    async def get_statuses_for_products_in_reserve(self) -> List[ProductStats]| WarehouseAndBalanceResponse:
+        result = await self.warehouse_and_balances_repository.get_statuses_for_products_in_reserve()
+        return result
 
     async def get_historical_stocks(self, data: HistoricalStockBody) -> List[HistoricalStockData]:
         result = await self.warehouse_and_balances_repository.get_historical_stocks(data)
@@ -49,7 +55,6 @@ class WarehouseAndBalancesService:
             one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
             await one_c_connect.assembly_or_disassembly_metawild(data=refactor_kit_components)
 
-
         return result
 
     @staticmethod
@@ -83,3 +88,72 @@ class WarehouseAndBalancesService:
     async def add_stock_by_client(self, data: List[AddStockByClient]) -> AddStockByClientResponse:
         result = await self.warehouse_and_balances_repository.add_stock_by_client(data)
         return result
+
+
+    async def product_quantity_check(self, warehouse_id: int, data: List[ProductQuantityCheck]) -> ProductQuantityCheckResult:
+        all_product_current_balances = await self.get_all_product_current_balances()
+
+        results = []
+        overall_drawback = False
+
+        for check_request in data:
+            # Фильтруем балансы по product_id и warehouse_id = 1
+            product_balances = [
+                b for b in all_product_current_balances
+                if b.product_id == check_request.product_id and b.warehouse_id == warehouse_id
+            ]
+
+            quantity_checks = []
+            product_drawback = False
+
+            if not product_balances:
+                # Если нет данных по складу 1, считаем что количества недостаточно
+                if check_request.expected_physical_quantity is not None:
+                    quantity_checks.append(PhysicalQuantityCheck(
+                        current_physical_quantity=0,
+                        enough=False
+                    ))
+                    product_drawback = True
+                if check_request.expected_available_quantity is not None:
+                    quantity_checks.append(AvailableQuantityCheck(
+                        current_available_quantity=0,
+                        enough=False
+                    ))
+                    product_drawback = True
+            else:
+                # Берем первый подходящий баланс (warehouse_id = 1)
+                balance = product_balances[0]
+
+                # Проверяем physical quantity
+                if check_request.expected_physical_quantity is not None:
+                    physical_enough = check_request.expected_physical_quantity <= balance.physical_quantity
+                    if not physical_enough:
+                        product_drawback = True
+                    quantity_checks.append(PhysicalQuantityCheck(
+                        current_physical_quantity=balance.physical_quantity,
+                        enough=physical_enough
+                    ))
+
+                # Проверяем available quantity
+                if check_request.expected_available_quantity is not None:
+                    available_enough = check_request.expected_available_quantity <= balance.available_quantity
+                    if not available_enough:
+                        product_drawback = True
+                    quantity_checks.append(AvailableQuantityCheck(
+                        current_available_quantity=balance.available_quantity,
+                        enough=available_enough
+                    ))
+
+            # Обновляем общий drawback
+            if product_drawback:
+                overall_drawback = True
+
+            results.append(ProductCheckResult(
+                product_id=check_request.product_id,
+                quantity_checks=quantity_checks
+            ))
+
+        return ProductQuantityCheckResult(
+            drawback=overall_drawback,
+            results=results
+        )

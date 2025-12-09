@@ -1,6 +1,6 @@
 from .docs import DocsRepository
 from .receipt_of_goods import ReceiptOfGoodsRepository
-from .income_on_bank_account import IncomeOnBankAccountRepository
+from .financial_transactions import FinancialTransactionsRepository
 from .shipment_of_goods import ShipmentOfGoodsRepository
 from .ordered_goods_from_buyers import OrderedGoodsFromBuyersRepository
 from .local_barcode_generation import LocalBarcodeGenerationRepository
@@ -11,7 +11,7 @@ from .inventory_transactions import InventoryTransactionsRepository
 from .return_of_goods import ReturnOfGoodsRepository
 __all__ = [
     'ReceiptOfGoodsRepository',
-    'IncomeOnBankAccountRepository',
+    'FinancialTransactionsRepository',
     'ShipmentOfGoodsRepository',
     'OrderedGoodsFromBuyersRepository',
     'LocalBarcodeGenerationRepository',

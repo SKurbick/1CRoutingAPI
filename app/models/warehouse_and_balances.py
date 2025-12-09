@@ -1,7 +1,27 @@
-from typing import Optional, Dict, List, Literal
+from typing import Optional, Dict, List, Literal, Union
 
 from pydantic import BaseModel, field_validator, Field, ConfigDict
 from datetime import datetime, date
+
+
+
+
+
+
+
+
+product_quantity_check_description = """
+expected_physical_quantity - передайте что бы узнать "ожидаемый физический остаток"\n
+expected_available_quantity -  передайте что бы узнать "ожидаемый свободный остаток"\n
+product_id - обязательный параметр\n
+так же нужно передать либо expected_physical_quantity либо expected_available_quantity\n
+"""
+product_quantity_check_response_description = """
+если drawback = true - следовательно во вложенности есть ожидаемый остаток которого меньше фактического\n
+enough =  true - значит соответствующего остатка достаточно\n
+current_physical_quantity - ожидаемый физический остаток\n
+ и expected_available_quantity - ожидаемый свободный остаток\n
+"""
 
 example_defective_goods_data = [
     {
@@ -36,6 +56,42 @@ example_assembly_metawild_data = {
     "warehouse_id": 1,
     "operation_type": "assembly"
 }
+
+from pydantic import model_validator
+
+
+class ProductQuantityCheck(BaseModel):
+    product_id: str
+    expected_physical_quantity: Optional[int] = None
+    expected_available_quantity: Optional[int] = None
+
+    @model_validator(mode='after')
+    def validate_at_least_one_quantity_field(self) -> 'ProductQuantityCheck':
+        if (self.expected_physical_quantity is None and
+                self.expected_available_quantity is None):
+            raise ValueError(
+                'Must provide either expected_physical_quantity or expected_available_quantity'
+            )
+        return self
+
+
+
+class PhysicalQuantityCheck(BaseModel):
+    current_physical_quantity: int
+    enough: bool
+
+class AvailableQuantityCheck(BaseModel):
+    current_available_quantity: int
+    enough: bool
+
+class ProductCheckResult(BaseModel):
+    product_id: str
+    quantity_checks: List[Union[PhysicalQuantityCheck, AvailableQuantityCheck]]
+
+class ProductQuantityCheckResult(BaseModel):
+    drawback: bool  # один раз для всего ответа
+    results: List[ProductCheckResult]  # список результатов по продуктам
+
 
 
 
@@ -159,3 +215,18 @@ class AddStockByClientResponse(BaseModel):
     status: int
     message: str
     details: Optional[str] = None
+
+
+class StatusStats(BaseModel):
+    fictitious_delivered: int
+    in_hanging_supply: int
+    in_technical_supply: int
+    new: int
+    total_count: int
+    canceled_count: int
+    actual_count: int
+
+# Основная модель для продукта
+class ProductStats(BaseModel):
+    product_id: str  # local_vendor_code
+    status_stats: StatusStats

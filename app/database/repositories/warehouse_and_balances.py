@@ -10,7 +10,7 @@ from app.models import DefectiveGoodsUpdate, AddStockByClient
 from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse, CurrentBalances, ValidStockData, ComponentsInfo, \
     AssemblyOrDisassemblyMetawildData, \
     AssemblyMetawildResponse, WarehouseAndBalanceResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClientResponse, HistoricalStockBody, \
-    HistoricalStockData, StockData
+    HistoricalStockData, StockData, ProductStats, StatusStats, ProductQuantityCheckResult, ProductQuantityCheck
 
 
 class WarehouseAndBalancesRepository:
@@ -18,7 +18,80 @@ class WarehouseAndBalancesRepository:
         self.pool = pool
 
 
-    async def kit_components_by_product_id(self, product_id:str):
+    async def product_quantity_check(self, data:List[ProductQuantityCheck]) -> List[ProductQuantityCheckResult]:
+        select_query = """
+        
+        """
+
+    async def get_statuses_for_products_in_reserve(self) -> List[ProductStats]|WarehouseAndBalanceResponse:
+
+        select_query = """
+                    WITH last_statuses AS (
+                SELECT 
+                    osl.order_id,
+                    osl.status,
+                    ROW_NUMBER() OVER (PARTITION BY osl.order_id ORDER BY osl.created_at DESC) as rn
+                FROM public.order_status_log osl
+            ),
+            canceled_counts AS (
+                SELECT 
+                    at.task_id,
+                    COUNT(CASE WHEN hsat.wb_status = 'canceled' THEN 1 END) as canceled_count
+                FROM public.assembly_task at
+                LEFT JOIN public.historical_statuses_of_assembly_tasks hsat ON at.task_id = hsat.assembly_task_id
+                GROUP BY at.task_id
+            )
+            SELECT 
+                a.local_vendor_code,
+                COUNT(CASE WHEN ls.status = 'FICTITIOUS_DELIVERED' THEN 1 END) as fictitious_delivered,
+                COUNT(CASE WHEN ls.status = 'IN_HANGING_SUPPLY' THEN 1 END) as in_hanging_supply,
+                COUNT(CASE WHEN ls.status = 'IN_TECHNICAL_SUPPLY' THEN 1 END) as in_technical_supply,
+                        COUNT(CASE WHEN ls.status = 'NEW' THEN 1 END) as new,
+                COUNT(*) as total_count,
+                SUM(cc.canceled_count) as canceled_count,
+                COUNT(*) - COALESCE(SUM(cc.canceled_count), 0) as actual_count
+            FROM public.article a
+            INNER JOIN public.assembly_task at ON a.nm_id = at.article_id
+            INNER JOIN last_statuses ls ON at.task_id = ls.order_id AND ls.rn = 1
+            LEFT JOIN canceled_counts cc ON at.task_id = cc.task_id
+            WHERE ls.status IN ('FICTITIOUS_DELIVERED', 'IN_HANGING_SUPPLY', 'IN_TECHNICAL_SUPPLY','NEW')
+            GROUP BY a.local_vendor_code
+            ORDER BY a.local_vendor_code;
+        """
+        try:
+            # Получаем данные из БД
+            async with self.pool.acquire() as conn:
+                records = await conn.fetch(select_query)
+
+                # Преобразуем записи в Pydantic модели
+                products = []
+                for record in records:
+                    product = ProductStats(
+                        product_id=record['local_vendor_code'],
+                        status_stats=StatusStats(
+                            fictitious_delivered=record['fictitious_delivered'],
+                            in_hanging_supply=record['in_hanging_supply'],
+                            in_technical_supply=record['in_technical_supply'],
+                            new=record['new'],
+                            total_count=record['total_count'],
+                            canceled_count=record['canceled_count'] or 0,
+                            actual_count=record['actual_count'] or 0
+                        )
+                    )
+                    products.append(product)
+
+            return products
+
+
+        except asyncpg.PostgresError as e:
+            return WarehouseAndBalanceResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e)
+            )
+
+
+    async def kit_components_by_product_id(self, product_id: str):
         select_query = """
         SELECT  kit_components FROM products WHERE id = $1
         """
@@ -31,7 +104,7 @@ class WarehouseAndBalancesRepository:
         try:
             kit_components = json.loads(result[0]['kit_components'])
         except (json.JSONDecodeError, TypeError) as e:
-                print(str(e))
+            print(str(e))
         return kit_components
 
     async def get_historical_stocks(self, data: HistoricalStockBody) -> List[HistoricalStockData]:
@@ -173,9 +246,62 @@ class WarehouseAndBalancesRepository:
         return [Warehouse(**res) for res in result]
 
     async def get_all_product_current_balances(self) -> List[CurrentBalances]:
+        # old
+        # select_query = """
+        # SELECT * FROM current_balances;
+        # """
+        # new
         select_query = """
-        SELECT * FROM current_balances;
+                    WITH last_statuses AS (
+                SELECT DISTINCT ON (osl.order_id)
+                    osl.order_id,
+                    osl.status
+                FROM public.order_status_log osl
+                ORDER BY osl.order_id, osl.created_at DESC
+            ),
+            task_counts AS (
+                SELECT 
+                    at.task_id,
+                    at.article_id,
+                    ls.status,
+                    CASE WHEN EXISTS (
+                        SELECT 1 
+                        FROM public.historical_statuses_of_assembly_tasks hsat 
+                        WHERE hsat.assembly_task_id = at.task_id 
+                        AND hsat.wb_status = 'canceled'
+                    ) THEN 1 ELSE 0 END as is_canceled
+                FROM public.assembly_task at
+                INNER JOIN last_statuses ls ON at.task_id = ls.order_id
+                WHERE ls.status IN ('FICTITIOUS_DELIVERED', 'IN_HANGING_SUPPLY', 'IN_TECHNICAL_SUPPLY')
+            ),
+            fbs_reserves AS (
+                SELECT 
+                    a.local_vendor_code as product_id,
+                    COUNT(*) as total_count,
+                    SUM(tc.is_canceled) as canceled_count,
+                    COUNT(*) - SUM(tc.is_canceled) as actual_count
+                FROM public.article a
+                INNER JOIN task_counts tc ON a.nm_id = tc.article_id
+                GROUP BY a.local_vendor_code
+            )
+            SELECT 
+                cb.product_id,
+                cb.warehouse_id,
+                cb.physical_quantity,
+                CASE 
+                    WHEN cb.warehouse_id = 1 THEN cb.reserved_quantity + COALESCE(fbs.actual_count, 0)
+                    ELSE cb.reserved_quantity
+                END as reserved_quantity,
+                CASE 
+                    WHEN cb.warehouse_id = 1 THEN cb.available_quantity - COALESCE(fbs.actual_count, 0)
+                    ELSE cb.available_quantity
+                END as available_quantity
+            --    COALESCE(fbs.actual_count, 0) as fbs_reserve
+            FROM public.current_balances cb
+            LEFT JOIN fbs_reserves fbs ON cb.product_id = fbs.product_id
+            ORDER BY cb.product_id, cb.warehouse_id;
         """
+
         async with self.pool.acquire() as conn:
             result = await conn.fetch(select_query)
         pprint(result)

@@ -34,6 +34,8 @@ async def create_data(
         data: List[ShipmentOfGoodsUpdate] = Body(example=example_shipment_of_goods_data),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
+    print("delivery_type",delivery_type)
+    print(data)
     result = await service.create_data(data, delivery_type)
 
     if result.status >= 400:

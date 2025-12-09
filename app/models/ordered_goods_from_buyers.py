@@ -29,13 +29,13 @@ example_ordered_goods_from_buyers_data = [
      "supply_date": "2025-04-16 15:22:37",
      "supplier_name": "Никола Тесла",
      "supplier_code": "7355608",
-    "expected_receipt_date":datetime.today() ,
-    "currency": "string" ,
-    "shipment_date":datetime.today() ,
-    "payment_document_number": "string",
-    "payment_indicator":"string" ,
-    "receipt_transaction_number": "string",
-    "comment": "string",
+     "expected_receipt_date": datetime.today(),
+     "currency": "string",
+     "shipment_date": datetime.today(),
+     "payment_document_number": "string",
+     "payment_indicator": "string",
+     "receipt_transaction_number": "string",
+     "comment": "string",
      "supply_data": [
          {
              "local_vendor_code": "wild123",
@@ -133,6 +133,14 @@ ordered_goods_and_printed_data_example = {
 }
 
 
+
+class ReceiptsData(BaseModel):
+    reciept_number: str
+    reciept_date: datetime
+    reciept_quantity: float
+    reciept_amount: float
+
+
 class SupplyData(BaseModel):
     local_vendor_code: str
     product_name: str
@@ -145,6 +153,7 @@ class SupplyData(BaseModel):
     last_purchase_supplier: Optional[str] = None
     last_purchase_price: Optional[float] = None
     cancelled_due_to: Optional[str] = None
+    reciepts: list[ReceiptsData]
 
 
 class DocumentData1C(BaseModel):
