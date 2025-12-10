@@ -7,7 +7,7 @@ from app.infrastructure.ONE_C import ONECRouting
 from app.models import ShipmentOfGoodsUpdate, ShippedGoodsByID
 from app.database.repositories import ShipmentOfGoodsRepository
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsResponse, ReserveOfGoodsCreate, ShippedGoods, DeliveryType, \
-    ReservedData, CreationWithMovement
+    ReservedData, CreationWithMovement, ShipmentWithReserveUpdating
 
 
 class ShipmentOfGoodsService:
@@ -16,6 +16,23 @@ class ShipmentOfGoodsService:
             shipment_of_goods_repository: ShipmentOfGoodsRepository,
     ):
         self.shipment_of_goods_repository = shipment_of_goods_repository
+
+    async def shipment_with_reserve_updating(self, data: List[ShipmentWithReserveUpdating], delivery_type: DeliveryType) -> ShipmentOfGoodsResponse:
+        #todo предпроверка на метод отгрузки. Если ФБО - запрос в 1с
+        result = await self.shipment_of_goods_repository.shipment_with_reserve_updating(data)
+        if result.status == 201:
+            match delivery_type:  # запрос для 1С
+                case DeliveryType.FBO:
+                    try:
+                        one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
+                        refactoring_data = one_c_connect.refactoring_to_account_data(shipments=data, account_to_inn=account_inn_map)
+                        pprint(refactoring_data)
+                        one_c_result = await one_c_connect.commission_sales_fbo_add(data=refactoring_data)
+                        print(one_c_result)
+                    except Exception as e:
+                        print(e)
+        return result
+
 
     async def creation_reserve_with_movement(self, data: List[CreationWithMovement], delivery_type) -> ShipmentOfGoodsResponse:
         result = await self.shipment_of_goods_repository.creation_reserve_with_movement(data)

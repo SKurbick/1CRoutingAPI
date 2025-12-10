@@ -153,3 +153,6 @@ class SummReserveData(BaseModel):
 class CreationWithMovement(ReserveOfGoodsCreate):
     move_from_supply: str
     quantity_to_move: int
+
+class ShipmentWithReserveUpdating(ShipmentOfGoodsUpdate):
+    is_fulfilled: bool
