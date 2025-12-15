@@ -6,7 +6,7 @@ from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool
-from app.models import ShipmentOfGoodsUpdate
+from app.models import ShipmentOfGoodsUpdate, ShipmentOfGoodsForFBS
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsCreate, ReserveOfGoodsResponse, ShippedGoods, ReservedData, \
     DeliveryType, ShippedGoodsByID, SummReserveData, DeliveryTypeData, CreationWithMovement, ShipmentWithReserveUpdating
 
@@ -402,7 +402,7 @@ class ShipmentOfGoodsRepository:
             select_result = await conn.fetch(query, *params)
         return [ReservedData(**res) for res in select_result]
 
-    async def update_data(self, data: List[ShipmentOfGoodsUpdate]):
+    async def update_data(self, data: List[ShipmentOfGoodsForFBS]):
         data_to_update: List[Tuple] = []
         for shipment_data in data:
             author = shipment_data.author
@@ -415,14 +415,14 @@ class ShipmentOfGoodsRepository:
             quantity = shipment_data.quantity
             date = shipment_data.shipment_date
             product_reserves_id = shipment_data.product_reserves_id
-
-            tuple_data = (author, supply_id, product_id, warehouse_id, delivery_type, wb_warehouse, account, quantity, date, False, None, product_reserves_id)
+            integration_id = shipment_data.integration_id
+            tuple_data = (author, supply_id, product_id, warehouse_id, delivery_type, wb_warehouse, account, quantity, date, False, None, product_reserves_id,integration_id)
             data_to_update.append(tuple_data)
         pprint(data_to_update)
         query_to_insert = """
         INSERT INTO shipment_of_goods (author, supply_id, product_id, warehouse_id, delivery_type,
-                               wb_warehouse, account, quantity, shipment_date, share_of_kit, metawild, product_reserves_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+                               wb_warehouse, account, quantity, shipment_date, share_of_kit, metawild, product_reserves_id, integration_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
         """
         try:
             async with self.pool.acquire() as conn:

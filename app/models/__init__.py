@@ -2,7 +2,7 @@ from .receipt_of_goods import ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate, On
 from .financial_transactions import IncomeOnBankAccountUpdate, WriteOffOfNonCashFunds, CashDisbursementOrder
 from .return_of_goods import ReturnsOneCModelAdd, OneCReturnDataByProduct
 from .shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsResponse, example_shipment_of_goods_data, ShipmentParamsData, ReservedData, \
-    ShippedGoodsByID, SummReserveData, DeliveryTypeData, CreationWithMovement, ShipmentWithReserveUpdating
+    ShippedGoodsByID, SummReserveData, DeliveryTypeData, CreationWithMovement, ShipmentWithReserveUpdating, ShipmentOfGoodsForFBS
 from .ordered_goods_from_buyers import OrderedGoodsFromBuyersUpdate, OrderedGoodsFromBuyersResponse, example_ordered_goods_from_buyers_data, \
     OrderedGoodsFromBuyersData, PrintedBarcodeData, OrderedGoodsAndPrintedBarcodeData
 from .local_barcode_generation import GoodsAcceptanceCertificateCreate
@@ -66,5 +66,6 @@ __all__ = [
     'AvailableQuantityCheck',
     'ProductCheckResult',
     'ProductQuantityCheckResult',
-    'ShipmentWithReserveUpdating'
+    'ShipmentWithReserveUpdating',
+    'ShipmentOfGoodsForFBS'
 ]

@@ -3,7 +3,7 @@ from typing import Optional, List
 from enum import Enum
 
 from pydantic import BaseModel
-
+import uuid
 example_shipment_of_goods_data = [
     {
         'author': 'admin',
@@ -15,7 +15,8 @@ example_shipment_of_goods_data = [
         'wb_warehouse': 'Лентяево',
         'account': 'Хачатрян',
         'quantity': 12,
-        "product_reserves_id": 11
+        "product_reserves_id": 11,
+        "integration_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
     }
 ]
 
@@ -156,3 +157,6 @@ class CreationWithMovement(ReserveOfGoodsCreate):
 
 class ShipmentWithReserveUpdating(ShipmentOfGoodsUpdate):
     is_fulfilled: bool
+
+class ShipmentOfGoodsForFBS(ShipmentOfGoodsUpdate):
+    integration_id: uuid.UUID

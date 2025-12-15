@@ -7,7 +7,7 @@ from app.infrastructure.ONE_C import ONECRouting
 from app.models import ShipmentOfGoodsUpdate, ShippedGoodsByID
 from app.database.repositories import ShipmentOfGoodsRepository
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsResponse, ReserveOfGoodsCreate, ShippedGoods, DeliveryType, \
-    ReservedData, CreationWithMovement, ShipmentWithReserveUpdating
+    ReservedData, CreationWithMovement, ShipmentWithReserveUpdating, ShipmentOfGoodsForFBS
 
 
 class ShipmentOfGoodsService:
@@ -51,7 +51,7 @@ class ShipmentOfGoodsService:
         result = await self.shipment_of_goods_repository.get_reserved_data(is_fulfilled=is_fulfilled, begin_date=begin_date, delivery_type=delivery_type)
         return result
 
-    async def create_data(self, data: List[ShipmentOfGoodsUpdate], delivery_type: DeliveryType) -> ShipmentOfGoodsResponse:
+    async def create_data(self, data: List[ShipmentOfGoodsForFBS], delivery_type: DeliveryType) -> ShipmentOfGoodsResponse:
         result = await self.shipment_of_goods_repository.update_data(data)
         if result.status == 201:
             match delivery_type:  # запрос для 1С
