@@ -15,8 +15,9 @@ router = APIRouter(prefix="/ordered_goods_from_buyers", tags=["Заказы то
 
 @router.post("/update", response_model=OrderedGoodsFromBuyersResponse, status_code=status.HTTP_201_CREATED)
 async def create_data(
-        data: List[OrderedGoodsFromBuyersUpdate] = Body(example=example_ordered_goods_from_buyers_data),
-        service: OrderedGoodsFromBuyersService = Depends(get_ordered_goods_from_buyers_service)
+        data: List[OrderedGoodsFromBuyersUpdate],
+        # data: List[OrderedGoodsFromBuyersUpdate] = Body(example=example_ordered_goods_from_buyers_data),
+        service: OrderedGoodsFromBuyersService = Depends(get_ordered_goods_from_buyers_service),
 ):
     result = await service.create_data(data)
 
