@@ -40,8 +40,8 @@ async def add_incoming_receipt(
         service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service)
 ):
     """Оприходование товаров (от акта приемки) на основной склад продавца. Временное решение пока нет актуализации поступлений в 1С"""
-    result = await service.add_incoming_receipt(data)
-
+    # result = await service.add_incoming_receipt(data)
+    result = ReceiptOfGoodsResponse(status=201,message="стоит заглушка на оприходование")
     if result.status >= 400:
         raise HTTPException(
             status_code=result.status,
