@@ -87,9 +87,10 @@ class ReceiptOfGoodsRepository:
                 amount_with_vat = supply_data.amount_with_vat
                 amount_without_vat = supply_data.amount_without_vat
                 product_name = supply_data.product_name
+                planned_cost = supply_data.planned_cost
                 data_to_update_supply_to_sellers_warehouse.append((guid, document_number, document_created_at, update_document_datetime, event_status,
                                                                    author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
-                                                                   quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name))
+                                                                   quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, planned_cost))
 
                 if local_vendor_code in ids:  # собираем данные для актуализации остатков на складе
                     data_to_update_incoming_items.append(
@@ -108,8 +109,8 @@ class ReceiptOfGoodsRepository:
         query_to_insert_supply_to_sellers_warehouse = """
         INSERT INTO supply_to_sellers_warehouse (guid, document_number, document_created_at, update_document_datetime, event_status,
                                author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
-                               quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, is_valid)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, True); """
+                               quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, is_valid,planned_cost)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, True, $16); """
 
         update_is_valid_in_incoming_items = """
         UPDATE incoming_items

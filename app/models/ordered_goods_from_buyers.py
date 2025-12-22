@@ -153,6 +153,7 @@ class SupplyData(BaseModel):
     last_purchase_supplier: Optional[str] = None
     last_purchase_price: Optional[float] = None
     cancelled_due_to: Optional[str] = None
+    planned_cost: Optional[float] = None
     reciepts: list[ReceiptsData]
 
 

@@ -87,6 +87,7 @@ class SupplyData(BaseModel):
     quantity: float
     amount_with_vat: float
     amount_without_vat: Optional[float] = None
+    planned_cost: Optional[float] = None
 
 
 class OneCModelUpdate(BaseModel):
