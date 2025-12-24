@@ -88,7 +88,8 @@ class SupplyData(BaseModel):
     amount_with_vat: float
     amount_without_vat: Optional[float] = None
     planned_cost: Optional[float] = None
-
+    pack_count: Optional[float] = None
+    pack_multiplicity: Optional[float] = None
 
 class OneCModelUpdate(BaseModel):
     guid: str

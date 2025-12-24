@@ -159,4 +159,4 @@ class ShipmentWithReserveUpdating(ShipmentOfGoodsUpdate):
 
 
 class WriteOffAccordingToFBS(ShipmentOfGoodsUpdate):
-    pass
+    assembly_tasks: List[int]

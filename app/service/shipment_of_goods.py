@@ -21,9 +21,6 @@ class ShipmentOfGoodsService:
 
 
     async def write_off_according_to_fbs(self, data: List[WriteOffAccordingToFBS])-> ShipmentOfGoodsResponse:
-        # todo
-        # проверка сбор заданий на условие приёмки
-        #
         result = await self.shipment_of_goods_repository.write_off_according_to_fbs(data)
 
         return result
