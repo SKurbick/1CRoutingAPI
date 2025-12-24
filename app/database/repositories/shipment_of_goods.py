@@ -6,7 +6,7 @@ from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool
-from app.models import ShipmentOfGoodsUpdate
+from app.models import ShipmentOfGoodsUpdate, WriteOffAccordingToFBS
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsCreate, ReserveOfGoodsResponse, ShippedGoods, ReservedData, \
     DeliveryType, ShippedGoodsByID, SummReserveData, DeliveryTypeData, CreationWithMovement, ShipmentWithReserveUpdating
 
@@ -15,12 +15,27 @@ class ShipmentOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
+
+
+
+    async def write_off_according_to_fbs(self, data: List[WriteOffAccordingToFBS]) ->ShipmentOfGoodsResponse:
+        """
+        Метод отгрузки товаров по ФБС. Перед списанием товара проверяет СЗ на повтор отгрузки.
+        Если хоть одно заявленное к отгрузке СЗ ранее было отгружено, то транзакция откатится и весь массив на списание
+        будет не исполнен.
+        """
+        # собираем сборочные задания для проверки
+        # если хоть одно ЗС ранее уже было отгружено, отбиваем ошибку. Так же при условии если СЗ нет в бд
+        # в обратно случае устанавливаем все как отгруженные
+        # так же устанавливаем отгрузку в shipment_of_goods
+        # отбиваем успешный результат
+        pass
     async def shipment_with_reserve_updating(
             self,
             data: List[ShipmentWithReserveUpdating]
     ) -> ShipmentOfGoodsResponse:
         """
-        Обновляет резервы и создает записи о отгрузке в одной транзакции
+        Обновляет резервы и создает записи об отгрузке в одной транзакции
         """
         # Подготовка данных для обновления резервов
         update_reserve_query = """

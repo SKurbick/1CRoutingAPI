@@ -4,7 +4,7 @@ from typing import List
 
 from app.dependencies.config import settings, account_inn_map
 from app.infrastructure.ONE_C import ONECRouting
-from app.models import ShipmentOfGoodsUpdate, ShippedGoodsByID
+from app.models import ShipmentOfGoodsUpdate, ShippedGoodsByID, WriteOffAccordingToFBS
 from app.database.repositories import ShipmentOfGoodsRepository
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsResponse, ReserveOfGoodsCreate, ShippedGoods, DeliveryType, \
     ReservedData, CreationWithMovement, ShipmentWithReserveUpdating
@@ -16,6 +16,17 @@ class ShipmentOfGoodsService:
             shipment_of_goods_repository: ShipmentOfGoodsRepository,
     ):
         self.shipment_of_goods_repository = shipment_of_goods_repository
+
+
+
+
+    async def write_off_according_to_fbs(self, data: List[WriteOffAccordingToFBS])-> ShipmentOfGoodsResponse:
+        # todo
+        # проверка сбор заданий на условие приёмки
+        #
+        result = await self.shipment_of_goods_repository.write_off_according_to_fbs(data)
+
+        return result
 
     async def shipment_with_reserve_updating(self, data: List[ShipmentWithReserveUpdating], delivery_type: DeliveryType) -> ShipmentOfGoodsResponse:
         #todo предпроверка на метод отгрузки. Если ФБО - запрос в 1с

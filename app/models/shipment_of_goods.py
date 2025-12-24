@@ -156,3 +156,7 @@ class CreationWithMovement(ReserveOfGoodsCreate):
 
 class ShipmentWithReserveUpdating(ShipmentOfGoodsUpdate):
     is_fulfilled: bool
+
+
+class WriteOffAccordingToFBS(ShipmentOfGoodsUpdate):
+    pass

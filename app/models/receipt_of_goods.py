@@ -106,6 +106,7 @@ class ReceiptOfGoodsUpdate(BaseModel):
     update_document_datetime: datetime
     author_of_the_change: str
     our_organizations_name: str
+    currency: Optional[str] = None
     supply_data: List[SupplyData]
 
     @field_validator('supplier_code')
