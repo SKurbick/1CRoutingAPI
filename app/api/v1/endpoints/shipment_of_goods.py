@@ -40,7 +40,7 @@ async def creation_reserve_with_movement(
 
 @router.post("/write_off_according_to_fbs", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def write_off_according_to_fbs(
-        data: List[WriteOffAccordingToFBS] = Body(example=example_shipment_of_goods_data),
+        data: List[WriteOffAccordingToFBS],
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
     """

@@ -157,6 +157,19 @@ class CreationWithMovement(ReserveOfGoodsCreate):
 class ShipmentWithReserveUpdating(ShipmentOfGoodsUpdate):
     is_fulfilled: bool
 
+from pydantic import  field_validator
 
 class WriteOffAccordingToFBS(ShipmentOfGoodsUpdate):
     assembly_tasks: List[int]
+
+    @field_validator('quantity')
+    def validate_quantity_equals_tasks_count(cls, v: int, info) -> int:
+        """Проверяет, что quantity равно количеству assembly_tasks"""
+        # Получаем значение assembly_tasks из данных
+        assembly_tasks = info.data.get('assembly_tasks', [])
+
+        if v != len(assembly_tasks):
+            raise ValueError(
+                f'Количество ({v}) должно быть равно количеству сборочных заданий({len(assembly_tasks)})'
+            )
+        return v

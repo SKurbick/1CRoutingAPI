@@ -15,21 +15,179 @@ class ShipmentOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
-
-
-
-    async def write_off_according_to_fbs(self, data: List[WriteOffAccordingToFBS]) ->ShipmentOfGoodsResponse:
+    async def write_off_according_to_fbs(self, data: List[WriteOffAccordingToFBS]) -> ShipmentOfGoodsResponse:
         """
         Метод отгрузки товаров по ФБС. Перед списанием товара проверяет СЗ на повтор отгрузки.
         Если хоть одно заявленное к отгрузке СЗ ранее было отгружено, то транзакция откатится и весь массив на списание
         будет не исполнен.
         """
-        # 1. собираем сборочные задания для проверки
-        # 2. если хоть одно ЗС ранее уже было отгружено, отбиваем ошибку. Так же при условии если СЗ нет в бд
-        # 3. в обратно случае устанавливаем все как отгруженные
-        # 4. так же устанавливаем отгрузку в shipment_of_goods
-        # 5. отбиваем успешный результат
-        pass
+        if not data:
+            return ShipmentOfGoodsResponse(
+                status=400,
+                message="No data provided",
+                details="Empty data list",
+                data=None
+            )
+
+        try:
+            # 1. Собираем все сборочные задания для проверки
+            all_assembly_tasks = []
+            for item in data:
+                all_assembly_tasks.extend(item.assembly_tasks)
+
+            if not all_assembly_tasks:
+                return ShipmentOfGoodsResponse(
+                    status=400,
+                    message="Сборочные задания по отгрузке не указаны.",
+                    details="Каждая отгрузка должна содержать как минимум 1 СЗ.",
+                    data=None
+                )
+
+            # 2. Начинаем транзакцию
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    # Проверяем, есть ли уже отгруженные сборочные задания
+                    query_check = """
+                        SELECT task_id 
+                        FROM public.assembly_task 
+                        WHERE task_id = ANY($1::bigint[]) 
+                        AND is_shipped = TRUE
+                    """
+
+                    already_shipped = await conn.fetch(
+                        query_check,
+                        all_assembly_tasks
+                    )
+
+                    # 3. Если хоть одно СЗ ранее уже было отгружено, возвращаем ошибку
+                    if already_shipped:
+                        shipped_ids = [record['task_id'] for record in already_shipped]
+                        # Преобразуем список int в список dict
+                        data_list = [{"task_id": task_id, "status": "already_shipped"} for task_id in shipped_ids]
+
+                        return ShipmentOfGoodsResponse(
+                            status=400,
+                            message="Операция не может быть выполнена.Определенные сборочные задания ранее уже были отгружены",
+                            details=f"Ранее отгруженные СЗ:{[i for i in shipped_ids]}",
+                            data=data_list  # ← теперь это List[dict]
+                        )
+
+
+
+                    # 4. Проверяем существование всех сборочных заданий
+                    query_exist = """
+                        SELECT task_id 
+                        FROM public.assembly_task 
+                        WHERE task_id = ANY($1::bigint[])
+                    """
+
+                    existing_tasks = await conn.fetch(
+                        query_exist,
+                        all_assembly_tasks
+                    )
+
+                    existing_ids = {record['task_id'] for record in existing_tasks}
+                    non_existing_ids = set(all_assembly_tasks) - existing_ids
+
+                    if non_existing_ids:
+                        return ShipmentOfGoodsResponse(
+                            status=404,
+                            message="Некоторые сборочные задания не найдены.",
+                            details="Следующие сборочные задания не найдены в базе данных.",
+                            data=list(non_existing_ids)
+                        )
+
+                    # 5. Устанавливаем все сборочные задания как отгруженные
+                    query_update_assembly = """
+                        UPDATE public.assembly_task 
+                        SET is_shipped = TRUE 
+                        WHERE task_id = ANY($1::bigint[])
+                        AND is_shipped = FALSE
+                    """
+
+                    await conn.execute(
+                        query_update_assembly,
+                        all_assembly_tasks
+                    )
+
+                    # 6. Вставляем записи в таблицу shipment_of_goods
+                    query_insert_shipment = """
+                    INSERT INTO shipment_of_goods (author, supply_id, product_id, warehouse_id, delivery_type,
+                                           wb_warehouse, account, quantity, shipment_date, share_of_kit, metawild, product_reserves_id)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+                    """
+
+                    # Подготавливаем данные для вставки
+                    shipment_data = []
+                    for item in data:
+                        shipment_data.append((
+                            item.author,
+                            item.supply_id,
+                            item.product_id,
+                            item.warehouse_id,
+                            item.delivery_type,
+                            item.wb_warehouse,
+                            item.account,
+                            item.quantity,
+                            item.shipment_date,
+                            False,
+                            None,
+                            item.product_reserves_id
+                        ))
+
+                    # Выполняем массовую вставку
+                    await conn.executemany(query_insert_shipment, shipment_data)
+                    # 7. Фиксируем транзакцию (произойдет автоматически при выходе из блока)
+                    # Возвращаем успешный результат
+                    return ShipmentOfGoodsResponse(
+                        status=201,
+                        message="Successfully shipped",
+                        details=f"Updated {len(all_assembly_tasks)} assembly tasks",
+                        data=[{"assembly_tasks_updated": all_assembly_tasks}]
+                    )
+
+        except asyncpg.exceptions.ForeignKeyViolationError as e:
+            print(f"Foreign key violation: {e}")
+            return ShipmentOfGoodsResponse(
+                status=400,
+                message="Foreign key violation",
+                details=str(e),
+                data=None
+            )
+        except asyncpg.exceptions.NotNullViolationError as e:
+            print(f"Not null violation: {e}")
+            return ShipmentOfGoodsResponse(
+                status=400,
+                message="Not null violation",
+                details=str(e),
+                data=None
+            )
+        except asyncpg.exceptions.CheckViolationError as e:
+            print(f"Check violation: {e}")
+            return ShipmentOfGoodsResponse(
+                status=400,
+                message="Check violation",
+                details=str(e),
+                data=None
+            )
+        except asyncpg.exceptions.PostgresError as e:
+            print(f"Database error: {e}")
+            return ShipmentOfGoodsResponse(
+                status=500,
+                message="Database error",
+                details=str(e),
+                data=None
+            )
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return ShipmentOfGoodsResponse(
+                status=500,
+                message="Internal server error",
+                details=str(e),
+                data=None
+            )
+
+
     async def shipment_with_reserve_updating(
             self,
             data: List[ShipmentWithReserveUpdating]
