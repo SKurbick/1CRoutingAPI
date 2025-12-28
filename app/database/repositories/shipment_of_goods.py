@@ -439,7 +439,7 @@ class ShipmentOfGoodsRepository:
                         SELECT 1 
                         FROM public.historical_statuses_of_assembly_tasks hsat 
                         WHERE hsat.assembly_task_id = at.task_id 
-                        AND hsat.wb_status = 'canceled'
+                        AND hsat.wb_status in ('canceled', 'canceled_by_client')
                     ) as is_canceled
                 FROM public.assembly_task at
                 INNER JOIN last_statuses ls ON at.task_id = ls.order_id
