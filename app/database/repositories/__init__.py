@@ -9,6 +9,8 @@ from .goods_information import GoodsInformationRepository
 from .inventory_check import InventoryCheckRepository
 from .inventory_transactions import InventoryTransactionsRepository
 from .return_of_goods import ReturnOfGoodsRepository
+from .containers import ContainerRepository
+from .products_dimensions import ProductDimensionsRepository
 __all__ = [
     'ReceiptOfGoodsRepository',
     'FinancialTransactionsRepository',
@@ -20,5 +22,7 @@ __all__ = [
     'InventoryCheckRepository',
     'InventoryTransactionsRepository',
     'ReturnOfGoodsRepository',
-    'DocsRepository'
+    'DocsRepository',
+    'ContainerRepository',
+    'ProductDimensionsRepository',
 ]
