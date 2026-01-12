@@ -37,7 +37,7 @@ class ContainerService:
 
     async def get_containers(
         self,
-        is_active: Optional[bool] = True
+        is_active: Optional[bool] = None
     ) -> list[Container]:
         """Получить все контейнеры."""
         return await self.repository.get_all(is_active)

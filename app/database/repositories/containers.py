@@ -15,7 +15,7 @@ class ContainerRepository:
 
     async def get_all(
         self,
-        is_active: Optional[bool] = True
+        is_active: Optional[bool] = None
     ) -> list[Container]:
         query = """
             SELECT
@@ -30,11 +30,17 @@ class ContainerRepository:
                 created_at,
                 updated_at
             FROM containers 
-            WHERE is_active = $1
-            ORDER BY created_at DESC
         """
-        
-        rows = await self.pool.fetch(query, is_active)
+
+        params = []
+
+        if is_active is not None:
+            query += " WHERE is_active = $1"
+            params.append(is_active)
+
+        query += " ORDER BY created_at DESC"
+
+        rows = await self.pool.fetch(query, *params)
         return [Container(**dict(row)) for row in rows] if rows else []
 
     async def get_by_id(self, container_id: int) -> Optional[Container]:

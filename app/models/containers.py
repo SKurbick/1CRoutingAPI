@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -18,9 +19,9 @@ class ContainerCreate(ContainerBase):
 
 class ContainerUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=255)
-    length: Optional[float] = Field(None, gt=0, decimal_places=1, max_digits=6)
-    width: Optional[float] = Field(None, gt=0, decimal_places=1, max_digits=6)
-    height: Optional[float] = Field(None, gt=0, decimal_places=1, max_digits=6)
+    length: Optional[float] = Field(None, gt=0)
+    width: Optional[float] = Field(None, gt=0)
+    height: Optional[float] = Field(None, gt=0)
     boxes_per_pallet: Optional[int] = Field(None, ge=0)
     is_active: Optional[bool] = None
 
