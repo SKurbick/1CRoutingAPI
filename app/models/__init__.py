@@ -13,6 +13,7 @@ from .goods_information import MetawildsData, AllProductsData, GoodsResponse
 from .inventory_check import InventoryCheckUpdate, InventoryData, InventoryDataResponse, IDGroupData
 from .inventory_transactions import ITGroupData
 from .docs import docs_data_response_example, DocsData
+from .auth import UserPermissions
 
 __all__ = [
     'ReceiptOfGoodsUpdate',
@@ -67,5 +68,6 @@ __all__ = [
     'ProductCheckResult',
     'ProductQuantityCheckResult',
     'ShipmentWithReserveUpdating',
-    'WriteOffAccordingToFBS'
+    'WriteOffAccordingToFBS',
+    'UserPermissions'
 ]

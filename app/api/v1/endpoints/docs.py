@@ -3,11 +3,11 @@ from typing import List, Dict, Union
 
 from fastapi import APIRouter, Depends, status, Body, HTTPException, Query, Request
 from app.limiter import limiter
+from app.models import UserPermissions
 
 from app.models.docs import DocsData, docs_data_response_example
 from app.service.docs import DocsService
-from app.dependencies import get_docs_service
-
+from app.dependencies import get_docs_service, get_info_from_token
 
 router = APIRouter(prefix="/docs", tags=["Документы"])
 #responses={200: docs_data_response_example}
@@ -19,8 +19,11 @@ async def get_docs(
         account_name: str ,
         date_from: datetime.date = None,
         date_to: datetime.date = None,
+        user: UserPermissions = Depends(get_info_from_token),
         service: DocsService = Depends(get_docs_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     print(account_name)
     # if date_from is None or date_to is None:
     #     raise HTTPException(
