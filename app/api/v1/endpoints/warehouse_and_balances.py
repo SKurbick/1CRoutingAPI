@@ -1,13 +1,15 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, status, Body, HTTPException, Query, Request
+
+from app.models import UserPermissions
 from app.models.warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, Warehouse, CurrentBalances, \
     ValidStockData, example_assembly_metawild_data, AssemblyOrDisassemblyMetawildData, AssemblyMetawildResponse, assembly_or_disassembly_metawild_description, \
     add_defective_goods_description, ReSortingOperationResponse, ReSortingOperation, re_sorting_operations_description, example_re_sorting_operations, \
     AddStockByClient, AddStockByClientResponse, HistoricalStockData, HistoricalStockBody, StatusStats, ProductStats, WarehouseAndBalanceResponse, \
     ProductQuantityCheck, ProductQuantityCheckResult, product_quantity_check_description, product_quantity_check_response_description
 from app.service.warehouse_and_balances import WarehouseAndBalancesService
-from app.dependencies import get_warehouse_and_balances_service
+from app.dependencies import get_warehouse_and_balances_service, get_info_from_token
 
 router = APIRouter(prefix="/warehouse_and_balances", tags=["Склады и остатки"])
 
@@ -17,8 +19,11 @@ from app.limiter import limiter
 @limiter.limit("3/5 second")
 async def get_statuses_for_products_in_reserve(
         request: Request,
+        user: UserPermissions = Depends(get_info_from_token),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.get_statuses_for_products_in_reserve()
     return result
 
@@ -26,8 +31,11 @@ async def get_statuses_for_products_in_reserve(
 @router.post("/add_defective_goods", response_model=DefectiveGoodsResponse, status_code=status.HTTP_201_CREATED, description=add_defective_goods_description)
 async def add_defective_goods(
         data: List[DefectiveGoodsUpdate] = Body(example=example_defective_goods_data),
+        user: UserPermissions = Depends(get_info_from_token),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.add_defective_goods(data)
 
     if result.status >= 400:
@@ -44,8 +52,11 @@ async def add_defective_goods(
 
 @router.get("/get_warehouses", response_model=List[Warehouse], status_code=status.HTTP_200_OK)
 async def get_warehouses(
+        user: UserPermissions = Depends(get_info_from_token),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.get_warehouses()
     return result
 
@@ -54,8 +65,11 @@ async def get_warehouses(
 @limiter.limit("3/5 second")
 async def get_all_product_current_balances(
         request: Request,
+        user: UserPermissions = Depends(get_info_from_token),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.get_all_product_current_balances()
     return result
 
@@ -72,8 +86,11 @@ async def get_all_product_current_balances(
              description=assembly_or_disassembly_metawild_description)
 async def assembly_or_disassembly_metawild(
         data: AssemblyOrDisassemblyMetawildData = Body(example=example_assembly_metawild_data),
+        user: UserPermissions = Depends(get_info_from_token),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.assembly_or_disassembly_metawild(data)
 
     if result.code_status >= 400:
@@ -92,8 +109,11 @@ async def assembly_or_disassembly_metawild(
              description=re_sorting_operations_description)
 async def re_sorting_operations(
         data: ReSortingOperation = Body(example=example_re_sorting_operations),
+        user: UserPermissions = Depends(get_info_from_token),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.re_sorting_operations(data)
 
     if result.code_status >= 400:
@@ -111,8 +131,11 @@ async def re_sorting_operations(
 @router.post("/add_stock_by_client", response_model=AddStockByClientResponse)
 async def add_stock_by_client(
         data: List[AddStockByClient],
+        user: UserPermissions = Depends(get_info_from_token),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.add_stock_by_client(data)
     return result
 
@@ -121,8 +144,11 @@ async def add_stock_by_client(
 async def get_historical_stocks(
         request: Request,
         data: HistoricalStockBody,
+        user: UserPermissions = Depends(get_info_from_token),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.get_historical_stocks(data)
     return result
 
@@ -134,7 +160,10 @@ async def get_historical_stocks(
 async def product_quantity_check(
         data: List[ProductQuantityCheck],
         warehouse_id: int = Query(example=1, default=1, description="id Склада. По умолчанию 1"),
+        user: UserPermissions = Depends(get_info_from_token),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.product_quantity_check(warehouse_id=warehouse_id,data= data)
     return result

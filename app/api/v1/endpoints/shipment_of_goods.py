@@ -3,12 +3,12 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
 
-from app.models import ShippedGoodsByID
+from app.models import ShippedGoodsByID, UserPermissions
 from app.models.shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsResponse, example_shipment_of_goods_data, ShipmentParamsData, \
     ReserveOfGoodsResponse, ReserveOfGoodsCreate, example_reserve_of_goods_data, ShippedGoods, example_shipped_goods_data, DeliveryType, ReservedData, \
     SummReserveData, CreationWithMovement, ShipmentWithReserveUpdating, WriteOffAccordingToFBS
 from app.service.shipment_of_goods import ShipmentOfGoodsService
-from app.dependencies import get_shipment_of_goods_service
+from app.dependencies import get_shipment_of_goods_service, get_info_from_token
 
 router = APIRouter(prefix="/shipment_of_goods", tags=["Отгрузка со склада продавца"])
 
@@ -17,8 +17,11 @@ router = APIRouter(prefix="/shipment_of_goods", tags=["Отгрузка со с�
 async def shipment_with_reserve_updating(
         data: List[ShipmentWithReserveUpdating],
         delivery_type: DeliveryType = Query(..., description="принимает ФБС или ФБО"),
+        user: UserPermissions = Depends(get_info_from_token),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.shipment_with_reserve_updating(data, delivery_type)
     return result
 
@@ -28,12 +31,15 @@ async def shipment_with_reserve_updating(
 async def creation_reserve_with_movement(
         data: List[CreationWithMovement],
         delivery_type: DeliveryType = Query(..., description="принимает ФБС или ФБО"),
+        user: UserPermissions = Depends(get_info_from_token),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
     """Создание поставки резерва с перемещением из другой поставки резерва.\n
     Для осуществления перемещения товара необходимо, чтобы исходная поставка (move_from_supply) с соответствующим product_id была создана заранее.
     \n quantity_to_move - какое количество
     \n move_from_supply - из какой поставки """
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.creation_reserve_with_movement(data, delivery_type)
     return result
 
@@ -41,11 +47,14 @@ async def creation_reserve_with_movement(
 @router.post("/write_off_according_to_fbs", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def write_off_according_to_fbs(
         data: List[WriteOffAccordingToFBS],
+        user: UserPermissions = Depends(get_info_from_token),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
     """
     Отгрузка товаров со склада по методу ФБС.
     """
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     print(data)
     result = await service.write_off_according_to_fbs(data)
 
@@ -66,8 +75,11 @@ async def write_off_according_to_fbs(
 async def create_data(
         delivery_type: DeliveryType = Query(..., description="принимает ФБС или ФБО"),
         data: List[ShipmentOfGoodsUpdate] = Body(example=example_shipment_of_goods_data),
+        user: UserPermissions = Depends(get_info_from_token),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     print("delivery_type",delivery_type)
     print(data)
     result = await service.create_data(data, delivery_type)
@@ -86,16 +98,22 @@ async def create_data(
 
 @router.get("/get_shipment_params", response_model=ShipmentParamsData, status_code=status.HTTP_200_OK)
 async def shipment_params_data(
+        user: UserPermissions = Depends(get_info_from_token),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     return await service.get_shipment_params()
 
 
 @router.post("/create_reserve", response_model=List[ReserveOfGoodsResponse]|ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def create_reserve(
         data: List[ReserveOfGoodsCreate], #= Body(example=example_reserve_of_goods_data)
+        user: UserPermissions = Depends(get_info_from_token),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.create_reserve(data)
     #
     # if result.status >= 400:
@@ -112,19 +130,25 @@ async def create_reserve(
 
 @router.get("/get_reserved_data", response_model=List[ReservedData], status_code=status.HTTP_200_OK)
 async def get_reserved_data(
+        user: UserPermissions = Depends(get_info_from_token),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service),
         delivery_type: DeliveryType = Query(None, description="принимает ФБС или ФБО"),
         is_fulfilled: Optional[bool] = Query(None, description="Фильтр по статусу отгрузок. False для неотгруженных"),
         begin_date: Optional[datetime.date] = Query(None, description="Начальная дата"),
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     return await service.get_reserved_data(is_fulfilled, begin_date, delivery_type)
 
 
 @router.post("/add_shipped_goods_by_id", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_shipped_goods_by_id(
         data: List[ShippedGoodsByID],
+        user: UserPermissions = Depends(get_info_from_token),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.add_shipped_goods_by_id(data)
     return result
 
@@ -132,16 +156,22 @@ async def add_shipped_goods_by_id(
 @router.post("/add_shipped_goods", response_model=List[ReserveOfGoodsResponse]|ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_shipped_goods(
         data: List[ShippedGoods] = Body(example=example_shipped_goods_data),
+        user: UserPermissions = Depends(get_info_from_token),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.add_shipped_goods(data)
     return result
 
 
 @router.get("/summ_reserve_data", response_model=List[SummReserveData], status_code=status.HTTP_200_OK)
 async def get_summ_reserve_data(
+        user: UserPermissions = Depends(get_info_from_token),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.get_summ_reserve_data()
     return result
 
