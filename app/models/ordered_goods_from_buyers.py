@@ -176,6 +176,15 @@ class DocumentData1C(BaseModel):
     receipt_transaction_number: Optional[str] = None
     comment: Optional[str] = None
 
+    @field_validator("currency")
+    def validate_currency(cls, value):
+        if value is None:
+            return None
+        if value == "643":
+            return "₽"
+        if value == "156":
+            return "¥"
+
 
 class OrderedGoodsFromBuyersUpdate(DocumentData1C):
     supply_data: List[SupplyData]
