@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     ONE_C_LOGIN: str
     ONE_C_PASSWORD: str
     ONE_C_BASE_URL: str
+    JWT_ALGORITHM: str
+    JWT_SECRET_KEY: str
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 account_inn_map = data = {

@@ -1,7 +1,8 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, status, Body, HTTPException
-from app.dependencies import  get_receipt_of_goods_service
+from app.dependencies import get_receipt_of_goods_service, get_info_from_token
+from app.models import UserPermissions
 from app.models.receipt_of_goods import ReceiptOfGoodsResponse, example_receipt_of_goods_data, ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate, example_add_incoming_receipt_data
 from app.service.receipt_of_goods import ReceiptOfGoodsService
 
@@ -20,8 +21,11 @@ router = APIRouter(prefix="/receipt_of_goods", tags=["Поступления т�
 async def create_data(
         data: List[ReceiptOfGoodsUpdate],
 # data: List[ReceiptOfGoodsUpdate] = Body(example=example_receipt_of_goods_data),
+        user: UserPermissions = Depends(get_info_from_token),
         service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service),
 ):
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     result = await service.create_data(data)
 
     if result.status >= 400:
@@ -38,9 +42,12 @@ async def create_data(
 @router.post("/add_incoming_receipt", response_model=ReceiptOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_incoming_receipt(
         data: List[AddIncomingReceiptUpdate] = Body(example=example_add_incoming_receipt_data),
+        user: UserPermissions = Depends(get_info_from_token),
         service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service)
 ):
     """Оприходование товаров (от акта приемки) на основной склад продавца. Временное решение пока нет актуализации поступлений в 1С"""
+    if not user.viewing:
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Permission Locked")
     # result = await service.add_incoming_receipt(data)
     result = ReceiptOfGoodsResponse(status=201,message="стоит заглушка на оприходование")
     if result.status >= 400:
