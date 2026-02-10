@@ -1,10 +1,12 @@
+from concurrent.futures import ProcessPoolExecutor
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.db_connect import init_db, close_db
 from app.api.v1.endpoints import (receipt_of_goods_router, income_on_bank_account_router, shipment_of_goods_router,
                                   ordered_goods_from_buyers_router, local_barcode_generation_router, warehouse_and_balances_router,
                                   goods_information_router, inventory_check_router, inventory_transactions_router, return_of_goods_router, docs_router,
-                                  containers_router, products_dimensions_router)
+                                  containers_router, products_dimensions_router, box_stickers_router)
 from app.monitoring import MetricsMiddleware, monitoring_router
 from contextlib import asynccontextmanager
 import uvicorn
@@ -19,9 +21,13 @@ from app.limiter import limiter
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     pool = await init_db()
+    process_pool = ProcessPoolExecutor(max_workers=4)
     app.state.pool = pool
+    app.state.process_pool = process_pool
     yield
     await close_db(pool)
+    if process_pool:
+        process_pool.shutdown(wait=True)
 
 
 app = FastAPI(lifespan=lifespan, title="1CRoutingAPI")
@@ -58,6 +64,7 @@ app.include_router(return_of_goods_router, prefix="/api")
 app.include_router(docs_router, prefix="/api")
 app.include_router(containers_router, prefix="/api")
 app.include_router(products_dimensions_router, prefix="/api")
+app.include_router(box_stickers_router, prefix="/api")
 
 
 if __name__ == "__main__":

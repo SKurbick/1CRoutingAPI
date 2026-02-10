@@ -11,6 +11,9 @@ from .return_of_goods import router as return_of_goods_router
 from .docs import router as docs_router
 from .containers import router as containers_router
 from .products_dimensions import router as products_dimensions_router
+from .box_stickers import router as box_stickers_router
+
+
 __all__ = [
     'receipt_of_goods_router',
     'income_on_bank_account_router',
@@ -25,4 +28,5 @@ __all__ = [
     'docs_router',
     'containers_router',
     'products_dimensions_router',
+    'box_stickers_router',
 ]
