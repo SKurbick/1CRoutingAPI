@@ -455,8 +455,8 @@ class BoxStickerService:
     ) -> list[io.BytesIO]:
         """Создать стикеры коробов."""
         creator = StickerCreator(
-            width=int(width_mm * 2.8),
-            height=int(height_mm * 2.8),
+            width=int(width_mm * 4),
+            height=int(height_mm * 4),
         )
         return [creator.create_sticker_image(p) for p in payloads]
 
