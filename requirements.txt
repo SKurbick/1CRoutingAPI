@@ -12,3 +12,5 @@ aiohttp
 pdfplumber
 pandas
 slowapi
+qrcode==8.2
+pymupdf
