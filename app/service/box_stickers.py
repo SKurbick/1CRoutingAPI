@@ -22,8 +22,8 @@ class StickerCreator:
         self._width = width
         self._height = height
         self._half_width = width // 2
-        self._qr_code_version = 1
-        self._qr_code_box_size = 8
+        self._qr_code_version = None
+        self._qr_code_box_size = 10
         self._qr_code_border = 1
         self._dpi = 4
 
@@ -137,13 +137,13 @@ class StickerCreator:
         ru_text_image = self._draw_text_boxed(
             text=ru_text,
             width=self._half_width - (default_margin * 2),
-            height=int(self._height * 0.6)
+            height=int(self._height * 0.5)
         )
 
         en_text_image = self._draw_text_boxed(
             text=en_text,
             width=self._half_width - (default_margin * 2),
-            height=int(self._height * 0.6)
+            height=int(self._height * 0.5)
         )
 
         text_y_start = icon_y + self._icon_height + default_margin
@@ -164,9 +164,14 @@ class StickerCreator:
             )
         )
 
-        qr_size = int(self._half_width * 0.3)
+        if qr_image.mode != "RGB":
+            qr_image = qr_image.convert("RGB")
+
+        qr_size, _ = qr_image.size
         qr_x = default_margin + self._half_width
         qr_y = self._height - qr_size - default_margin
+        image.paste(qr_image, (qr_x, qr_y))
+        qr_x = default_margin
         image.paste(qr_image, (qr_x, qr_y))
 
         # Отрисовка рамок
@@ -185,7 +190,7 @@ class StickerCreator:
 
         # Сохранение стикера
         buffer = io.BytesIO()
-        image.save(buffer, format="PNG", dpi=(self._dpi * 25.4, self._dpi * 25.4), quality=88, optimize=True)
+        image.save(buffer, format="PNG", dpi=(self._dpi * 25.4, self._dpi * 25.4), compress_level=2, optimize=True)
         buffer.seek(0)
         return buffer
 
@@ -278,26 +283,28 @@ class StickerCreator:
     def _create_qr_code_image(self,  data: QRCodeData) -> Image.Image:
         """Сгенерировать изображение QR кода."""
         qr_info = [
-            f"Артикул: {data.article}",
-            f"Док: {data.proforma_number}",
-            f"Количество: {data.items_per_box} шт в коробе",
-            f"Номер короба: {data.box_number}/{data.total_boxes}"
+            f"Артикул/Item No: {data.article}",
+            f"Doc: {data.proforma_number}",
+            f"Кол-во/Qty: {data.items_per_box} шт./p.b.",
+            f"Номер короба/N: {data.box_number}/{data.total_boxes}"
         ]
 
         qr_data = "\n".join(qr_info)
 
         qr = qrcode.QRCode(
             version=self._qr_code_version,
-            error_correction=qrcode.ERROR_CORRECT_H,
+            error_correction=qrcode.ERROR_CORRECT_M,
             box_size=self._qr_code_box_size,
             border=self._qr_code_border,
         )
+
         qr.add_data(qr_data)
         qr.make(fit=True)
 
         img = qr.make_image(fill_color="black", back_color="white")
-        qr_width = int(self._half_width * 0.3)
-        qr_image = img.get_image().resize((qr_width, qr_width), Image.Resampling.LANCZOS)
+        pil_img = img.get_image() 
+        qr_width = int(self._half_width * 0.45)
+        qr_image = pil_img.resize((qr_width, qr_width), Image.Resampling.NEAREST)
 
         return qr_image
 
@@ -333,6 +340,7 @@ class PDFStickerGenerator:
             page.insert_image(
                 pymupdf.Rect(x, y, x + self._sticker_width_mm, y + self._sticker_height_mm),
                 stream=image.getvalue(),
+                keep_proportion=False,
             )
 
     def create_document(self, images: list[io.BytesIO]):
@@ -349,6 +357,7 @@ class PDFStickerGenerator:
             garbage=4,
             clean=True,
             deflate=True,
+            deflate_images=True,
             expand=0
         )
         self.document.close()
