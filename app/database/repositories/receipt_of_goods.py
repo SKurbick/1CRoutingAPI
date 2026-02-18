@@ -57,7 +57,6 @@ class ReceiptOfGoodsRepository:
             print(f"Error fetching data: {e}")
             return []
 
-
     async def update_data(self, data: List[ReceiptOfGoodsUpdate]):
         get_wilds_in_products = """SELECT id FROM products;"""
         data_to_update_incoming_items: List[Tuple] = []
@@ -94,9 +93,9 @@ class ReceiptOfGoodsRepository:
                 data_to_update_supply_to_sellers_warehouse.append((guid, document_number, document_created_at, update_document_datetime, event_status,
                                                                    author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
                                                                    quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name,
-                                                                   planned_cost,currency, pack_count, pack_multiplicity))
+                                                                   planned_cost, currency, pack_count, pack_multiplicity))
 
-                if local_vendor_code in ids:  # собираем данные для актуализации остатков на складе
+                if local_vendor_code in ids and supplier_code != '9714053621':  # собираем данные для актуализации остатков на складе # исключаем операции от ВБ -> 9714053621
                     data_to_update_incoming_items.append(
                         (guid, local_vendor_code, quantity, amount_with_vat)
                     )
