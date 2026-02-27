@@ -23,3 +23,7 @@ class GoodsInformationService:
     async def add_product(self, data: List[AllProductsData]) -> GoodsResponse:
         result = await self.goods_information_repository.add_product(data)
         return result
+
+    async def get_product(self, product_id: str) -> AllProductsData:
+        result = await self.goods_information_repository.get_products_data(product_id)
+        return result

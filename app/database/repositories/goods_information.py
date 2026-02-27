@@ -65,6 +65,27 @@ class GoodsInformationRepository:
 
         return all_products_data
 
+    async def get_products_data(self, product_id: str) -> AllProductsData | None:
+        query = """
+            SELECT * FROM products WHERE id = $1 AND is_active = TRUE;
+        """
+        async with self.pool.acquire() as conn:
+            result = await conn.fetchrow(query, product_id)
+
+            try:
+                kit_components = json.loads(result['kit_components'])
+            except (json.JSONDecodeError, TypeError):
+                kit_components = {}
+
+                return AllProductsData(
+                    id=result['id'],
+                    name=result['name'],
+                    photo_link=result['photo_link'],
+                    is_kit=result['is_kit'],
+                    share_of_kit=result['share_of_kit'],
+                    kit_components=kit_components
+                ) if result else None
+
     async def add_product(self, data: List[AllProductsData]) -> GoodsResponse:
         insert_data: list[Tuple] = []
         insert_query = """
@@ -81,7 +102,7 @@ class GoodsInformationRepository:
         pprint(insert_data)
         try:
             async with self.pool.acquire() as conn:
-                async with conn.transaction() as transaction:
+                async with conn.transaction():
                     await conn.executemany(insert_query, insert_data)
 
             result = GoodsResponse(
