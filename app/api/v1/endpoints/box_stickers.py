@@ -1,29 +1,32 @@
 from datetime import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Path
 from fastapi.responses import StreamingResponse
 
 from app.dependencies import get_box_sticker_service
-from app.models.box_stickers import BoxDataRequest
+from app.models.box_stickers import BoxDataRequest, BoxStickerTemplate, BoxStickerTemplateShort
 from app.service.box_stickers import BoxStickerService
+from app.service.translate_manager import translation_manager
 
 
-router = APIRouter(prefix="/stickers", tags=["Сткеры для коробов"])
+router = APIRouter(prefix="/stickers", tags=["Стикеры для коробов"])
 
 
 @router.post(
         "/generate",
         status_code=status.HTTP_200_OK,
         description="""
-    **Генерирует PDF со стикерами для коробов.**
+    **Сгенерировать PDF со стикерами для коробов.**
 
     Возвращает: PDF файл для скачивания
 """
 )
 async def generate_stickers(
     data: BoxDataRequest,
-    service: BoxStickerService = Depends(get_box_sticker_service)
-):
+    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
+) -> StreamingResponse:
+    """Сгенерировать PDF со стикерами для коробов."""
     try:
         result = await service.generate_stickers(data)
         return StreamingResponse(
@@ -40,3 +43,98 @@ async def generate_stickers(
             status_code=500,
             detail=f"Internal server error"
         )
+
+
+@router.get(
+        "/templates/{article}",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Получить шаблон стикера по артикулу.**
+"""
+)
+async def get_sticker_template(
+    article: Annotated[str, Path(..., description="Артикул товара для поиска шаблона")],
+    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
+) -> BoxStickerTemplate:
+    """Получить шаблон стикера по артикулу."""
+    return await service.get_template(article)
+
+
+@router.get(
+        "/templates",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Получить список существующих шаблонов для стикеров.**
+"""
+)
+async def get_list_templates(
+    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
+) -> list[BoxStickerTemplateShort]:
+    """Получить список существующих шаблонов для стикеров."""
+    return await service.get_list_templates()
+
+
+@router.get(
+        "/color/translate",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Получить перевод цвета или его транслитерацию.**
+"""
+)
+async def translate_color(
+    color: Annotated[str, Query(..., min_length=3, description="Цвет на русском языке.")]
+) -> str:
+    """Получить перевод цвета или его транслитерацию."""
+    return translation_manager.translate_color(color)
+
+
+@router.get(
+        "/country/translate",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Получить перевод названия страны или транслитерацию названия.**
+"""
+)
+async def translate_country(
+    country: Annotated[str, Query(..., min_length=3, description="Страна производства на русском языке.")]
+) -> str:
+    """Получить перевод названия страны или транслитерацию названия."""
+    return translation_manager.translate_country(country)
+
+
+@router.get(
+        "/title/transliterate",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Сделать транслитерацию названия на русском латиницей.**
+"""
+)
+async def transliterate_title(
+    title: Annotated[str, Query(..., min_length=3, description="Название товара на русском языке.")]
+) -> str:
+    """Сделать транслитерацию названия на русском латиницей."""
+    return translation_manager.transliterate_string(title)
+
+
+@router.get(
+        "/colors",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Получить список цветов.**
+"""
+)
+async def get_colors() -> list[str]:
+    """Получить список цветов."""
+    return [color.capitalize() for  color in sorted(translation_manager.colors.keys())]
+
+
+@router.get(
+        "/countries",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Получить список стран.**
+"""
+)
+async def get_countries() -> list[str]:
+    """Получить список стран."""
+    return sorted(translation_manager.countries.keys())

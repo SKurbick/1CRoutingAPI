@@ -1,4 +1,13 @@
+from enum import Enum
+
 from pydantic import BaseModel, Field
+
+
+class CertificationType(str, Enum):
+    """Тип сертификата или знака соответствия."""
+    EAC = "ЕАС"       # Евразийское соответствие
+    STR = "СТР"       # Свидетельство о госрегистрации
+    NONE = "NONE"     # Отсутствует / Не требуется
 
 
 class BoxSize(BaseModel):
@@ -12,17 +21,21 @@ class BoxDataRequest(BaseModel):
     """Данные для одного короба."""
     name: str = Field(..., description="Название", max_length=128)
     article: str = Field(..., description="Артикул", max_length=16)
-    color: str = Field(..., description="Цвет", max_length=64)
+    color: str | None = Field(None, description="Цвет", max_length=64)
     gross_weight: float = Field(..., description="Вес брутто, кг", gt=0)
     net_weight: float = Field(..., description="Вес нетто, кг", gt=0)
     box_size: BoxSize = Field(..., description="Размер короба, см")
-    produced_in: str = Field(..., description="Произведено в", max_length=64)
-    proforma_number: str = Field(..., description="Номер проформы", max_length=128)
-    items_per_box: int = Field(..., description="Количество в коробе", gt=0)
+    produced_in: str | None = Field(None, description="Произведено в", max_length=64)
+    proforma_number: str | None = Field(None, description="Номер проформы", max_length=128)
+    items_per_box: int | None = Field(None, description="Количество в коробе", gt=0)
     total_boxes: int = Field(..., description="Количество коробов", gt=0, le=500)
-    name_en: str = Field(..., description="Название, en", max_length=128)
-    color_en: str = Field(..., description="Цвет, en", max_length=64)
-    produced_in_en: str = Field(..., description="Произведено в, en", max_length=64)
+    name_en: str | None = Field(None, description="Название, en", max_length=128)
+    color_en: str | None = Field(None, description="Цвет, en", max_length=64)
+    produced_in_en: str | None = Field(None, description="Произведено в, en", max_length=64)
+    certification_type: CertificationType = Field(
+        default=CertificationType.NONE, 
+        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)"
+    )
 
 
 class QRCodeData(BaseModel):
@@ -45,3 +58,36 @@ class StickerData(QRCodeData):
     name_en: str = Field(..., description="Название, en")
     color_en: str = Field(..., description="Цвет, en")
     produced_in_en: str = Field(..., description="Произведено в, en")
+    certification_type: CertificationType = Field(
+        default=CertificationType.NONE, 
+        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)"
+    )
+
+
+class BoxStickerTemplate(BaseModel):
+    """Шаблон стикера для одного короба."""
+    article: str | None = Field(None, description="Артикул")
+    name: str | None = Field(None, description="Название")
+    name_en: str | None = Field(None, description="Название, en")
+    color: str | None = Field(None, description="Цвет")
+    color_en: str | None = Field(None, description="Цвет, en")
+    gross_weight: float | None = Field(None, description="Вес брутто, кг")
+    net_weight: float | None = Field(None, description="Вес нетто, кг")
+    box_length: int | None = Field(None, gt=0, description="Длина, см")
+    box_width: int | None = Field(None, gt=0, description="Ширина, см")
+    box_height: int | None = Field(None, gt=0, description="Высота, см")
+    items_per_box: int | None = Field(None, description="Количество в коробе")
+    total_boxes: int | None = Field(None, description="Количество коробов")
+    produced_in: str | None = Field(None, description="Произведено в")
+    produced_in_en: str | None = Field(None, description="Произведено в, en")
+    proforma_number: str | None = Field(None, description="Номер проформы")
+    certification_type: CertificationType = Field(
+        default=CertificationType.NONE, 
+        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)"
+    )
+
+
+class BoxStickerTemplateShort(BaseModel):
+    """Шаблон стикера с минимальной информацией."""
+    article: str | None = Field(None, description="Артикул")
+    name: str | None = Field(None, description="Название")

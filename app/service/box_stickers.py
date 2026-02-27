@@ -7,7 +7,10 @@ import qrcode
 import pymupdf
 from PIL import Image, ImageDraw, ImageFont
 
-from app.models.box_stickers import BoxDataRequest, StickerData, QRCodeData
+from app.models.box_stickers import BoxDataRequest, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort
+from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
+from app.service.goods_information import GoodsInformationService
+from app.service.translate_manager import translation_manager
 
 
 class StickerCreator:
@@ -28,9 +31,10 @@ class StickerCreator:
         self._dpi = 4
 
         if icons_dir is None:
-            icons_dir = Path(__file__).parent.parent / "icons"
+            icons_dir = Path(__file__).parents[1] / "icons"
 
-        self._icon_height = int(height * 0.1)
+        self._meta_icon_height = int(height * 0.1)
+        self._certificate_icon_height = int(height * 0.25)
         self._icons = self._load_icons(icons_dir)
         self._cyrillic_font_path = self._find_cyrillic_font()
 
@@ -64,16 +68,26 @@ class StickerCreator:
         icon_files = {
             "moisture": "berech-ot-vlagi.png",
             "fragile": "hrupkoe.png",
+            "eac": "eac.png",
+            "rostest": "rostest.png",
         }
+
+        meta_icons_names = {"moisture", "fragile"}
+        certificate_icons = {"eac", "rostest"}
     
         for icon_key, filename in icon_files.items():
             icon_path = icons_dir / filename
             if icon_path.exists():
                 try:
                     icon_img = Image.open(icon_path).convert("RGBA")
-                    icon_ratio = self._icon_height / icon_img.height
+                    if icon_key in meta_icons_names:
+                        icon_hight = self._meta_icon_height
+                    elif icon_key in certificate_icons:
+                        icon_hight = self._certificate_icon_height
+
+                    icon_ratio = icon_hight / icon_img.height
                     icon_width = int(icon_img.width * icon_ratio)
-                    icon_img = icon_img.resize((icon_width, self._icon_height), Image.Resampling.LANCZOS)
+                    icon_img = icon_img.resize((icon_width, icon_hight), Image.Resampling.LANCZOS)
                     icons[icon_key] = icon_img
                 except Exception as e:
                     print(f"Ошибка загрузки иконки '{filename}': {e}")
@@ -88,19 +102,34 @@ class StickerCreator:
 
         # Добавление иконок
         icon_y = default_margin
-        icons = [self._icons[k] for k in ["moisture", "fragile"] if k in self._icons]
+        meta_icons = [self._icons[k] for k in ["moisture", "fragile"] if k in self._icons]
 
-        if icons:
-            total_width = sum(icon.width for icon in icons)
-            spacing = (self._half_width - total_width) // (len(icons))
+        certificate_icon = None
+
+        if payload.certification_type == CertificationType.EAC:
+            certificate_icon = self._icons["eac"]
+        elif payload.certification_type == CertificationType.STR:
+            certificate_icon = self._icons["rostest"]
+        
+        if certificate_icon is not None:
+            certificate_icon_size, _ = certificate_icon.size
+            certificate_icon_x = self._width - default_margin - certificate_icon_size
+            certificate_icon_y = self._height - certificate_icon_size - default_margin
+            image.paste(certificate_icon, (certificate_icon_x, certificate_icon_y), certificate_icon)
+            certificate_icon_x -= self._half_width
+            image.paste(certificate_icon, (certificate_icon_x, certificate_icon_y), certificate_icon)
+
+        if meta_icons:
+            total_width = sum(icon.width for icon in meta_icons)
+            spacing = (self._half_width - total_width) // (len(meta_icons))
             current_x = spacing
 
-            for icon in icons:
+            for icon in meta_icons:
                 image.paste(icon, (current_x, icon_y), icon)
                 current_x += icon.width
 
             current_x = self._half_width + spacing
-            for icon in icons:
+            for icon in meta_icons:
                 image.paste(icon, (current_x, icon_y), icon)
                 current_x += icon.width
 
@@ -146,7 +175,7 @@ class StickerCreator:
             height=int(self._height * 0.5)
         )
 
-        text_y_start = icon_y + self._icon_height + default_margin
+        text_y_start = icon_y + self._meta_icon_height + default_margin
         text_en_x = default_margin
         text_ru_x = self._half_width + (default_margin)
 
@@ -368,13 +397,78 @@ class PDFStickerGenerator:
 class BoxStickerService:
     """Сервис для генерации стикеров коробов."""
 
-    def __init__(self, process_pool: ProcessPoolExecutor):
+    def __init__(self,
+            template_repo: BoxStickersTemplateRepository,
+            goods_info_service: GoodsInformationService,
+            process_pool: ProcessPoolExecutor,
+    ):
         self._process_pool = process_pool
+        self._template_repo = template_repo
+        self._goods_service = goods_info_service
         self._sticker_width_mm = 140
         self._sticker_hight_mm = 100
 
+    async def get_list_templates(self) -> list[BoxStickerTemplateShort]:
+        """Получить список шаблонов для стикеров."""
+        return await self._template_repo.get_list()
+
+    async def get_template(self, article: str) -> BoxStickerTemplate:
+        """Получить шаблон стикера по артикулу."""
+        template = await self._template_repo.get(article)
+
+        if not template:
+            template = BoxStickerTemplate()
+            product_data = await self._goods_service.get_product(article)
+
+            if not product_data:
+                return template
+
+            template.article = product_data.id
+            template.name = product_data.name
+        
+        if not template.color:
+            parts = product_data.name.split()
+
+            for item in parts:
+                colors = translation_manager.colors
+                if item.lower() in colors:
+                    template.color = item.capitalize()
+                    template.color_en = translation_manager.translate_color(template.color)
+
+        if not template.color_en:
+            template.color_en = translation_manager.translate_color(template.color or "") or None
+        
+        if not template.name_en:
+            template.name_en = translation_manager.transliterate_string(template.name or "") or None
+        
+        if not template.produced_in_en:
+            template.produced_in_en = translation_manager.translate_country(template.produced_in or "") or None
+
+        return template
+
     async def generate_stickers(self,  data: BoxDataRequest) -> bytes:
         """Сгенерировать документ со стикерами."""
+        template = BoxStickerTemplate(
+            article=data.article,
+            name=data.name,
+            name_en=data.name_en,
+            color=data.color,
+            color_en=data.color_en,
+            gross_weight=data.gross_weight,
+            net_weight=data.net_weight,
+            box_length=data.box_size.length,
+            box_height=data.box_size.height,
+            box_width=data.box_size.width,
+            items_per_box=data.items_per_box,
+            total_boxes=data.total_boxes,
+            produced_in=data.produced_in,
+            produced_in_en=data.produced_in_en,
+            proforma_number=data.proforma_number,
+            certification_type=data.certification_type,
+        )
+
+        await self._template_repo.update(template)
+
         payloads = [
             StickerData(
                 name=data.name,
@@ -390,7 +484,8 @@ class BoxStickerService:
                 proforma_number=data.proforma_number,
                 items_per_box=data.items_per_box,
                 box_number=i,
-                total_boxes=data.total_boxes
+                total_boxes=data.total_boxes,
+                certification_type=data.certification_type
             )
             for i in range(1, data.total_boxes + 1)
         ]
