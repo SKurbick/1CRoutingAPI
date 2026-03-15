@@ -14,3 +14,4 @@ pandas
 slowapi
 qrcode==8.2
 pymupdf
+httpx>=0.24.0

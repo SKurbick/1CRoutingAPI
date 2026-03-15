@@ -12,11 +12,39 @@ class ReceiptOfGoodsService:
     def __init__(
             self,
             receipt_of_goods_repository: ReceiptOfGoodsRepository,
+            wms_integration_service=None,  # Optional для обратной совместимости
     ):
         self.receipt_of_goods_repository = receipt_of_goods_repository
+        self.wms_integration_service = wms_integration_service
 
     async def create_data(self, data: List[ReceiptOfGoodsUpdate]) -> ReceiptOfGoodsResponse:
+        # Существующая логика сохранения в БД (НЕ МЕНЯТЬ!)
         result = await self.receipt_of_goods_repository.update_data(data)
+
+        # WMS Integration (только если сервис подключен и данные успешно сохранены)
+        if result.status == 201 and self.wms_integration_service:
+            try:
+                wms_stats = await self.wms_integration_service.process_receipts(data)
+
+                details_parts = []
+                if wms_stats["created_movements"]:
+                    details_parts.append(f"WMS: создано movements {wms_stats['created_movements']}")
+                if wms_stats["adjusted_movements"]:
+                    details_parts.append(f"скорректировано {wms_stats['adjusted_movements']}")
+                if wms_stats["skipped_products"]:
+                    details_parts.append(f"пропущено товаров {len(wms_stats['skipped_products'])}")
+                if wms_stats["adjustment_warnings"]:
+                    details_parts.append(f"предупреждений {len(wms_stats['adjustment_warnings'])}")
+
+                if details_parts:
+                    result.details = ". ".join(details_parts)
+
+            except Exception as e:
+                # WMS ошибка НЕ должна ломать основной процесс
+                import logging
+                logging.error(f"WMS integration error: {e}", exc_info=True)
+                result.details = f"Данные сохранены, но WMS integration failed: {str(e)}"
+
         return result
 
     async def add_incoming_receipt(self, data: List[AddIncomingReceiptUpdate]) -> ReceiptOfGoodsResponse:
