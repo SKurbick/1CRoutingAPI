@@ -143,7 +143,7 @@ class WMSIntegrationService:
         """Приходовать товар (новая поставка)"""
 
         # Создать movement через WMS API
-        wms_api_url = getattr(settings, 'WMS_API_URL', 'http://localhost:8000/api/movements')
+        wms_api_url = getattr(settings, 'WMS_API_URL_MOVEMENTS', 'http://localhost:8000/api/movements')
 
         await self._create_wms_movement(
             api_url=wms_api_url,
@@ -194,7 +194,7 @@ class WMSIntegrationService:
             location_code=self.RECEIPT_LOCATION
         )
 
-        wms_api_url = getattr(settings, 'WMS_API_URL', 'http://localhost:8000/api/movements')
+        wms_api_url = getattr(settings, 'WMS_API_URL_MOVEMENTS', 'http://localhost:8000/api/movements')
 
         if diff > 0:
             # Увеличение количества
