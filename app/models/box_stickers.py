@@ -12,9 +12,9 @@ class CertificationType(str, Enum):
 
 class BoxSize(BaseModel):
     "Размер короба."
-    length: int = Field(..., gt=0, description="Длина, см")
-    width: int = Field(..., gt=0, description="Ширина, см")
-    height: int = Field(..., gt=0, description="Высота, см")
+    length: float = Field(..., gt=0, description="Длина, см")
+    width: float = Field(..., gt=0, description="Ширина, см")
+    height: float = Field(..., gt=0, description="Высота, см")
 
 
 class BoxDataRequest(BaseModel):
@@ -73,9 +73,9 @@ class BoxStickerTemplate(BaseModel):
     color_en: str | None = Field(None, description="Цвет, en")
     gross_weight: float | None = Field(None, description="Вес брутто, кг")
     net_weight: float | None = Field(None, description="Вес нетто, кг")
-    box_length: int | None = Field(None, gt=0, description="Длина, см")
-    box_width: int | None = Field(None, gt=0, description="Ширина, см")
-    box_height: int | None = Field(None, gt=0, description="Высота, см")
+    box_length: float | None = Field(None, gt=0, description="Длина, см")
+    box_width: float | None = Field(None, gt=0, description="Ширина, см")
+    box_height: float | None = Field(None, gt=0, description="Высота, см")
     items_per_box: int | None = Field(None, description="Количество в коробе")
     total_boxes: int | None = Field(None, description="Количество коробов")
     produced_in: str | None = Field(None, description="Произведено в")
