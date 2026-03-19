@@ -4,11 +4,38 @@ WMS Integration Service
 """
 
 import logging
+import json
+import os
+from logging.handlers import RotatingFileHandler
 from typing import List, Dict, Any, Set
 import httpx
 from app.dependencies.config import settings
 
+# ============================================================================
+# Настройка логирования в файл
+# ============================================================================
 logger = logging.getLogger(__name__)
+
+_log_dir = '/app/logs' if os.path.exists('/app') else os.path.join(os.path.dirname(os.path.abspath(__file__)), '../logs')
+os.makedirs(os.path.normpath(_log_dir), exist_ok=True)
+_log_path = os.path.normpath(os.path.join(_log_dir, 'wms_integration.log'))
+
+file_handler = RotatingFileHandler(
+    _log_path,
+    maxBytes=10 * 1024 * 1024,  # 10 MB
+    backupCount=5,
+    encoding='utf-8'
+)
+file_handler.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter(
+    '%(asctime)s | %(levelname)s | %(funcName)s | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+file_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.setLevel(logging.DEBUG)
 
 
 class WMSIntegrationService:
@@ -37,6 +64,13 @@ class WMSIntegrationService:
         Returns:
             Статистика обработки
         """
+        # ============================================================================
+        # ЛОГИРОВАНИЕ: Начало обработки
+        # ============================================================================
+        logger.info("=" * 80)
+        logger.info(f"WMS Integration START | Получено поступлений: {len(receipts)}")
+        logger.debug(f"Receipts data: {json.dumps([r.model_dump() for r in receipts], ensure_ascii=False, default=str)}")
+
         stats = {
             "processed_receipts": 0,
             "created_movements": 0,
@@ -48,6 +82,8 @@ class WMSIntegrationService:
 
         # Получить список валидных товаров
         valid_products = await self._get_valid_products()
+        logger.info(f"Valid products count: {len(valid_products)}")
+        logger.debug(f"Valid products (first 20): {list(valid_products)[:20]}...")
 
         for receipt in receipts:
             try:
@@ -64,6 +100,23 @@ class WMSIntegrationService:
                     "error": str(e)
                 })
 
+        # ============================================================================
+        # ЛОГИРОВАНИЕ: Завершение обработки
+        # ============================================================================
+        logger.info("=" * 80)
+        logger.info(f"WMS Integration COMPLETE")
+        logger.info(f"  Processed receipts: {stats['processed_receipts']}")
+        logger.info(f"  Created movements: {stats['created_movements']}")
+        logger.info(f"  Adjusted movements: {stats['adjusted_movements']}")
+        logger.info(f"  Skipped products: {len(stats['skipped_products'])}")
+        logger.info(f"  Adjustment warnings: {len(stats['adjustment_warnings'])}")
+        logger.info(f"  Errors: {len(stats['errors'])}")
+        if stats['skipped_products']:
+            logger.warning(f"  Skipped product IDs: {stats['skipped_products']}")
+        if stats['errors']:
+            logger.error(f"  Errors: {json.dumps(stats['errors'], ensure_ascii=False)}")
+        logger.info("=" * 80)
+
         return stats
 
     async def _process_single_receipt(
@@ -74,15 +127,26 @@ class WMSIntegrationService:
     ) -> None:
         """Обработать одну поставку"""
 
+        # ============================================================================
+        # ЛОГИРОВАНИЕ: Обработка одной поставки
+        # ============================================================================
+        logger.info("-" * 80)
+        logger.info(f"Processing receipt | GUID: {receipt.guid} | DOC: {receipt.document_number}")
+        logger.info(f"  Event status: {receipt.event_status}")
+        logger.info(f"  Supplier code: {receipt.supplier_code}")
+        logger.info(f"  Items count: {len(receipt.supply_data)}")
+
         # Фильтрация по статусу
         if receipt.event_status != "Проведен":
-            logger.debug(f"Skipping receipt {receipt.guid}: status={receipt.event_status}")
+            logger.warning(f"  ❌ SKIPPED: event_status != 'Проведен' (actual: '{receipt.event_status}')")
             return
 
         # Фильтрация по поставщику (исключаем ВБ)
         if receipt.supplier_code == self.EXCLUDED_SUPPLIER_CODE:
-            logger.debug(f"Skipping receipt {receipt.guid}: supplier is WB")
+            logger.warning(f"  ❌ SKIPPED: supplier is WB (code: {receipt.supplier_code})")
             return
+
+        logger.info(f"  ✅ Receipt passed filters")
 
         guid = receipt.guid
         document_number = receipt.document_number
@@ -95,9 +159,11 @@ class WMSIntegrationService:
             product_id = item.local_vendor_code
             quantity = float(item.quantity)
 
+            logger.debug(f"    Processing item | Product: {product_id} | Qty: {quantity}")
+
             # Пропустить несуществующие товары
             if product_id not in valid_products:
-                logger.warning(f"Product {product_id} not found in products table, skipping")
+                logger.warning(f"    ❌ SKIPPED: product '{product_id}' not found in products table")
                 if product_id not in stats["skipped_products"]:
                     stats["skipped_products"].append(product_id)
                 continue
@@ -106,6 +172,7 @@ class WMSIntegrationService:
             existing = await self.receipt_repo.get_receipt_item(guid, product_id)
 
             if existing:
+                logger.info(f"    🔄 ADJUSTMENT: {product_id} | Old qty: {existing['quantity']} | New qty: {quantity}")
                 # Поставка обновилась — корректировка
                 await self._adjust_receipt_item(
                     guid=guid,
@@ -118,6 +185,7 @@ class WMSIntegrationService:
                 )
                 stats["adjusted_movements"] += 1
             else:
+                logger.info(f"    ➕ NEW RECEIPT: {product_id} | Qty: {quantity}")
                 # Новая поставка — receive
                 await self._receive_goods(
                     guid=guid,
@@ -287,14 +355,21 @@ class WMSIntegrationService:
         if from_location_code:
             payload["from_location_code"] = from_location_code
 
+        # ============================================================================
+        # ЛОГИРОВАНИЕ: Вызов WMS API
+        # ============================================================================
+        logger.debug(f"      📡 WMS API call | URL: {api_url}")
+        logger.debug(f"      Payload: {json.dumps(payload, ensure_ascii=False)}")
+
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(api_url, json=payload)
                 response.raise_for_status()
-                logger.debug(f"Created WMS movement: {movement_type} {product_id} qty={quantity}")
+                logger.info(f"      ✅ WMS movement created | {movement_type} {product_id} qty={quantity}")
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to create WMS movement: {e}")
+            logger.error(f"      ❌ WMS API ERROR: {e}")
+            logger.error(f"      Response: {getattr(e.response, 'text', 'N/A')}")
             raise RuntimeError(f"WMS API error: {e}")
 
     async def _get_valid_products(self) -> Set[str]:

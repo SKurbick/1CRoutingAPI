@@ -22,3 +22,4 @@ upd_test.json
 bureaucracy_last_v.py
 .venv
 .zed
+app/logs/*.log
