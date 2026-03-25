@@ -156,6 +156,9 @@ class WMSIntegrationService:
         author = receipt.author_of_the_change
 
         # Обработать каждый товар в поставке
+        # Разделяем на новые (bulk receive) и корректировки (per-item)
+        new_items = []  # [(product_id, quantity)]
+
         for item in receipt.supply_data:
             product_id = item.local_vendor_code
             quantity = float(item.quantity)
@@ -174,7 +177,7 @@ class WMSIntegrationService:
 
             if existing:
                 logger.info(f"    🔄 ADJUSTMENT: {product_id} | Old qty: {existing['quantity']} | New qty: {quantity}")
-                # Поставка обновилась — корректировка
+                # Поставка обновилась — корректировка (per-item, требует проверки остатков)
                 await self._adjust_receipt_item(
                     guid=guid,
                     product_id=product_id,
@@ -187,57 +190,73 @@ class WMSIntegrationService:
                 stats["adjusted_movements"] += 1
             else:
                 logger.info(f"    ➕ NEW RECEIPT: {product_id} | Qty: {quantity}")
-                # Новая поставка — receive
-                await self._receive_goods(
-                    guid=guid,
-                    product_id=product_id,
-                    quantity=quantity,
-                    document_number=document_number,
-                    supplier_name=supplier_name,
-                    supplier_code=supplier_code,
-                    author=author
+                new_items.append((product_id, quantity))
+
+        # Bulk-создание всех новых receive movements с разбивкой на батчи
+        if new_items:
+            wms_api_url = getattr(settings, 'WMS_API_URL_MOVEMENTS', 'http://localhost:8000/api/movements')
+            BATCH_SIZE = 500  # Лимит WMS API
+
+            total_batches = (len(new_items) + BATCH_SIZE - 1) // BATCH_SIZE
+            total_created = 0
+
+            for batch_index in range(0, len(new_items), BATCH_SIZE):
+                batch_items = new_items[batch_index:batch_index + BATCH_SIZE]
+                batch_number = (batch_index // BATCH_SIZE) + 1
+
+                movements = [
+                    {
+                        "movement_type": "receive",
+                        "product_id": product_id,
+                        "quantity": int(quantity),
+                        "from_location_code": None,
+                        "to_location_code": self.RECEIPT_LOCATION,
+                        "batch_number": None,
+                        "container_code": None,
+                        "user_name": author,
+                        "reason": f"Поставка {document_number} от {supplier_name}",
+                    }
+                    for product_id, quantity in batch_items
+                ]
+
+                logger.info(
+                    f"Создание movements в WMS | receipt={document_number} | "
+                    f"batch={batch_number}/{total_batches} | count={len(movements)}"
                 )
-                stats["created_movements"] += 1
 
-    async def _receive_goods(
-        self,
-        guid: str,
-        product_id: str,
-        quantity: float,
-        document_number: str,
-        supplier_name: str,
-        supplier_code: str,
-        author: str
-    ) -> None:
-        """Приходовать товар (новая поставка)"""
+                result = await self._create_wms_movements_bulk(
+                    api_url=wms_api_url,
+                    movements=movements,
+                )
 
-        # Создать movement через WMS API
-        wms_api_url = getattr(settings, 'WMS_API_URL_MOVEMENTS', 'http://localhost:8000/api/movements')
+                logger.info(
+                    f"Movements созданы в WMS | receipt={document_number} | "
+                    f"batch={batch_number}/{total_batches} | total={result['total']}"
+                )
 
-        await self._create_wms_movement(
-            api_url=wms_api_url,
-            movement_type="receive",
-            product_id=product_id,
-            to_location_code=self.RECEIPT_LOCATION,
-            quantity=quantity,
-            user_name=author,
-            reason=f"Поставка {document_number} от {supplier_name}"
-        )
+                for product_id, quantity in batch_items:
+                    await self.receipt_repo.create_receipt_item(
+                        guid=guid,
+                        product_id=product_id,
+                        quantity=quantity,
+                        document_number=document_number,
+                        supplier_name=supplier_name,
+                        supplier_code=supplier_code
+                    )
+                    logger.info(
+                        f"Received: {product_id} qty={quantity} "
+                        f"from receipt {document_number} (guid={guid})"
+                    )
 
-        # Сохранить в receipt_items
-        await self.receipt_repo.create_receipt_item(
-            guid=guid,
-            product_id=product_id,
-            quantity=quantity,
-            document_number=document_number,
-            supplier_name=supplier_name,
-            supplier_code=supplier_code
-        )
+                total_created += result['total']
 
-        logger.info(
-            f"Received: {product_id} qty={quantity} "
-            f"from receipt {document_number} (guid={guid})"
-        )
+            stats["created_movements"] += total_created
+
+            if total_batches > 1:
+                logger.info(
+                    f"✅ Поступление обработано | receipt={document_number} | "
+                    f"batches={total_batches} | total_movements={total_created}"
+                )
 
     async def _adjust_receipt_item(
         self,
@@ -372,6 +391,44 @@ class WMSIntegrationService:
             logger.error(f"      ❌ WMS API ERROR: {e}")
             logger.error(f"      Response: {getattr(e.response, 'text', 'N/A')}")
             raise RuntimeError(f"WMS API error: {e}")
+
+    async def _create_wms_movements_bulk(
+        self,
+        api_url: str,
+        movements: List[dict],
+    ) -> dict:
+        """Создать несколько movements в WMS одним запросом (bulk)
+
+        Args:
+            api_url: Base URL WMS API (например, "http://wms:8310/api/movements")
+            movements: Список movements для создания (1-500 элементов)
+
+        Returns:
+            Response от WMS API: {"created": [...], "total": N}
+
+        Raises:
+            RuntimeError: Если WMS вернул ошибку
+        """
+        logger.debug(f"      📡 WMS bulk API call | URL: {api_url} | count={len(movements)}")
+        logger.debug(f"      Payload: {json.dumps(movements, ensure_ascii=False)}")
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    api_url,
+                    json=movements,
+                    headers={"Content-Type": "application/json"},
+                )
+                response.raise_for_status()
+                result = response.json()
+                logger.info(f"      ✅ WMS bulk movements created | total={result.get('total')}")
+                return result
+        except httpx.HTTPError as e:
+            logger.error(
+                f"      ❌ WMS bulk API ERROR | url={api_url} | count={len(movements)} | error={e}"
+            )
+            logger.error(f"      Response: {getattr(e.response, 'text', 'N/A')}")
+            raise RuntimeError(f"WMS bulk API error: {e}")
 
     async def _get_valid_products(self) -> Set[str]:
         """Получить список валидных product_id из БД"""
