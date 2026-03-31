@@ -12,6 +12,7 @@ from .return_of_goods import get_return_of_goods_service
 from .containers import get_container_service
 from .products_dimensions import get_product_dimensions_service
 from .box_stickers import get_box_sticker_service
+from .cash_flow_writeoff import get_cash_flow_writeoff_service
 
 
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     'get_container_service',
     'get_product_dimensions_service',
     'get_box_sticker_service',
+    'get_cash_flow_writeoff_service',
 ]
