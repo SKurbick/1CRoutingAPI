@@ -28,10 +28,26 @@ class CashFlowWriteoffRepository:
         """
 
         data_to_insert = [
-            (r.guid, r.document_number, r.date, r.operation_type, r.organization,
-             r.operation, r.item_cash_flow, r.expense_item, r.amount_vat, r.amount,
-             r.author, r.currency, r.payment_purpose, r.event_status, r.bank_status, r.bank_account)
+            (
+                r.guid,
+                r.document_number,
+                r.date,
+                r.operation_type,
+                r.organization,
+                r.operation,
+                pd.item_cash_flow,
+                r.expense_item,
+                pd.amount_vat,
+                pd.amount,
+                r.author,
+                r.currency,
+                r.payment_purpose,
+                r.event_status,
+                r.bank_status,
+                r.bank_account,
+            )
             for r in records
+            for pd in r.payment_descriptions
         ]
 
         async with self.pool.acquire() as conn:
