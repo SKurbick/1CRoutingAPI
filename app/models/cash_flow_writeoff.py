@@ -28,6 +28,7 @@ class CashFlowWriteoff(BaseModel):
                 "currency": "RUB",
                 "payment_purpose": "Расчет при увольнении. Без налога (НДС)",
                 "bank_account": "5343 в АО \"АЛЬФА-БАНК\", СТАРТ ООО",
+                "recipient": "АЛЬФА-БАНК",
                 "payment_descriptions": [
                     {
                         "item_cash_flow": "Выплата заработной платы сотрудникам",
@@ -52,6 +53,7 @@ class CashFlowWriteoff(BaseModel):
     event_status: str = Field(description="Статус проводки из документа списания ДС (например: Проведен)")
     bank_status: bool = Field(description="Статус обработки банком")
     bank_account: str = Field(description="Расчётный счёт организации из документа списания ДС")
+    recipient: Optional[str] = Field(default=None, description="Получатель платежа — необязательное поле")
     payment_descriptions: List[PaymentDescription] = Field(description="Список строк документа — каждая строка сохраняется отдельной записью в БД")
 
 

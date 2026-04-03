@@ -23,8 +23,8 @@ class CashFlowWriteoffRepository:
         INSERT INTO cash_flow_writeoffs
             (guid, document_number, date, operation_type, organization,
              operation, item_cash_flow, expense_item, amount_vat, amount,
-             author, currency, payment_purpose, event_status, bank_status, bank_account, is_valid)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, True)
+             author, currency, payment_purpose, event_status, bank_status, bank_account, recipient, is_valid)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, True)
         """
 
         data_to_insert = [
@@ -45,6 +45,7 @@ class CashFlowWriteoffRepository:
                 r.event_status,
                 r.bank_status,
                 r.bank_account,
+                r.recipient,
             )
             for r in records
             for pd in r.payment_descriptions
