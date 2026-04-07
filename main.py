@@ -6,7 +6,8 @@ from app.database.db_connect import init_db, close_db
 from app.api.v1.endpoints import (receipt_of_goods_router, income_on_bank_account_router, shipment_of_goods_router,
                                   ordered_goods_from_buyers_router, local_barcode_generation_router, warehouse_and_balances_router,
                                   goods_information_router, inventory_check_router, inventory_transactions_router, return_of_goods_router, docs_router,
-                                  containers_router, products_dimensions_router, box_stickers_router, cash_flow_writeoff_router)
+                                  containers_router, products_dimensions_router, box_stickers_router, cash_flow_writeoff_router,
+                                  return_to_supplier_router)
 from app.monitoring import MetricsMiddleware, monitoring_router
 from contextlib import asynccontextmanager
 import uvicorn
@@ -66,6 +67,7 @@ app.include_router(containers_router, prefix="/api")
 app.include_router(products_dimensions_router, prefix="/api")
 app.include_router(box_stickers_router, prefix="/api")
 app.include_router(cash_flow_writeoff_router, prefix="/api")
+app.include_router(return_to_supplier_router, prefix="/api")
 
 
 if __name__ == "__main__":
