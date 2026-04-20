@@ -121,6 +121,7 @@ class StickerLocalisationData(BaseModel):
     lang: str
     translation: str
 
+
 class StickerUserTemplateData(BaseModel):
     product_id: str
     document_type: StickerDocumentType
