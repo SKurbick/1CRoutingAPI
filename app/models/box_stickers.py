@@ -3,6 +3,11 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
+class StickerDocumentType(str, Enum):
+    TRANSPORT = "TRANSPORT"
+    INDIVIDUAL = "INDIVIDUAL"
+
+
 class CertificationType(str, Enum):
     """Тип сертификата или знака соответствия."""
     EAC = "ЕАС"       # Евразийское соответствие
@@ -91,3 +96,37 @@ class BoxStickerTemplateShort(BaseModel):
     """Шаблон стикера с минимальной информацией."""
     article: str | None = Field(None, description="Артикул")
     name: str | None = Field(None, description="Название")
+
+
+
+class StickerProductData(BaseModel):
+    product_id: str = Field(None, description="Артикул")
+    name: str = Field(None, description="Название")
+    color: str | None = Field(None, description="Цвет")
+    material: str | None = Field(None, description="Материал")
+    gross_weight: float | None= Field(None, description="Вес брутто, кг")
+    net_weight: float | None = Field(None, description="Вес нетто, кг")
+    box_size: BoxSize | None = None
+    produced_in: str | None = Field(None, description="Произведено в")
+    certification_type: CertificationType = Field(
+        default=CertificationType.NONE, 
+        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)"
+    )
+
+
+class StickerLocalisationData(BaseModel):
+    """Договорились не хранить русскую версию поля. Локализация!=перевод"""
+    product_id: str
+    field_name: str
+    lang: str
+    translation: str
+
+class StickerUserTemplateData(BaseModel):
+    product_id: str
+    document_type: StickerDocumentType
+    proforma_number: str | None = None
+    items_per_box: int | None = None
+    total_boxes: int | None = None
+    first_box_number: int | None = 1
+    produced_in: int | None = None
+    importer_id: int | None = None
