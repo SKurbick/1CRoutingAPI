@@ -127,6 +127,5 @@ class StickerUserTemplateData(BaseModel):
     proforma_number: str | None = None
     items_per_box: int | None = None
     total_boxes: int | None = None
-    first_box_number: int | None = 1
     produced_in: int | None = None
     importer_id: int | None = None
