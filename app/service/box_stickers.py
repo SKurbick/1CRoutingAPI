@@ -7,7 +7,10 @@ import qrcode
 import pymupdf
 from PIL import Image, ImageDraw, ImageFont
 
-from app.models.box_stickers import BoxDataRequest, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort
+from app.database.repositories.localisation import LocalisationRepository
+from app.database.repositories.sticker_user_data import StickerUserDataRepository
+from app.database.repositories.stickers_storage import StickersStorageRepository
+from app.models.box_stickers import BoxDataRequest, BoxStickerTemplateView, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort, StickerType
 from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
 from app.service.goods_information import GoodsInformationService
 from app.service.translate_manager import translation_manager
@@ -578,3 +581,53 @@ class BoxStickerService:
 
         generator.create_document(images)
         return generator.get_bytes_and_close()
+    
+
+class StickerTemplateBuilderService:
+
+    def __init__(
+        self,
+        products_repo: StickersStorageRepository,
+        localisation_repo: LocalisationRepository,
+        user_data_repo: StickerUserDataRepository,
+    ):
+        self.products_repo = products_repo
+        self.localisation_repo = localisation_repo
+        self.user_data_repo = user_data_repo
+
+
+    async def get_transport_template(self, product_id: str) -> BoxStickerTemplateView:
+
+        #собираю данный по товару из таблицы stickers_storage
+        product = await self.products_repo.get_by_product_id(product_id)
+        if not product:
+            raise ValueError("Товар не найден")
+        #собираю данные по ранее заполненными пользователем поля для данного товара
+        user_data = await self.user_data_repo.get_last(
+            product_id=product.product_id,
+            sticker_type=StickerType.TRANSPORT,
+        )
+
+        #собираю данные по локализации, если были сохранены ранее
+        localisations = await self.localisation_repo.get_by_product_id(product.product_id)
+        translations = {
+            (item.field_name, item.lang): item.translation
+            for item in localisations
+        }
+
+        return BoxStickerTemplateView(
+            product_id=product.product_id,
+            name=product.name,
+            name_en=translations.get(("name", "en")),
+            color=product.color,
+            color_en=translations.get(("color", "en")),
+            gross_weight=product.gross_weight or 0,
+            net_weight=product.net_weight,
+            box_size=product.box_size,
+            items_per_box=user_data.items_per_box if user_data and user_data.items_per_box else 1,
+            total_boxes=user_data.total_boxes if user_data and user_data.total_boxes else 1,
+            produced_in=(user_data.produced_in if user_data and user_data.produced_in else product.produced_in),
+            produced_in_en=translations.get(("produced_in", "en")),
+            proforma_number=user_data.proforma_number if user_data else None,
+            certification_type=product.certification_type,
+        )

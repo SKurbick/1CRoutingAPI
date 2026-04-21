@@ -3,7 +3,7 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
-class StickerDocumentType(str, Enum):
+class StickerType(str, Enum):
     TRANSPORT = "TRANSPORT"
     INDIVIDUAL = "INDIVIDUAL"
 
@@ -17,9 +17,9 @@ class CertificationType(str, Enum):
 
 class BoxSize(BaseModel):
     "Размер короба."
-    length: float = Field(..., gt=0, description="Длина, см")
-    width: float = Field(..., gt=0, description="Ширина, см")
-    height: float = Field(..., gt=0, description="Высота, см")
+    box_length: float = Field(..., gt=0, description="Длина, см")
+    box_width: float = Field(..., gt=0, description="Ширина, см")
+    box_height: float = Field(..., gt=0, description="Высота, см")
 
 
 class BoxDataRequest(BaseModel):
@@ -100,8 +100,9 @@ class BoxStickerTemplateShort(BaseModel):
 
 
 class StickerProductData(BaseModel):
-    product_id: str = Field(None, description="Артикул")
-    name: str = Field(None, description="Название")
+    """Данные товара (временно тянутся из гугл дока)"""
+    product_id: str = Field(..., description="Артикул")
+    name: str = Field(..., description="Название")
     color: str | None = Field(None, description="Цвет")
     material: str | None = Field(None, description="Материал")
     gross_weight: float | None= Field(None, description="Вес брутто, кг")
@@ -123,10 +124,32 @@ class StickerLocalisationData(BaseModel):
 
 
 class StickerUserTemplateData(BaseModel):
+    """Пользовательские данные шаблона"""
     product_id: str
-    document_type: StickerDocumentType
+    sticker_type: StickerType
     proforma_number: str | None = None
     items_per_box: int | None = None
     total_boxes: int | None = None
-    produced_in: int | None = None
+    produced_in: str | None = None
     importer_id: int | None = None
+
+
+class BoxStickerTemplateView(BaseModel):
+    """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
+    product_id: str
+    name: str
+    name_en: str | None = None
+    color: str | None = None
+    color_en: str | None = None
+    gross_weight: float
+    net_weight: float | None = None # TODO: в таблице в БД нет net_weight
+    # box_length: float
+    # box_width: floatК
+    # box_height: float
+    box_size: BoxSize
+    items_per_box: int
+    total_boxes: int
+    produced_in: str | None = None
+    produced_in_en: str | None = None
+    proforma_number: str | None = None
+    certification_type: CertificationType = CertificationType.NONE
