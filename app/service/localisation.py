@@ -13,7 +13,7 @@ class LocalisationService:
     async def save_localisations(self, template_data) -> None:#template_data: BoxStickerTemplateView #TODO: сделать универсальный метод для всех видо стикеров(сохранять локлизацию для товара, а не для стикера)
         items: list[StickerLocalisationData] = []
 
-        if template_data.name_en:
+        if template_data.name_en: # при удалении данных в шаблоне старый перевод не удалится в бд
             items.append(
                 StickerLocalisationData(
                     product_id=template_data.product_id,
@@ -23,7 +23,7 @@ class LocalisationService:
                 )
             )
 
-        if template_data.color_en:
+        if template_data.color_en: # при удалении данных в шаблоне старый перевод не удалится в бд
             items.append(
                 StickerLocalisationData(
                     product_id=template_data.product_id,
@@ -33,7 +33,7 @@ class LocalisationService:
                 )
             )
 
-        if template_data.produced_in_en:
+        if template_data.produced_in_en: # при удалении данных в шаблоне старый перевод не удалится в бд
             items.append(
                 StickerLocalisationData(
                     product_id=template_data.product_id,
