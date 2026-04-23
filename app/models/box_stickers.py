@@ -131,10 +131,9 @@ class StickerUserTemplateData(BaseModel):
     items_per_box: int | None = None
     total_boxes: int | None = None
     produced_in: str | None = None
-    importer_id: int | None = None
 
 
-class BoxStickerTemplateView(BaseModel):
+class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающий класс для стикеров на коробки и индивидуальных с общими полями для типизации в async def save_localisations
     """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
     product_id: str
     name: str

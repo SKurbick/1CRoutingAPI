@@ -5,9 +5,10 @@ from fastapi import APIRouter, HTTPException, status, Depends, Query, Path
 from fastapi.responses import StreamingResponse
 
 from app.dependencies import get_box_sticker_service
-from app.dependencies.box_stickers import get_box_sticker_service_1
+from app.dependencies.box_stickers import get_box_sticker_service_1, get_sticker_template_save_service
 from app.models.box_stickers import BoxDataRequest, BoxStickerTemplate, BoxStickerTemplateShort, BoxStickerTemplateView
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
+from app.service.sticker_template_save import StickerTemplateSaveService
 from app.service.translate_manager import translation_manager
 
 
@@ -72,7 +73,18 @@ async def get_sticker_template_(
     service: Annotated[StickerTemplateBuilderService, Depends(get_box_sticker_service_1)],
 ) -> BoxStickerTemplateView:
     """Получить шаблон транспортного стикера по артикулу."""
-    return await service.get_transport_template(product_id)
+    return await service.get_box_sticker_template(product_id)
+
+@router.post(
+    "/templatesNEW/save",
+    status_code=status.HTTP_200_OK,
+    description="Сохранить пользовательские данные и локализации шаблона",
+)
+async def save_sticker_template_new(
+    data: BoxStickerTemplateView,
+    service: Annotated[StickerTemplateSaveService, Depends(get_sticker_template_save_service)],
+) -> BoxStickerTemplateView:
+    return await service.save_box_sticker_template(data)
 
 
 @router.get(

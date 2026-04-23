@@ -8,6 +8,9 @@ from app.database.repositories.localisation import LocalisationRepository
 from app.database.repositories.sticker_user_data import StickerUserDataRepository
 from app.database.repositories.stickers_storage import StickersStorageRepository
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
+from app.service.localisation import LocalisationService
+from app.service.sticker_template_save import StickerTemplateSaveService
+from app.service.sticker_user_data import StickerUserDataService
 from .goods_information import get_goods_information_service, GoodsInformationService
 
 
@@ -41,6 +44,11 @@ def get_user_data_repo(
 ) -> StickerUserDataRepository:
     return StickerUserDataRepository(pool)
 
+def get_sticker_user_data_repo(
+    pool: Pool = Depends(get_pool),
+) -> StickerUserDataRepository:
+    return StickerUserDataRepository(pool)
+
 
 def get_box_sticker_service(
         process_pool: ProcessPoolExecutor = Depends(get_process_pool),
@@ -64,3 +72,21 @@ def get_box_sticker_service_1(
         user_data_repo=user_data_repo
     )
 
+def get_sticker_user_data_service(
+        repo: StickerUserDataRepository = Depends(get_sticker_user_data_repo),
+) -> StickerUserDataService:
+    return StickerUserDataService(repo)
+
+def get_localisation_service(
+        repo: LocalisationRepository = Depends(get_localisation_repo)
+) -> LocalisationService:
+    return LocalisationService(repo)
+
+def get_sticker_template_save_service(
+    user_data_service: StickerUserDataService = Depends(get_sticker_user_data_service),
+    localisation_service: LocalisationService = Depends(get_localisation_service),
+) -> StickerTemplateSaveService:
+    return StickerTemplateSaveService(
+        user_data_service=user_data_service,
+        localisation_service=localisation_service,
+    )

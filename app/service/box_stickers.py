@@ -596,7 +596,7 @@ class StickerTemplateBuilderService:
         self.user_data_repo = user_data_repo
 
 
-    async def get_transport_template(self, product_id: str) -> BoxStickerTemplateView:
+    async def get_box_sticker_template(self, product_id: str) -> BoxStickerTemplateView:
 
         #собираю данный по товару из таблицы stickers_storage
         product = await self.products_repo.get_by_product_id(product_id)
@@ -607,7 +607,6 @@ class StickerTemplateBuilderService:
             product_id=product.product_id,
             sticker_type=StickerType.TRANSPORT,
         )
-
         #собираю данные по локализации, если были сохранены ранее
         localisations = await self.localisation_repo.get_by_product_id(product.product_id)
         translations = {

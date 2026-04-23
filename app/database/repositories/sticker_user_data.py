@@ -15,8 +15,7 @@ class StickerUserDataRepository:
                 proforma_number,
                 items_per_box,
                 total_boxes,
-                produced_in,
-                importer_id
+                produced_in
             FROM sticker_user_data
             WHERE product_id = $1
               AND sticker_type = $2;
@@ -34,7 +33,6 @@ class StickerUserDataRepository:
             items_per_box=data.get("items_per_box"),
             total_boxes=data.get("total_boxes"),
             produced_in=data.get("produced_in"),
-            importer_id=data.get("importer_id"),
         )
     
     async def upsert(self, data: StickerUserTemplateData) -> None:
@@ -45,17 +43,15 @@ class StickerUserDataRepository:
                 proforma_number,
                 items_per_box,
                 total_boxes,
-                produced_in,
-                importer_id
+                produced_in
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (product_id, sticker_type) DO UPDATE
             SET
                 proforma_number = EXCLUDED.proforma_number,
                 items_per_box = EXCLUDED.items_per_box,
                 total_boxes = EXCLUDED.total_boxes,
                 produced_in = EXCLUDED.produced_in,
-                importer_id = EXCLUDED.importer_id,
                 updated_at = now();
         """
 
@@ -66,6 +62,5 @@ class StickerUserDataRepository:
             data.proforma_number,
             data.items_per_box,
             data.total_boxes,
-            data.produced_in,
-            data.importer_id,
+            data.produced_in
         )
