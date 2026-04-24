@@ -152,3 +152,29 @@ class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающ�
     produced_in_en: str | None = None
     proforma_number: str | None = None
     certification_type: CertificationType = CertificationType.NONE
+
+
+class GenerationStatus(str, Enum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    DONE = "DONE"
+    FAILED = "FAILED"
+
+
+class StickerGenerationTaskView(BaseModel):
+    id: int
+    product_id: str
+    sticker_type: StickerType
+    template_hash: str
+    generation_status: GenerationStatus
+    generation_task_id: str | None = None
+    document_path: str
+    error_message: str | None = None
+
+
+class StickerGenerationTaskResult(BaseModel):
+    task_id: int
+    generation_status: GenerationStatus
+    document_path: str
+    generation_task_id: str | None = None
+    error_message: str | None = None
