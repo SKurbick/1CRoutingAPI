@@ -83,7 +83,7 @@ class StickerGenerationService:
             f"sticker_type={StickerType.TRANSPORT},"
             f"template_hash={template_hash},"
             f"document_path={document_path},"
-            f"generation_task_id={None},")
+            )
         
         #TODO: логировать данные для стикеры
 
