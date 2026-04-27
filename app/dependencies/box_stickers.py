@@ -5,10 +5,12 @@ from asyncpg import Pool
 
 from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
 from app.database.repositories.localisation import LocalisationRepository
+from app.database.repositories.sticker_generation_tasks import StickerGenerationTasksRepository
 from app.database.repositories.sticker_user_data import StickerUserDataRepository
 from app.database.repositories.stickers_storage import StickersStorageRepository
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
 from app.service.localisation import LocalisationService
+from app.service.sticker_generation_service import StickerGenerationService
 from app.service.sticker_template_save import StickerTemplateSaveService
 from app.service.sticker_user_data import StickerUserDataService
 from .goods_information import get_goods_information_service, GoodsInformationService
@@ -89,4 +91,30 @@ def get_sticker_template_save_service(
     return StickerTemplateSaveService(
         user_data_service=user_data_service,
         localisation_service=localisation_service,
+    )
+
+def get_sticker_generation_tasks_repo(
+    pool: Pool = Depends(get_pool),
+) -> StickerGenerationTasksRepository:
+    return StickerGenerationTasksRepository(pool)
+
+
+# def get_sticker_generation_publisher() -> StickerGenerationPublisher:
+#     return StickerGenerationPublisher()
+
+def get_sticker_generation_service(
+    generation_tasks_repo: StickerGenerationTasksRepository = Depends(
+        get_sticker_generation_tasks_repo),
+    user_data_service: StickerUserDataService = Depends(
+        get_sticker_user_data_service),
+    localisation_service: LocalisationService = Depends(
+        get_localisation_service),
+    # publisher: StickerGenerationPublisher = Depends(
+    #     get_sticker_generation_publisher),
+) -> StickerGenerationService:
+    return StickerGenerationService(
+        generation_tasks_repo=generation_tasks_repo,
+        user_data_service=user_data_service,
+        localisation_service=localisation_service,
+        # publisher=publisher,
     )

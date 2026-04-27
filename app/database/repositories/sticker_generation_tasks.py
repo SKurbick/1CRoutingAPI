@@ -46,22 +46,20 @@ class StickerGenerationTasksRepository:
             error_message=data.get("error_message"),
         )
     
-    async def create_task (self, product_id: str, sticker_type: StickerType, hash: str, path: str, task_id: str):
+    async def create_task (self, product_id: str, sticker_type: StickerType, hash: str, path: str, task_id: str) ->StickerGenerationTaskResult:
         sql = """
             INSERT INTO sticker_generation_tasks (
                 product_id,
                 sticker_type,
                 template_hash,
                 generation_status,
-                generation_task_id,
                 document_path
             )
-            VALUES ($1, $2, $3, $4, $5, $6)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING
                 id AS task_id,
                 generation_status,
                 document_path,
-                generation_task_id,
                 error_message;
         """
         row = await self.pool.fetchrow(
@@ -106,3 +104,26 @@ class StickerGenerationTasksRepository:
             generation_task_id=data.get("generation_task_id"),
             error_message=data.get("error_message"),
         )
+    
+    async def add_user_to_task(self, task_id: int, user_id: int) -> None:
+        """Добавляет каждой задаче id пользователя, ее инициировавшего.
+        Необходимо для контроля максимального количества задач на каждом пользователе"""
+
+        sql = """
+            INSERT INTO sticker_generation_task_users (task_id, user_id)
+            VALUES ($1, $2)
+            ON CONFLICT (task_id, user_id) DO NOTHING;
+        """
+        await self.pool.execute(sql, task_id, user_id)
+
+
+    async def count_active_tasks_by_user(self, user_id: int) -> int:
+        """Считает такси в статусе PENDING и PROCESSING на пользователе. Считает активные задачи"""
+        sql = """
+            SELECT COUNT(*)
+            FROM sticker_generation_task_users tu
+            JOIN sticker_generation_tasks t ON t.id = tu.task_id
+            WHERE tu.user_id = $1
+            AND t.generation_status IN ('PENDING', 'PROCESSING');
+        """
+        return await self.pool.fetchval(sql, user_id)

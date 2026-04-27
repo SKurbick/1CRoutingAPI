@@ -5,9 +5,10 @@ from fastapi import APIRouter, HTTPException, status, Depends, Query, Path
 from fastapi.responses import StreamingResponse
 
 from app.dependencies import get_box_sticker_service
-from app.dependencies.box_stickers import get_box_sticker_service_1, get_sticker_template_save_service
-from app.models.box_stickers import BoxDataRequest, BoxStickerTemplate, BoxStickerTemplateShort, BoxStickerTemplateView
+from app.dependencies.box_stickers import get_box_sticker_service_1, get_sticker_generation_service, get_sticker_template_save_service
+from app.models.box_stickers import BoxDataRequest, BoxStickerTemplate, BoxStickerTemplateShort, BoxStickerTemplateView, StickerGenerationTaskResult
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
+from app.service.sticker_generation_service import StickerGenerationService
 from app.service.sticker_template_save import StickerTemplateSaveService
 from app.service.translate_manager import translation_manager
 
@@ -85,6 +86,22 @@ async def save_sticker_template_new(
     service: Annotated[StickerTemplateSaveService, Depends(get_sticker_template_save_service)],
 ) -> BoxStickerTemplateView:
     return await service.save_box_sticker_template(data)
+
+
+@router.post("/generation-tasks")
+async def create_or_get_generation_task(
+    template_data: BoxStickerTemplateView,
+    user_id: int, #TODO: временное решение для тестирования
+    # user_id: int = Depends(get_current_user_id), #TODO: как получит user_id?
+    service: StickerGenerationService = Depends(get_sticker_generation_service),
+) -> StickerGenerationTaskResult:
+    try:
+        return await service.create_or_get_box_generation_task(
+            user_id=user_id,
+            template_data=template_data,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 @router.get(
