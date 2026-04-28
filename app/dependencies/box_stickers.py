@@ -10,6 +10,7 @@ from app.database.repositories.sticker_user_data import StickerUserDataRepositor
 from app.database.repositories.stickers_storage import StickersStorageRepository
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
 from app.service.localisation import LocalisationService
+from app.service.sticker_generation_publisher import StickerGenerationPublisher
 from app.service.sticker_generation_service import StickerGenerationService
 from app.service.sticker_template_save import StickerTemplateSaveService
 from app.service.sticker_user_data import StickerUserDataService
@@ -99,8 +100,8 @@ def get_sticker_generation_tasks_repo(
     return StickerGenerationTasksRepository(pool)
 
 
-# def get_sticker_generation_publisher() -> StickerGenerationPublisher:
-#     return StickerGenerationPublisher()
+def get_sticker_generation_publisher() -> StickerGenerationPublisher:
+    return StickerGenerationPublisher()
 
 def get_sticker_generation_service(
     generation_tasks_repo: StickerGenerationTasksRepository = Depends(
@@ -109,12 +110,11 @@ def get_sticker_generation_service(
         get_sticker_user_data_service),
     localisation_service: LocalisationService = Depends(
         get_localisation_service),
-    # publisher: StickerGenerationPublisher = Depends(
-    #     get_sticker_generation_publisher),
+    publisher: StickerGenerationPublisher = Depends(
+        get_sticker_generation_publisher),
 ) -> StickerGenerationService:
     return StickerGenerationService(
         generation_tasks_repo=generation_tasks_repo,
         user_data_service=user_data_service,
         localisation_service=localisation_service,
-        # publisher=publisher,
-    )
+        publisher=publisher)

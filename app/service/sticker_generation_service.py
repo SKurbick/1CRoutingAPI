@@ -4,6 +4,7 @@ import logging
 from app.database.repositories.sticker_generation_tasks import StickerGenerationTasksRepository
 from app.models.box_stickers import BoxStickerTemplateView, StickerGenerationTaskResult, StickerType
 from app.service.localisation import LocalisationService
+from app.service.sticker_generation_publisher import StickerGenerationPublisher
 from app.service.sticker_template_hash import StickerTemplateHashService
 from app.service.sticker_user_data import StickerUserDataService
 
@@ -16,12 +17,12 @@ class StickerGenerationService:
         generation_tasks_repo: StickerGenerationTasksRepository,
         user_data_service: StickerUserDataService,
         localisation_service: LocalisationService,
-        # publisher: str, # TODO: примочка для брокера
+       publisher: StickerGenerationPublisher,
     ):
         self.generation_tasks_repo = generation_tasks_repo
         self.user_data_service = user_data_service
         self.localisation_service = localisation_service
-        # self.publisher = publisher
+        self.publisher = publisher
 
 
     async def create_or_get_box_generation_task(
@@ -82,8 +83,6 @@ class StickerGenerationService:
             f"{StickerType.TRANSPORT.value}/"
             f"{template_hash}.pdf"
         )
-
-        print("готовую не нашел")
         
         #TODO: логировать данные для стикеры
 
@@ -93,7 +92,6 @@ class StickerGenerationService:
             hash=template_hash,
             path=document_path,
         )
-        print(generation_task)
 
         await self.generation_tasks_repo.add_user_to_task(
             task_id=generation_task.task_id,
@@ -109,18 +107,16 @@ class StickerGenerationService:
             "template_data": hash_payload,
             "document_path": document_path,
         }
-        print("broker_payload->", broker_payload)
 
         broker_task_id = await self.publisher.publish_generation_task(broker_payload)
 
-        # if broker_task_id:
-        #     await self.generation_tasks_repo.set_processing(
-        #         task_id=generation_task.id,
-        #         generation_task=broker_task_id,
-        #     )
+        if broker_task_id:
+            await self.generation_tasks_repo.set_processing(
+                task_id=generation_task.task_id,
+                generation_task=broker_task_id)
 
-            # updated = await self.generation_tasks_repo.get_by_id(generation_task.id)
-            # if updated:
-            #     return updated
+            updated = await self.generation_tasks_repo.get_by_id(generation_task.id)
+            if updated:
+                return updated
 
         return generation_task

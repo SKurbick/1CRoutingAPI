@@ -126,3 +126,23 @@ class StickerGenerationTasksRepository:
             AND t.generation_status IN ('PENDING', 'PROCESSING');
         """
         return await self.pool.fetchval(sql, user_id)
+    
+
+    async def set_processing(self, task_id: int, generation_task: str) -> None:
+        """Обновляет данные о задаче по генерации стикера после ответа брокера по задаче"""
+
+        sql = """
+            UPDATE sticker_generation_tasks
+            SET
+                generation_status = $2,
+                generation_task_id = $3,
+                updated_at = now()
+            WHERE id = $1
+            """
+
+        await self.pool.execute(
+            sql,
+            task_id,
+            GenerationStatus.PROCESSING.value,
+            generation_task,
+        )

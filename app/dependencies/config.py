@@ -1,7 +1,28 @@
+from functools import lru_cache
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+
+    # RabbitMQ
+    RABBIT_PORT: int = 5672
+    RABBIT_HOST: str = "localhost"
+    RABBIT_USER: str
+    RABBIT_PASS: SecretStr
+    # rabbit exchanges
+    RABBIT_EXC_DOCGEN_REQUEST: str = "docgen.request.exchange"
+    RABBIT_EXC_DOCGEN_EVENT: str = "docgen.event.exchange"
+
+    # rabbit queues
+    RABBIT_Q_DOCGEN_BOX_LABEL: str = "docgen.box_label.queue"
+    RABBIT_Q_DOCGEN_UNIT_LABEL: str = "docgen.unit_label.queue"
+
+    # rabbit routing keys
+    RABBIT_RK_DOC_BOX_LABEL: str = "doc.box_label"
+    RABBIT_RK_DOC_UNIT_LABEL: str = "doc.unit_label"
+    RABBIT_RK_DOC_GENERATED_BOX_LABEL: str = "doc.generated.box_label"
+    RABBIT_RK_DOC_GENERATED_UNIT_LABEL: str = "doc.generated.unit_label"
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
@@ -31,5 +52,13 @@ account_inn_map = data = {
 
         }
 settings: Settings = Settings()
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()
+
+SETTINGS = get_settings()
+
 
 
