@@ -176,5 +176,5 @@ class StickerGenerationTaskResult(BaseModel):
     task_id: int
     generation_status: GenerationStatus
     document_path: str
-    generation_task_id: str | None = None
+    generation_task_id: str | None = None #для номера задачи в сервисе генерации стикеров. не уверен, что нужен
     error_message: str | None = None

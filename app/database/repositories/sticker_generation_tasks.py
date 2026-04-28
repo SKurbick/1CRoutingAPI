@@ -46,7 +46,7 @@ class StickerGenerationTasksRepository:
             error_message=data.get("error_message"),
         )
     
-    async def create_task (self, product_id: str, sticker_type: StickerType, hash: str, path: str, task_id: str) ->StickerGenerationTaskResult:
+    async def create_task (self, product_id: str, sticker_type: StickerType, hash: str, path: str) ->StickerGenerationTaskResult:
         sql = """
             INSERT INTO sticker_generation_tasks (
                 product_id,
@@ -68,7 +68,6 @@ class StickerGenerationTasksRepository:
             sticker_type,
             hash,
             GenerationStatus.PENDING.value,
-            task_id,
             path,
         )
         data = dict(row)

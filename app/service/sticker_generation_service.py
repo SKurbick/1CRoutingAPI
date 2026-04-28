@@ -51,7 +51,6 @@ class StickerGenerationService:
         }
 
         template_hash = StickerTemplateHashService.calculate(hash_payload)
-        print(template_hash, "<-", hash_payload)
 
         #проверяем существования таски по составному ключу (product_id, sticker_type, template_hash)
         existing_task = await self.generation_tasks_repo.get_by_unique_key(
@@ -59,15 +58,20 @@ class StickerGenerationService:
             sticker_type=StickerType.TRANSPORT,
             template_hash=template_hash,
             )
+        print(existing_task)
 
         if existing_task:
             await self.generation_tasks_repo.add_user_to_task(
-                task_id=existing_task.id,
+                task_id=existing_task.task_id,
                 user_id=user_id,
                 )
+            print("нашел готовую")
+            #TODO: если таска висит со статусом ошибки, то другому польщователю вернем чужую ошибку. Нужен ретрай!
             return existing_task
 
         active_count = await self.generation_tasks_repo.count_active_tasks_by_user(user_id)
+
+        print("active_count", active_count)
 
         # if active_count >= self.max_active_tasks_per_user:
         #     raise ValueError("Превышен лимит документов в обработке")
@@ -79,11 +83,7 @@ class StickerGenerationService:
             f"{template_hash}.pdf"
         )
 
-        logger.info(f" параметры таски product_id={template_data.product_id},"
-            f"sticker_type={StickerType.TRANSPORT},"
-            f"template_hash={template_hash},"
-            f"document_path={document_path},"
-            )
+        print("готовую не нашел")
         
         #TODO: логировать данные для стикеры
 
@@ -93,24 +93,25 @@ class StickerGenerationService:
             hash=template_hash,
             path=document_path,
         )
+        print(generation_task)
 
         await self.generation_tasks_repo.add_user_to_task(
-            task_id=generation_task.id,
+            task_id=generation_task.task_id,
             user_id=user_id,
         )
         
         #добавляем 
         broker_payload = {
-            "task_id": generation_task.id,
+            "task_id": generation_task.task_id,
             "product_id": template_data.product_id,
             "sticker_type": StickerType.TRANSPORT.value,
             "template_hash": template_hash,
             "template_data": hash_payload,
             "document_path": document_path,
         }
+        print("broker_payload->", broker_payload)
 
-        #TODO: publisher механика
-        # broker_task_id = await self.publisher.publish_generation_task(broker_payload)
+        broker_task_id = await self.publisher.publish_generation_task(broker_payload)
 
         # if broker_task_id:
         #     await self.generation_tasks_repo.set_processing(
