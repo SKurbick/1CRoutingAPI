@@ -59,22 +59,20 @@ class StickerGenerationService:
             sticker_type=StickerType.TRANSPORT,
             template_hash=template_hash,
             )
-        print(existing_task)
+        #TODO: логирование 
 
         if existing_task:
             await self.generation_tasks_repo.add_user_to_task(
                 task_id=existing_task.task_id,
                 user_id=user_id,
                 )
-            print("нашел готовую")
-            #TODO: если таска висит со статусом ошибки, то другому польщователю вернем чужую ошибку. Нужен ретрай!
+            # print("нашел готовую") TODO: логирование
+            #TODO: если таска висит со статусом ошибки, то другому пользователю вернем чужую ошибку. Нужен ретрай!
             return existing_task
 
         active_count = await self.generation_tasks_repo.count_active_tasks_by_user(user_id)
 
-        print("active_count", active_count)
-
-        # if active_count >= self.max_active_tasks_per_user:
+        # if active_count >= self.max_active_tasks_per_user: TODO: использовать ограничения по количеству тасок на пользователя в конфиге?
         #     raise ValueError("Превышен лимит документов в обработке")
         
         #TODO: StickerType.TRANSPORT.value.lower() ? stickers/{template_data.product_id}_{StickerType.TRANSPORT.value}_{template_hash}.pdf лучше? хуже?

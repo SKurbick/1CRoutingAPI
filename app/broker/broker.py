@@ -25,10 +25,11 @@ class BrokerManager:
     @property
     def broker(self) -> RabbitBroker:
         if self._broker is None:
+            password = SETTINGS.RABBIT_PASS.get_secret_value()
             self._broker = RabbitBroker(
                 url=(
                     f"amqp://{SETTINGS.RABBIT_USER}:"
-                    f"{SETTINGS.RABBIT_PASS}@"
+                    f"{password}@"
                     f"{SETTINGS.RABBIT_HOST}:"
                     f"{SETTINGS.RABBIT_PORT}/"
                 )
@@ -52,8 +53,16 @@ class BrokerManager:
             exchange=self.get_exchange(exchange),
         )
 
+    async def connect(self) -> None:
+        await self.broker.connect()
+        print("RabbitMQ connected")
 
-@lru_cache(maxsize=1)
+    async def close(self) -> None:
+        await self.broker.close()
+        print("RabbitMQ closed")
+
+
+# @lru_cache(maxsize=1)
 def get_broker_manager() -> BrokerManager:
     return BrokerManager()
 

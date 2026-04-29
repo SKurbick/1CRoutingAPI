@@ -18,7 +18,6 @@ class StickerUserDataService:
             total_boxes=template_data.total_boxes,
             produced_in=template_data.produced_in
         )
-        print(data_to_save)
         await self.repo.upsert(data_to_save)
 
 

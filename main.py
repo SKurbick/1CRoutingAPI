@@ -12,6 +12,7 @@ from app.monitoring import MetricsMiddleware, monitoring_router
 from contextlib import asynccontextmanager
 import uvicorn
 from app.dependencies.config import settings
+from app.broker.broker import broker_manager
 
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -22,11 +23,13 @@ from app.limiter import limiter
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     pool = await init_db()
+    await broker_manager.connect()
     process_pool = ProcessPoolExecutor(max_workers=4)
     app.state.pool = pool
     app.state.process_pool = process_pool
     yield
     await close_db(pool)
+    await broker_manager.close()
     if process_pool:
         process_pool.shutdown(wait=True)
 

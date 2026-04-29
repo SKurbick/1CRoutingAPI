@@ -58,6 +58,8 @@ settings: Settings = Settings()
 def get_settings() -> Settings:
     return Settings()
 
+
+
 SETTINGS = get_settings()
 
 
