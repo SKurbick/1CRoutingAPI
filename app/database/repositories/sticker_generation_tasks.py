@@ -18,7 +18,7 @@ class StickerGenerationTasksRepository:
                 id AS task_id,
                 generation_status,
                 document_path,
-                generation_task_id,
+                task_uuid,
                 error_message
             FROM sticker_generation_tasks
             WHERE product_id = $1
@@ -42,11 +42,12 @@ class StickerGenerationTasksRepository:
             task_id=data["task_id"],
             generation_status=GenerationStatus(data["generation_status"]),
             document_path=data["document_path"],
-            generation_task_id=data.get("generation_task_id"),
+            task_uuid=data.get("task_uuid"),
             error_message=data.get("error_message"),
         )
     
     async def create_task (self, product_id: str, sticker_type: StickerType, hash: str, path: str) ->StickerGenerationTaskResult:
+        #TODO: убарть путь к файлу из запроса. Путь будет генерировать сервис генерации
         sql = """
             INSERT INTO sticker_generation_tasks (
                 product_id,
@@ -60,6 +61,7 @@ class StickerGenerationTasksRepository:
                 id AS task_id,
                 generation_status,
                 document_path,
+                task_uuid,
                 error_message;
         """
         row = await self.pool.fetchrow(
@@ -75,7 +77,7 @@ class StickerGenerationTasksRepository:
             task_id=data["task_id"],
             generation_status=GenerationStatus(data["generation_status"]),
             document_path=data["document_path"],
-            generation_task_id=data.get("generation_task_id"),
+            task_uuid=data.get("task_uuid"),
             error_message=data.get("error_message"),
         )
     
@@ -86,7 +88,7 @@ class StickerGenerationTasksRepository:
                 id AS task_id,
                 generation_status,
                 document_path,
-                generation_task_id,
+                task_uuid,
                 error_message
             FROM sticker_generation_tasks
             WHERE id = $1;
@@ -100,7 +102,7 @@ class StickerGenerationTasksRepository:
             task_id=data["task_id"],
             generation_status=GenerationStatus(data["generation_status"]),
             document_path=data["document_path"],
-            generation_task_id=data.get("generation_task_id"),
+            task_uuid=data.get("task_uuid"),
             error_message=data.get("error_message"),
         )
     
@@ -128,21 +130,19 @@ class StickerGenerationTasksRepository:
         return await self.pool.fetchval(sql, user_id)
     
 
-    async def set_processing(self, task_id: int, generation_task: str) -> None:
+    async def set_processing(self, task_uuid: str) -> None:
         """Обновляет данные о задаче по генерации стикера после ответа брокера по задаче"""
 
         sql = """
             UPDATE sticker_generation_tasks
             SET
                 generation_status = $2,
-                generation_task_id = $3,
                 updated_at = now()
-            WHERE id = $1
+            WHERE task_uuid = $1
             """
 
         await self.pool.execute(
             sql,
-            task_id,
+            task_uuid,
             GenerationStatus.PROCESSING.value,
-            generation_task,
         )

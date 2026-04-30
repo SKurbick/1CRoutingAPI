@@ -1,4 +1,5 @@
 from enum import Enum
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -167,7 +168,7 @@ class StickerGenerationTaskView(BaseModel):
     sticker_type: StickerType
     template_hash: str
     generation_status: GenerationStatus
-    generation_task_id: str | None = None
+    task_uuid: UUID
     document_path: str
     error_message: str | None = None
 
@@ -176,5 +177,5 @@ class StickerGenerationTaskResult(BaseModel):
     task_id: int
     generation_status: GenerationStatus
     document_path: str
-    generation_task_id: str | None = None #для номера задачи в сервисе генерации стикеров. не уверен, что нужен
+    task_uuid: UUID|str
     error_message: str | None = None

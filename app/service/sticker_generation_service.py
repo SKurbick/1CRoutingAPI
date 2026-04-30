@@ -95,23 +95,43 @@ class StickerGenerationService:
             task_id=generation_task.task_id,
             user_id=user_id,
         )
-        
-        #добавляем 
+
         broker_payload = {
-            "task_id": generation_task.task_id,
-            "product_id": template_data.product_id,
-            "sticker_type": StickerType.TRANSPORT.value,
-            "template_hash": template_hash,
-            "template_data": hash_payload,
-            "document_path": document_path,
-        }
+    "task_id": generation_task.task_uuid,
+    "limit": None,
+    "offset": None,
+    "data": {
+        "product_id": template_data.product_id,
+        "gross_weight": template_data.gross_weight,
+        "net_weight": template_data.net_weight,
+        "box_size": {
+            "length": template_data.box_size.box_length,
+            "width": template_data.box_size.box_width,
+            "height": template_data.box_size.box_height,
+        } if template_data.box_size else None,
+        "proforma_number": template_data.proforma_number,
+        "items_per_box": template_data.items_per_box,
+        "total_boxes": template_data.total_boxes,
+        "certification_type": template_data.certification_type.value,
+        "local_data": [
+            {
+                "local": "en",
+                "data": {
+                    "name": template_data.name_en,
+                    "color": template_data.color_en,
+                    "produced_in": template_data.produced_in_en,
+                }
+            }
+        ]
+    }
+}
 
         broker_task_id = await self.publisher.publish_generation_task(broker_payload)
 
         if broker_task_id:
+            print("попал в уловие!/!!!")
             await self.generation_tasks_repo.set_processing(
-                task_id=generation_task.task_id,
-                generation_task=broker_task_id)
+                task_uuid=generation_task.task_uuid)
 
             updated = await self.generation_tasks_repo.get_by_id(generation_task.id)
             if updated:
