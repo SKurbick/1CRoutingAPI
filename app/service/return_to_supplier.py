@@ -9,15 +9,4 @@ class ReturnToSupplierService:
         self.repository = repository
 
     async def create_data(self, data: List[ReturnToSupplierUpdate]) -> ReturnToSupplierResponse:
-        try:
-            await self.repository.update_data(data)
-            return ReturnToSupplierResponse(
-                status="success",
-                message=f"Обработано документов: {len(data)}"
-            )
-        except Exception as e:
-            return ReturnToSupplierResponse(
-                status="error",
-                message="Ошибка при сохранении",
-                details=str(e)
-            )
+        return await self.repository.update_data(data)
