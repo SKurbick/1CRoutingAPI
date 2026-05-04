@@ -333,17 +333,12 @@ class DocsService:
         if not table_data or len(table_data) < 2:
             return []
 
-        df = pd.DataFrame(table_data)
-
         def clean_col(x):
             if not isinstance(x, str) or x is None:
                 return ""
             x = re.sub(r'\s+', ' ', x.strip().replace('\n', ' '))
             x = re.sub(r'^[^a-zA-Zа-яА-Я0-9]+|[^a-zA-Zа-яА-Я0-9]+$', '', x)
             return x.lower()
-
-        df.columns = [clean_col(col) for col in df.iloc[0]]
-        df = df.drop(df.index[0]).reset_index(drop=True)
 
         col_mapping = {
             'наименование товара': 'Услуга',
@@ -352,6 +347,23 @@ class DocsService:
             'налоговая ставка': 'Налоговая ставка',
             'нало- говая став- ка': 'Налоговая ставка'
         }
+
+        header_row_index = None
+        for idx, row in enumerate(table_data):
+            cleaned_row = [clean_col(col) for col in row]
+            has_service_name = any('наименование товара' in col for col in cleaned_row)
+            has_without_vat = any('без налога - всего' in col for col in cleaned_row)
+            has_with_vat = any('с налогом - всего' in col for col in cleaned_row)
+            if has_service_name and has_without_vat and has_with_vat:
+                header_row_index = idx
+                break
+
+        if header_row_index is None:
+            return []
+
+        df = pd.DataFrame(table_data)
+        df.columns = [clean_col(col) for col in df.iloc[header_row_index]]
+        df = df.drop(df.index[:header_row_index + 1]).reset_index(drop=True)
 
         selected_cols = {}
         for key_part, standard_name in col_mapping.items():
@@ -378,7 +390,6 @@ class DocsService:
             # df_clean[col] = df_clean[col].str.replace(',', '.', regex=False).astype(float)
             df_clean[col] = df_clean[col].str.extract(r'^([0-9,]+\.?[0-9]*)', expand=False).str.replace(',', '.', regex=False).astype(float)
         return df_clean.to_dict('records')
-
 
 
 
