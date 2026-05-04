@@ -132,6 +132,12 @@ class StickerUserTemplateData(BaseModel):
     items_per_box: int | None = None
     total_boxes: int | None = None
     produced_in: str | None = None
+    gross_weight: float | None = None
+    net_weight: float | None = None
+    box_length: float | None = None
+    box_width: float | None = None
+    box_height: float | None = None
+    certification_type: CertificationType | None = None
 
 
 class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающий класс для стикеров на коробки и индивидуальных с общими полями для типизации в async def save_localisations
@@ -144,7 +150,7 @@ class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающ�
     gross_weight: float
     net_weight: float | None = None # TODO: в таблице в БД нет net_weight
     # box_length: float
-    # box_width: floatК
+    # box_width: float
     # box_height: float
     box_size: BoxSize
     items_per_box: int

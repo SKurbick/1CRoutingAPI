@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 from app.database.repositories.localisation import LocalisationRepository
 from app.database.repositories.sticker_user_data import StickerUserDataRepository
 from app.database.repositories.stickers_storage import StickersStorageRepository
-from app.models.box_stickers import BoxDataRequest, BoxStickerTemplateView, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort, StickerType
+from app.models.box_stickers import BoxDataRequest, BoxSize, BoxStickerTemplateView, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort, StickerType
 from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
 from app.service.goods_information import GoodsInformationService
 from app.service.translate_manager import translation_manager
@@ -607,6 +607,7 @@ class StickerTemplateBuilderService:
             product_id=product.product_id,
             sticker_type=StickerType.TRANSPORT,
         )
+        print(user_data)
         #собираю данные по локализации, если были сохранены ранее
         localisations = await self.localisation_repo.get_by_product_id(product.product_id)
         translations = {
@@ -614,19 +615,48 @@ class StickerTemplateBuilderService:
             for item in localisations
         }
 
+        user_box_size = None
+        if user_data and all([user_data.box_length, user_data.box_width, user_data.box_height]):
+            user_box_size = BoxSize(
+                box_length=user_data.box_length,
+                box_width=user_data.box_width,
+                box_height=user_data.box_height
+            )
+
+        # return BoxStickerTemplateView(
+        #     product_id=product.product_id,
+        #     name=product.name,
+        #     name_en=translations.get(("name", "en")),
+        #     color=product.color,
+        #     color_en=translations.get(("color", "en")),
+        #     gross_weight=product.gross_weight or 0,
+        #     net_weight=product.net_weight,
+        #     box_size=product.box_size,
+        #     items_per_box=user_data.items_per_box if user_data and user_data.items_per_box else 1,
+        #     total_boxes=user_data.total_boxes if user_data and user_data.total_boxes else 1,
+        #     produced_in=(user_data.produced_in if user_data and user_data.produced_in else product.produced_in),
+        #     produced_in_en=translations.get(("produced_in", "en")),
+        #     proforma_number=user_data.proforma_number if user_data else None,
+        #     certification_type=product.certification_type,
+        # )
+        print(user_data.gross_weight)
         return BoxStickerTemplateView(
             product_id=product.product_id,
-            name=product.name,
+            name=translations.get(("name", "ru")) or product.name,
             name_en=translations.get(("name", "en")),
-            color=product.color,
+            color=translations.get(("color", "ru")) or product.color,
             color_en=translations.get(("color", "en")),
-            gross_weight=product.gross_weight or 0,
-            net_weight=product.net_weight,
-            box_size=product.box_size,
+            gross_weight=(user_data.gross_weight if user_data and user_data.gross_weight is not None 
+                        else (product.gross_weight or 0)),
+            net_weight=(user_data.net_weight if user_data and user_data.net_weight is not None 
+                        else product.net_weight),
+            box_size=user_box_size or product.box_size,
             items_per_box=user_data.items_per_box if user_data and user_data.items_per_box else 1,
             total_boxes=user_data.total_boxes if user_data and user_data.total_boxes else 1,
-            produced_in=(user_data.produced_in if user_data and user_data.produced_in else product.produced_in),
-            produced_in_en=translations.get(("produced_in", "en")),
             proforma_number=user_data.proforma_number if user_data else None,
-            certification_type=product.certification_type,
+            produced_in=(translations.get(("produced_in", "ru")) or 
+                        (user_data.produced_in if user_data and user_data.produced_in else product.produced_in)),
+            produced_in_en=translations.get(("produced_in", "en")),
+            certification_type=(user_data.certification_type if user_data and user_data.certification_type 
+                                else product.certification_type),
         )
