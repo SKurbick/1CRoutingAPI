@@ -10,12 +10,15 @@ class Settings(BaseSettings):
     RABBIT_HOST: str = "localhost"
     RABBIT_USER: str
     RABBIT_PASS: SecretStr
+    RABBIT_VHOST: str = '/'
+    
     # rabbit exchanges
     RABBIT_EXC_DOCGEN_REQUEST: str = "docgen.request.exchange"
     RABBIT_EXC_DOCGEN_EVENT: str = "docgen.event.exchange"
 
     # rabbit queues
     RABBIT_Q_DOCGEN_BOX_LABEL: str = "docgen.box_label.queue"
+    RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE: str = "docgen.box_label.event.queue"
     RABBIT_Q_DOCGEN_UNIT_LABEL: str = "docgen.unit_label.queue"
 
     # rabbit routing keys

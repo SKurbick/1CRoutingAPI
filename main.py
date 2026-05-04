@@ -2,6 +2,9 @@ from concurrent.futures import ProcessPoolExecutor
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from faststream import FastStream
+from faststream.asgi import AsgiFastStream
+
 from app.database.db_connect import init_db, close_db
 from app.api.v1.endpoints import (receipt_of_goods_router, income_on_bank_account_router, shipment_of_goods_router,
                                   ordered_goods_from_buyers_router, local_barcode_generation_router, warehouse_and_balances_router,
@@ -18,6 +21,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from app.limiter import limiter
+import app.broker.subscriber
 
 
 @asynccontextmanager
@@ -29,12 +33,17 @@ async def lifespan(app: FastAPI):
     app.state.process_pool = process_pool
     yield
     await close_db(pool)
-    await broker_manager.close()
+    # await broker_manager.close()
     if process_pool:
         process_pool.shutdown(wait=True)
 
+stream_app = FastStream(broker_manager.broker, lifespan=lifespan)
 
 app = FastAPI(lifespan=lifespan, title="1CRoutingAPI")
+
+app.mount("/ws", AsgiFastStream(broker_manager.broker))
+
+
 
 # 🔄 ПОРЯДОК MIDDLEWARE ВАЖЕН!
 # Мониторинг (первым - измеряет всё)

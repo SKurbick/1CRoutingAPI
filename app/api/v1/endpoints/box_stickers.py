@@ -63,7 +63,7 @@ async def get_sticker_template(
     return await service.get_template(article)
 
 @router.get(
-        "/templatesNEW/{product_id}",
+        "/NEWtemplates/{product_id}",
         status_code=status.HTTP_200_OK,
         description="""
     **Получить шаблон стикера по артикулу.**
@@ -77,7 +77,7 @@ async def get_sticker_template_(
     return await service.get_box_sticker_template(product_id)
 
 @router.post(
-    "/templatesNEW/save",
+    "/NEWtemplates/save",
     status_code=status.HTTP_200_OK,
     description="Сохранить пользовательские данные и локализации шаблона",
 )
@@ -88,7 +88,7 @@ async def save_sticker_template_new(
     return await service.save_box_sticker_template(data)
 
 
-@router.post("/generation-tasks")
+@router.post("/NEWgeneration_tasks")
 async def create_or_get_generation_task(
     template_data: BoxStickerTemplateView,
     user_id: int, #TODO: временное решение для тестирования
@@ -102,6 +102,19 @@ async def create_or_get_generation_task(
         )
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
+    
+@router.get(
+        "/NEWtemplates",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Получить список существующих шаблонов для стикеров.**
+"""
+)
+async def get_list_templates(
+    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
+) -> list[BoxStickerTemplateShort]:
+    """Получить список существующих шаблонов для стикеров."""
+    return await service.get_list_templates()
 
 
 @router.get(

@@ -1,10 +1,10 @@
 from functools import lru_cache
-from typing import Any, Self
+from typing import Any, Callable, Self
 
-from faststream.rabbit import RabbitBroker, RabbitExchange
+from faststream.rabbit import RabbitBroker, RabbitExchange, RabbitQueue
 
 
-from app.broker.topology import EXCHANGE_CONFIGS, ExchangeName, RoutingKey
+from app.broker.topology import EXCHANGE_CONFIGS, ExchangeName, QueueName, RoutingKey, QUEUE_CONFIGS
 from app.dependencies.config import SETTINGS
 
 
@@ -21,6 +21,13 @@ class BrokerManager:
             )
             for exchange, config in EXCHANGE_CONFIGS.items()
         }
+        self.queues: dict[QueueName, RabbitQueue] = {
+            queue: RabbitQueue(
+                name=config.name,
+                routing_key=config.routing_key,
+                durable=config.durable
+            ) for queue, config in QUEUE_CONFIGS.items()
+        }
 
     @property
     def broker(self) -> RabbitBroker:
@@ -31,9 +38,11 @@ class BrokerManager:
                     f"amqp://{SETTINGS.RABBIT_USER}:"
                     f"{password}@"
                     f"{SETTINGS.RABBIT_HOST}:"
-                    f"{SETTINGS.RABBIT_PORT}/"
+                    f"{SETTINGS.RABBIT_PORT}/{SETTINGS.RABBIT_VHOST}"
                 )
             )
+
+            
         return self._broker
     
     def __new__(cls, *args, **kwargs):
@@ -52,6 +61,18 @@ class BrokerManager:
             routing_key=routing_key.value,
             exchange=self.get_exchange(exchange),
         )
+
+    def subscriber(self, queue: QueueName, exchange: ExchangeName, *args: Any, **kwargs: Any) -> Callable:
+        rabbit_queue = self._get_queue(queue)
+        rabbit_exchange = self._get_exchange(exchange)
+        print(f"Регистрация подписчика: exchange='{rabbit_exchange.name}', queue='{rabbit_queue.name}', routing_key='{rabbit_queue.routing_key}'")
+        return self.broker.subscriber(queue=rabbit_queue, exchange=rabbit_exchange, *args, **kwargs)
+    
+    def _get_queue(self, name: QueueName) -> RabbitQueue:
+        return self.queues[name]
+    
+    def _get_exchange(self, name: ExchangeName) -> RabbitExchange:
+        return self.exchanges[name]
 
     async def connect(self) -> None:
         await self.broker.connect()
