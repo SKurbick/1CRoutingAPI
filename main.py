@@ -1,48 +1,75 @@
+from contextlib import asynccontextmanager, AsyncExitStack
 from concurrent.futures import ProcessPoolExecutor
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from faststream import FastStream
-from faststream.asgi import AsgiFastStream
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+import uvicorn
 
-from app.database.db_connect import init_db, close_db
 from app.api.v1.endpoints import (receipt_of_goods_router, income_on_bank_account_router, shipment_of_goods_router,
                                   ordered_goods_from_buyers_router, local_barcode_generation_router, warehouse_and_balances_router,
                                   goods_information_router, inventory_check_router, inventory_transactions_router, return_of_goods_router, docs_router,
                                   containers_router, products_dimensions_router, box_stickers_router, cash_flow_writeoff_router,
                                   return_to_supplier_router)
-from app.monitoring import MetricsMiddleware, monitoring_router
-from contextlib import asynccontextmanager
-import uvicorn
-from app.dependencies.config import settings
 from app.broker.broker import broker_manager
-
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
+import app.broker.subscriber  # noqa: F401
+from app.database.db_connect import init_db, close_db
+from app.dependencies.config import settings
+from app.monitoring import MetricsMiddleware, monitoring_router
 from app.limiter import limiter
-import app.broker.subscriber
+from app.file_storage import S3StorageManager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    pool = await init_db()
-    await broker_manager.connect()
     process_pool = ProcessPoolExecutor(max_workers=4)
-    app.state.pool = pool
-    app.state.process_pool = process_pool
-    yield
-    await close_db(pool)
-    # await broker_manager.close()
+    async with AsyncExitStack() as stack:    
+        # db
+        pool = await init_db()
+        stack.push_async_callback(close_db, pool)
+
+        # s3
+        storage_manager = await stack.enter_async_context(
+            S3StorageManager(
+                region_name=settings.AWS_REGION_NAME,
+                bucket_name=settings.DOCGEN_BUCKET_NAME,
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY.get_secret_value(),
+                endpoint_url=settings.FILE_STORAGE_HOST,
+                dns_subdomain=settings.FILE_STORAGE_DNS_SUBDOMAIN,
+            )
+        )
+
+        file_storage = storage_manager.storage
+
+        # rabbitmq
+        broker = broker_manager.broker
+
+        # faststream
+        if settings.CONSUMERS_START:
+            broker_app = FastStream(broker)
+            broker_app.context.set_global("pool", pool)
+            broker_app.context.set_global("file_storage", file_storage)
+            await broker_app.start()
+            stack.push_async_callback(broker_app.stop)
+        else:
+            await broker_manager.connect()
+            stack.push_async_callback(broker_manager.close)
+
+        app.state.broker = broker
+        app.state.process_pool = process_pool
+        app.state.pool = pool
+        app.state.file_storage = file_storage
+        yield
+
     if process_pool:
         process_pool.shutdown(wait=True)
 
-# stream_app = FastStream(broker_manager.broker, lifespan=lifespan)
 
 app = FastAPI(lifespan=lifespan, title="1CRoutingAPI")
-
-# app.mount("/ws", AsgiFastStream(broker_manager.broker))
-
 
 
 # 🔄 ПОРЯДОК MIDDLEWARE ВАЖЕН!
