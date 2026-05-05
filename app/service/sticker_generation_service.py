@@ -138,3 +138,23 @@ class StickerGenerationService:
                 return updated
 
         return generation_task
+    
+
+    async def handle_broker_response(self, data: dict) -> None:
+        """Бизнес-логика обработки сообщения от брокера"""
+
+        task_uuid = data.get("task_id")
+        status = data.get("status")
+        document_path = data.get("file_storage_key")
+        error_message = data.get("error")
+
+        
+        if not task_uuid:
+                print("пошло не так в handle_broker_response")
+                return
+        await self.generation_tasks_repo.update_task_result(
+                task_uuid=task_uuid,
+                status=status,
+                document_path=document_path,
+                error_message=error_message
+            )

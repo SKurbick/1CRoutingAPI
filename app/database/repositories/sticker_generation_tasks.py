@@ -146,3 +146,30 @@ class StickerGenerationTasksRepository:
             task_uuid,
             GenerationStatus.PROCESSING.value,
         )
+
+    async def update_task_result(
+            self, 
+            task_uuid: str, 
+            status: GenerationStatus, 
+            document_path: str | None = None, 
+            error_message: str | None = None
+        ) -> None:
+        """Обновляет статус и информацию о выполнении задачи генерации стикера"""
+
+        sql = """
+            UPDATE sticker_generation_tasks
+            SET
+                generation_status = $2,
+                document_path = $3,
+                error_message = $4,
+                updated_at = now()
+            WHERE task_uuid = $1
+        """
+        
+        await self.pool.execute(
+            sql,
+            task_uuid,
+            status.value,
+            document_path,
+            error_message
+        )
