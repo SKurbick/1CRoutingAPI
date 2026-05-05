@@ -37,11 +37,11 @@ async def lifespan(app: FastAPI):
     if process_pool:
         process_pool.shutdown(wait=True)
 
-stream_app = FastStream(broker_manager.broker, lifespan=lifespan)
+# stream_app = FastStream(broker_manager.broker, lifespan=lifespan)
 
 app = FastAPI(lifespan=lifespan, title="1CRoutingAPI")
 
-app.mount("/ws", AsgiFastStream(broker_manager.broker))
+# app.mount("/ws", AsgiFastStream(broker_manager.broker))
 
 
 
