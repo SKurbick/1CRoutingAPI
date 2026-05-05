@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 from app.database.repositories.localisation import LocalisationRepository
 from app.database.repositories.sticker_user_data import StickerUserDataRepository
 from app.database.repositories.stickers_storage import StickersStorageRepository
-from app.models.box_stickers import BoxDataRequest, BoxSize, BoxStickerTemplateView, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort, StickerType
+from app.models.box_stickers import BoxDataRequest, BoxSize, BoxStickerTemplateView, BoxStickerTemplateViewShort, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort, StickerType
 from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
 from app.service.goods_information import GoodsInformationService
 from app.service.translate_manager import translation_manager
@@ -607,7 +607,6 @@ class StickerTemplateBuilderService:
             product_id=product.product_id,
             sticker_type=StickerType.TRANSPORT,
         )
-        print(user_data)
         #собираю данные по локализации, если были сохранены ранее
         localisations = await self.localisation_repo.get_by_product_id(product.product_id)
         translations = {
@@ -660,3 +659,7 @@ class StickerTemplateBuilderService:
             certification_type=(user_data.certification_type if user_data and user_data.certification_type 
                                 else product.certification_type),
         )
+    
+    async def get_list_templates(self) -> list[BoxStickerTemplateViewShort]:
+        """Получить список шаблонов для стикеров."""
+        return await self.products_repo.get_list()

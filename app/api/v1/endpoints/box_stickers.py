@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 
 from app.dependencies import get_box_sticker_service
 from app.dependencies.box_stickers import get_box_sticker_service_1, get_sticker_generation_service, get_sticker_template_save_service
-from app.models.box_stickers import BoxDataRequest, BoxStickerTemplate, BoxStickerTemplateShort, BoxStickerTemplateView, StickerGenerationTaskResult
+from app.models.box_stickers import BoxDataRequest, BoxStickerTemplate, BoxStickerTemplateShort, BoxStickerTemplateView, BoxStickerTemplateViewShort, StickerGenerationTaskResult
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
 from app.service.sticker_generation_service import StickerGenerationService
 from app.service.sticker_template_save import StickerTemplateSaveService
@@ -74,7 +74,15 @@ async def get_sticker_template_(
     service: Annotated[StickerTemplateBuilderService, Depends(get_box_sticker_service_1)],
 ) -> BoxStickerTemplateView:
     """Получить шаблон транспортного стикера по артикулу."""
-    return await service.get_box_sticker_template(product_id)
+    # return await service.get_box_sticker_template(product_id)
+    try:
+        return await service.get_box_sticker_template(product_id)
+    except ValueError as e:
+        # Мы перехватываем ValueError из сервиса и превращаем его в 404
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
 
 @router.post(
     "/NEWtemplates/save",
@@ -111,8 +119,8 @@ async def create_or_get_generation_task(
 """
 )
 async def get_list_templates(
-    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
-) -> list[BoxStickerTemplateShort]:
+    service: Annotated[StickerTemplateBuilderService, Depends(get_box_sticker_service_1)],
+) -> list[BoxStickerTemplateViewShort]:
     """Получить список существующих шаблонов для стикеров."""
     return await service.get_list_templates()
 

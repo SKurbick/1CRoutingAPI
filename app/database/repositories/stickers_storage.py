@@ -1,6 +1,6 @@
 from asyncpg import Pool
 
-from app.models.box_stickers import BoxSize, CertificationType, StickerProductData
+from app.models.box_stickers import BoxSize, BoxStickerTemplateViewShort, CertificationType, StickerProductData
 
 
 class StickersStorageRepository:
@@ -48,6 +48,19 @@ class StickersStorageRepository:
             certification_type=CertificationType(product_data.get("certification_type", "NONE")),
         )
     #сделал аналогично async def get(self, article: str). Возвращает результат только по product_id!
+
+    async def get_list(self) -> list[BoxStickerTemplateViewShort]:
+        query = """
+            SELECT
+                product_id,
+                name
+            FROM stickers_storage
+            ORDER BY product_id;
+        """
+
+        rows = await self.pool.fetch(query)
+
+        return [BoxStickerTemplateViewShort(**row) for row in rows]
     
 
 
