@@ -6,9 +6,6 @@ from faststream.rabbit import ExchangeType
 from app.dependencies.config import SETTINGS
 
 
-
-
-
 class ExchangeName(str, Enum):
     DOCGEN_REQUEST = SETTINGS.RABBIT_EXC_DOCGEN_REQUEST
     DOCGEN_EVENT = SETTINGS.RABBIT_EXC_DOCGEN_EVENT
@@ -20,10 +17,7 @@ class RoutingKey(str, Enum):
 
 
 class QueueName(str, Enum):
-    DOCGEN_BOX_LABEL = SETTINGS.RABBIT_Q_DOCGEN_BOX_LABEL
-    DOCGEN_UNIT_LABEL = SETTINGS.RABBIT_Q_DOCGEN_UNIT_LABEL
     RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE = SETTINGS.RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE
-
 
 
 @dataclass(frozen=True)
@@ -32,12 +26,12 @@ class ExchangeConfig:
     type: ExchangeType = ExchangeType.DIRECT
     durable: bool = True
 
+
 @dataclass(frozen=True)
 class QueueConfig:
     name: str
     routing_key: str
     durable: bool = True
-
 
 
 EXCHANGE_CONFIGS: dict[ExchangeName, ExchangeConfig] = {
@@ -49,10 +43,11 @@ EXCHANGE_CONFIGS: dict[ExchangeName, ExchangeConfig] = {
     ),
 }
 
+
 QUEUE_CONFIGS: dict[QueueName, QueueConfig] = {
-    QueueName.DOCGEN_BOX_LABEL: QueueConfig(
-        name=QueueName.DOCGEN_BOX_LABEL.value, routing_key=RoutingKey.DOC_BOX_LABEL.value
-    ),
+    # QueueName.DOCGEN_BOX_LABEL: QueueConfig(
+    #     name=QueueName.DOCGEN_BOX_LABEL.value, routing_key=RoutingKey.DOC_BOX_LABEL.value
+    # ),
     # QueueName.DOCGEN_UNIT_LABEL: QueueConfig(
     #     name=QueueName.DOCGEN_UNIT_LABEL.value, routing_key=RoutingKey.DOC_UNIT_LABEL.value
     # ),
