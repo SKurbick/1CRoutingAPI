@@ -55,11 +55,12 @@ class BrokerManager:
     def get_exchange(self, name: ExchangeName) -> RabbitExchange:
         return self.exchanges[name]
 
-    async def publish(self, message: Any, routing_key: RoutingKey, exchange: ExchangeName) -> None:
+    async def publish(self, message: Any, routing_key: RoutingKey, exchange: ExchangeName, *args, **kwargs) -> None:
         await self.broker.publish(
             message=message,
             routing_key=routing_key.value,
             exchange=self.get_exchange(exchange),
+            *args, **kwargs,
         )
 
     def subscriber(self, queue: QueueName, exchange: ExchangeName, *args: Any, **kwargs: Any) -> Callable:
@@ -79,7 +80,7 @@ class BrokerManager:
         print("RabbitMQ connected")
 
     async def close(self) -> None:
-        await self.broker.close()
+        await self.broker.stop()
         print("RabbitMQ closed")
 
 
