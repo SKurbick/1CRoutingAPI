@@ -15,4 +15,4 @@ slowapi
 qrcode==8.2
 pymupdf
 httpx>=0.24.0
-faststream==0.6.7
+faststream[rabbit]==0.6.7
