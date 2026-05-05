@@ -185,3 +185,9 @@ class StickerGenerationTaskResult(BaseModel):
     document_path: str
     task_uuid: UUID|str
     error_message: str | None = None
+
+
+class BoxStickerTemplateViewShort(BaseModel):
+    """Шаблон стикера с минимальной информацией."""
+    product_id: str | None = Field(None, description="Артикул")
+    name: str | None = Field(None, description="Название")
