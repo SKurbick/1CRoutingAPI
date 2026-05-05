@@ -638,7 +638,6 @@ class StickerTemplateBuilderService:
         #     proforma_number=user_data.proforma_number if user_data else None,
         #     certification_type=product.certification_type,
         # )
-        print(user_data.gross_weight)
         return BoxStickerTemplateView(
             product_id=product.product_id,
             name=translations.get(("name", "ru")) or product.name,
@@ -653,7 +652,7 @@ class StickerTemplateBuilderService:
             items_per_box=user_data.items_per_box if user_data and user_data.items_per_box else 1,
             total_boxes=user_data.total_boxes if user_data and user_data.total_boxes else 1,
             proforma_number=user_data.proforma_number if user_data else None,
-            produced_in=(translations.get(("produced_in", "ru")) or 
+            produced_in=(translations.get(("produced_in", "ru")) or #TODO: реализация в локализации
                         (user_data.produced_in if user_data and user_data.produced_in else product.produced_in)),
             produced_in_en=translations.get(("produced_in", "en")),
             certification_type=(user_data.certification_type if user_data and user_data.certification_type 

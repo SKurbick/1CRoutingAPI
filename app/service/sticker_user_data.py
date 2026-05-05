@@ -21,6 +21,7 @@ class StickerUserDataService:
             box_length=template_data.box_size.box_length,
             box_width=template_data.box_size.box_width,
             box_height=template_data.box_size.box_height,
+            produced_in=template_data.produced_in,
             certification_type=template_data.certification_type
         )
         print("save_box_sticker_user_data ", user_data)

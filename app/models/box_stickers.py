@@ -18,9 +18,9 @@ class CertificationType(str, Enum):
 
 class BoxSize(BaseModel):
     "Размер короба."
-    box_length: float = Field(..., gt=0, description="Длина, см")
-    box_width: float = Field(..., gt=0, description="Ширина, см")
-    box_height: float = Field(..., gt=0, description="Высота, см")
+    box_length: float = Field(..., description="Длина, см")
+    box_width: float = Field(..., description="Ширина, см")
+    box_height: float = Field(..., description="Высота, см")
 
 
 class BoxDataRequest(BaseModel):

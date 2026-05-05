@@ -80,7 +80,6 @@ async def get_sticker_template_(
     try:
         return await service.get_box_sticker_template(product_id)
     except ValueError as e:
-        # Мы перехватываем ValueError из сервиса и превращаем его в 404
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
