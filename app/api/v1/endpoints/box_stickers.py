@@ -23,7 +23,8 @@ router = APIRouter(prefix="/stickers", tags=["Стикеры для коробо
     **Сгенерировать PDF со стикерами для коробов.**
 
     Возвращает: PDF файл для скачивания
-"""
+""",
+include_in_schema=False
 )
 async def generate_stickers(
     data: BoxDataRequest,
@@ -53,7 +54,8 @@ async def generate_stickers(
         status_code=status.HTTP_200_OK,
         description="""
     **Получить шаблон стикера по артикулу.**
-"""
+""",
+include_in_schema=False
 )
 async def get_sticker_template(
     article: Annotated[str, Path(..., description="Артикул товара для поиска шаблона")],
@@ -130,7 +132,8 @@ async def get_list_templates(
         status_code=status.HTTP_200_OK,
         description="""
     **Получить список существующих шаблонов для стикеров.**
-"""
+""",
+include_in_schema=False
 )
 async def get_list_templates(
     service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
@@ -144,7 +147,8 @@ async def get_list_templates(
         status_code=status.HTTP_200_OK,
         description="""
     **Получить перевод цвета или его транслитерацию.**
-"""
+""",
+include_in_schema=False
 )
 async def translate_color(
     color: Annotated[str, Query(..., min_length=3, description="Цвет на русском языке.")]
@@ -158,7 +162,8 @@ async def translate_color(
         status_code=status.HTTP_200_OK,
         description="""
     **Получить перевод названия страны или транслитерацию названия.**
-"""
+""",
+include_in_schema=False
 )
 async def translate_country(
     country: Annotated[str, Query(..., min_length=3, description="Страна производства на русском языке.")]
@@ -172,7 +177,8 @@ async def translate_country(
         status_code=status.HTTP_200_OK,
         description="""
     **Сделать транслитерацию названия на русском латиницей.**
-"""
+""",
+include_in_schema=False
 )
 async def transliterate_title(
     title: Annotated[str, Query(..., min_length=3, description="Название товара на русском языке.")]
@@ -186,7 +192,8 @@ async def transliterate_title(
         status_code=status.HTTP_200_OK,
         description="""
     **Получить список цветов.**
-"""
+""",
+include_in_schema=False
 )
 async def get_colors() -> list[str]:
     """Получить список цветов."""
@@ -198,7 +205,8 @@ async def get_colors() -> list[str]:
         status_code=status.HTTP_200_OK,
         description="""
     **Получить список стран.**
-"""
+""",
+include_in_schema=False
 )
 async def get_countries() -> list[str]:
     """Получить список стран."""

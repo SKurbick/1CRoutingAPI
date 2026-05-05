@@ -165,11 +165,11 @@ class StickerGenerationTasksRepository:
                 updated_at = now()
             WHERE task_uuid = $1
         """
-        
+
         await self.pool.execute(
             sql,
             task_uuid,
-            status.value,
+            status,
             document_path,
             error_message
         )

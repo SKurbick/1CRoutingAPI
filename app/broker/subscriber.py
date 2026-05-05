@@ -19,20 +19,25 @@ from asyncpg import Pool
         exchange="docgen.event.exchange",
         # routing_key="doc.generated.box_label",
         queue="docgen.box_label.event.queue")
-async def handle_responses(data: dict, file_storage: IFileStorage = Context()):
-    print("-"*25)
-    print(f"Получен ответ от брокера: {data}")
-    key = data.get("file_storage_key")
-    if key:
-        url = await file_storage.get_presigned_url(file_key=key, expires_in=180)
-        print(url)
-    else:
-        print("Ключ не найден.")
+async def handle_responses(data: dict, file_storage: IFileStorage = Context(), pool: Pool = Context()):
+    
+        print("-"*25)
+        print(f"Получен ответ от брокера: {data}")
+        key = data.get("file_storage_key")
+        if key:
+                url = await file_storage.get_presigned_url(file_key=key, expires_in=180)
+                print(url)
+        else:
+                print("Ключ не найден.")
+
         tasks_repo = StickerGenerationTasksRepository(pool)
-    service = StickerGenerationService(
-        generation_tasks_repo=tasks_repo,
-        user_data_service=None,
-        localisation_service=None,
-        publisher=None
-    )
+
+        service = StickerGenerationService(
+                                        generation_tasks_repo=tasks_repo,
+                                        user_data_service=None,
+                                        localisation_service=None,
+                                        publisher=None
+                                        )
+        await service.handle_broker_response(data)
+        
 
