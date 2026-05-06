@@ -16,9 +16,9 @@ from asyncpg import Pool
 
 
 @broker_manager.subscriber(
-        exchange="docgen.event.exchange",
-        # routing_key="doc.generated.box_label",
-        queue="docgen.box_label.event.queue")
+        exchange=ExchangeName.DOCGEN_EVENT,
+        # routing_key="doc.generated.box_label",’
+        queue=QueueName.RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE)
 async def handle_responses(data: dict, file_storage: IFileStorage = Context(), pool: Pool = Context()):
     
         print("-"*25)

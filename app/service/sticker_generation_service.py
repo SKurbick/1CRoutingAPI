@@ -2,6 +2,7 @@
 
 import logging
 from app.database.repositories.sticker_generation_tasks import StickerGenerationTasksRepository
+from app.file_storage.base.interface import IFileStorage
 from app.models.box_stickers import BoxStickerTemplateView, StickerGenerationTaskResult, StickerType
 from app.service.localisation import LocalisationService
 from app.service.sticker_generation_publisher import StickerGenerationPublisher
@@ -17,12 +18,14 @@ class StickerGenerationService:
         generation_tasks_repo: StickerGenerationTasksRepository,
         user_data_service: StickerUserDataService,
         localisation_service: LocalisationService,
-       publisher: StickerGenerationPublisher,
+        publisher: StickerGenerationPublisher,
+        file_storage: IFileStorage,
     ):
         self.generation_tasks_repo = generation_tasks_repo
         self.user_data_service = user_data_service
         self.localisation_service = localisation_service
         self.publisher = publisher
+        self.file_storage = file_storage
 
 
     async def create_or_get_box_generation_task(
@@ -68,19 +71,24 @@ class StickerGenerationService:
                 )
             # print("нашел готовую") TODO: логирование
             #TODO: если таска висит со статусом ошибки, то другому пользователю вернем чужую ошибку. Нужен ретрай!
+            url = await self.file_storage.get_presigned_url(
+                    file_key=existing_task.document_path, 
+                    expires_in=180
+                )
+            existing_task.document_path = url
             return existing_task
 
-        active_count = await self.generation_tasks_repo.count_active_tasks_by_user(user_id)
+        # active_count = await self.generation_tasks_repo.count_active_tasks_by_user(user_id) TODO: добавляем проверку на общее количество активных запросов
 
         # if active_count >= self.max_active_tasks_per_user: TODO: использовать ограничения по количеству тасок на пользователя в конфиге?
         #     raise ValueError("Превышен лимит документов в обработке")
         
-        #TODO: StickerType.TRANSPORT.value.lower() ? stickers/{template_data.product_id}_{StickerType.TRANSPORT.value}_{template_hash}.pdf лучше? хуже?
-        document_path = (
-            f"stickers/{template_data.product_id}/"
-            f"{StickerType.TRANSPORT.value}/"
-            f"{template_hash}.pdf"
-        )
+        # #TODO: StickerType.TRANSPORT.value.lower() ? stickers/{template_data.product_id}_{StickerType.TRANSPORT.value}_{template_hash}.pdf лучше? хуже?
+        # document_path = (
+        #     f"stickers/{template_data.product_id}/"
+        #     f"{StickerType.TRANSPORT.value}/"
+        #     f"{template_hash}.pdf"
+        # )
         
         #TODO: логировать данные для стикеры
 
@@ -88,7 +96,7 @@ class StickerGenerationService:
             product_id=template_data.product_id,
             sticker_type=StickerType.TRANSPORT,
             hash=template_hash,
-            path=document_path,
+            path=None,
         )
 
         await self.generation_tasks_repo.add_user_to_task(
