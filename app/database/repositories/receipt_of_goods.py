@@ -79,6 +79,7 @@ class ReceiptOfGoodsRepository:
             supply_date = document_data.supply_date
             supplier_name = document_data.supplier_name
             supplier_code = document_data.supplier_code
+            order_guid = document_data.order_guid
             currency = document_data.currency
             guid_data.append(guid)
             for supply_data in document_data.supply_data:
@@ -93,7 +94,7 @@ class ReceiptOfGoodsRepository:
                 data_to_update_supply_to_sellers_warehouse.append((guid, document_number, document_created_at, update_document_datetime, event_status,
                                                                    author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
                                                                    quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name,
-                                                                   planned_cost, currency, pack_count, pack_multiplicity))
+                                                                   planned_cost, currency, pack_count, pack_multiplicity, order_guid))
 
                 if local_vendor_code in ids and supplier_code != '9714053621':  # собираем данные для актуализации остатков на складе # исключаем операции от ВБ -> 9714053621
                     data_to_update_incoming_items.append(
@@ -112,8 +113,8 @@ class ReceiptOfGoodsRepository:
         query_to_insert_supply_to_sellers_warehouse = """
         INSERT INTO supply_to_sellers_warehouse (guid, document_number, document_created_at, update_document_datetime, event_status,
                                author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
-                               quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, is_valid,planned_cost,currency, pack_count, pack_multiplicity)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, True, $16, $17, $18, $19); """
+                               quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, is_valid,planned_cost,currency, pack_count, pack_multiplicity, order_guid)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, True, $16, $17, $18, $19, $20); """
 
         update_is_valid_in_incoming_items = """
         UPDATE incoming_items
