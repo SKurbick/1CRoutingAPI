@@ -8,6 +8,7 @@ from app.database.repositories.localisation import LocalisationRepository
 from app.database.repositories.sticker_generation_tasks import StickerGenerationTasksRepository
 from app.database.repositories.sticker_user_data import StickerUserDataRepository
 from app.database.repositories.stickers_storage import StickersStorageRepository
+from app.file_storage.base.interface import IFileStorage
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
 from app.service.localisation import LocalisationService
 from app.service.sticker_generation_publisher import StickerGenerationPublisher
@@ -103,6 +104,12 @@ def get_sticker_generation_tasks_repo(
 def get_sticker_generation_publisher() -> StickerGenerationPublisher:
     return StickerGenerationPublisher()
 
+def get_file_storage(request: Request) -> IFileStorage:
+    """
+    Берет уже инициализированное хранилище из состояния приложения.
+    """
+    return request.app.state.file_storage
+
 def get_sticker_generation_service(
     generation_tasks_repo: StickerGenerationTasksRepository = Depends(
         get_sticker_generation_tasks_repo),
@@ -112,9 +119,13 @@ def get_sticker_generation_service(
         get_localisation_service),
     publisher: StickerGenerationPublisher = Depends(
         get_sticker_generation_publisher),
+    file_storage: IFileStorage = Depends(get_file_storage)
+
+    
 ) -> StickerGenerationService:
     return StickerGenerationService(
         generation_tasks_repo=generation_tasks_repo,
         user_data_service=user_data_service,
         localisation_service=localisation_service,
-        publisher=publisher)
+        publisher=publisher,
+        file_storage=file_storage)
