@@ -28,6 +28,7 @@ example_receipt_of_goods_data = [
      "supply_date": "2025-04-16 15:22:37",
      "supplier_name": "Никола Тесла",
      "supplier_code": "7355608",
+     "order_guid": "84f250ebf6b2ce7d11efb5540f7265c9",
      "supply_data": [
          {
              "local_vendor_code": "wild123",
@@ -100,6 +101,7 @@ class ReceiptOfGoodsUpdate(BaseModel):
     supply_date: datetime
     supplier_name: str
     supplier_code: Optional[str] = None
+    order_guid: Optional[str] = None
     guid: str
     document_number: str
     document_created_at: datetime
