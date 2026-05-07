@@ -101,13 +101,13 @@ async def save_sticker_template_new(
 @router.post("/NEWgeneration_tasks")
 async def create_or_get_generation_task(
     template_data: BoxStickerTemplateView,
-    user_id: int, #TODO: временное решение для тестирования
+    # user_id: int, #TODO: временное решение для тестирования
     # user_id: int = Depends(get_current_user_id), #TODO: как получит user_id?
     service: StickerGenerationService = Depends(get_sticker_generation_service),
 ) -> StickerGenerationTaskResultResponse:
     try:
         return await service.create_or_get_box_generation_task(
-            user_id=user_id,
+            # user_id=user_id,
             template_data=template_data,
         )
         

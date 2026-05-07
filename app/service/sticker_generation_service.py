@@ -31,7 +31,7 @@ class StickerGenerationService:
 
     async def create_or_get_box_generation_task(
         self,
-        user_id: int,
+        # user_id: int, #TODO: пока нет авторизации польщователей
         template_data: BoxStickerTemplateView,
         ) -> StickerGenerationTaskResultResponse:
         await self.user_data_service.save_box_sticker_user_data(template_data)
@@ -63,10 +63,10 @@ class StickerGenerationService:
         #TODO: логирование
 
         if existing_task:
-            await self.generation_tasks_repo.add_user_to_task(
-                task_id=existing_task.task_id,
-                user_id=user_id,
-                )
+            # await self.generation_tasks_repo.add_user_to_task(
+            #     task_id=existing_task.task_id,
+            #     user_id=user_id,
+            #     )
             #TODO: убрать пока не будет актуально ограничивать таски на каждого пользователя 
             print("нашел готовую") #TODO: логирование
             response = response = StickerGenerationTaskResultResponse(
@@ -106,11 +106,11 @@ class StickerGenerationService:
             path=None,
         )
 
-        await self.generation_tasks_repo.add_user_to_task(
-            task_id=generation_task.task_id,
-            user_id=user_id,
-        )
-        print("дошел до хэширования "*5)  
+        # await self.generation_tasks_repo.add_user_to_task(
+        #     task_id=generation_task.task_id,
+        #     user_id=user_id,
+        # )
+ 
         broker_payload = {
             "task_id": generation_task.task_uuid,
             "limit": None,
