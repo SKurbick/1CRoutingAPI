@@ -76,6 +76,7 @@ class StickerGenerationService:
             print("нашел готовую") #TODO: логирование
             response = response = StickerGenerationTaskResultResponse(
                     task_id=existing_task.task_id,
+                    product_id=template_data.product_id,
                     generation_status=existing_task.generation_status,
                     error_message=existing_task.error_message,
                     document_url=None
@@ -88,6 +89,7 @@ class StickerGenerationService:
                     )
                 response = StickerGenerationTaskResultResponse(
                     task_id=existing_task.task_id,
+                    product_id=template_data.product_id,
                     generation_status=existing_task.generation_status,
                     error_message=existing_task.error_message,
                     document_url=document_url
@@ -156,6 +158,7 @@ class StickerGenerationService:
                 return updated
         response = StickerGenerationTaskResultResponse(
                  task_id=generation_task.task_id,
+                 product_id=template_data.product_id,
                  generation_status=generation_task.generation_status,
                  error_message=generation_task.error_message,
                  document_url=None
@@ -199,6 +202,7 @@ class StickerGenerationService:
 
             result.append(StickerGenerationTaskResultResponse(
                 task_id=task.id,
+                product_id=task.product_id,
                 generation_status=task.generation_status,
                 document_url=url,
                 error_message=task.error_message,

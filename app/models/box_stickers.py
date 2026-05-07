@@ -189,6 +189,7 @@ class StickerGenerationTaskResult(BaseModel):
 
 class StickerGenerationTaskResultResponse(BaseModel):
     task_id: int
+    product_id: str
     generation_status: GenerationStatus
     error_message: str | None = None
     document_url: str | None = None
