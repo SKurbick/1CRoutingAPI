@@ -185,9 +185,16 @@ class StickerGenerationTaskView(BaseModel):
 class StickerGenerationTaskResult(BaseModel):
     task_id: int
     generation_status: GenerationStatus
-    document_path: str
+    document_path: str | None = None
     task_uuid: UUID|str
     error_message: str | None = None
+
+
+class StickerGenerationTaskResultResponse(BaseModel):
+    task_id: int
+    generation_status: GenerationStatus
+    error_message: str | None = None
+    document_url: str | None = None
 
 
 class BoxStickerTemplateViewShort(BaseModel):

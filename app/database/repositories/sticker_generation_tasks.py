@@ -37,7 +37,6 @@ class StickerGenerationTasksRepository:
             return None
 
         data = dict(row)
-
         return StickerGenerationTaskResult(
             task_id=data["task_id"],
             generation_status=GenerationStatus(data["generation_status"]),
@@ -128,6 +127,17 @@ class StickerGenerationTasksRepository:
             AND t.generation_status IN ('PENDING', 'PROCESSING');
         """
         return await self.pool.fetchval(sql, user_id)
+    
+
+    async def count_total_active_tasks(self) -> int:
+        """Считает все такси в статусе PENDING и PROCESSING. Считает активные задачи"""
+        sql = """
+            SELECT COUNT(*)
+            FROM sticker_generation_task_users tu
+            JOIN sticker_generation_tasks t ON t.id = tu.task_id
+            WHERE t.generation_status IN ('PENDING', 'PROCESSING');
+        """
+        return await self.pool.fetchval(sql)
     
 
     async def set_processing(self, task_uuid: str) -> None:
