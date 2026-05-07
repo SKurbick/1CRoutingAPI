@@ -6,7 +6,14 @@ from fastapi.responses import StreamingResponse
 
 from app.dependencies import get_box_sticker_service
 from app.dependencies.box_stickers import get_box_sticker_service_1, get_sticker_generation_service, get_sticker_template_save_service
-from app.models.box_stickers import BoxDataRequest, BoxStickerTemplate, BoxStickerTemplateShort, BoxStickerTemplateView, BoxStickerTemplateViewShort, StickerGenerationTaskResult
+from app.models.box_stickers import (
+    BoxDataRequest,
+    BoxStickerTemplate,
+    BoxStickerTemplateShort,
+    BoxStickerTemplateView,
+    BoxStickerTemplateViewShort,
+    StickerGenerationTaskResult,
+)
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
 from app.service.sticker_generation_service import StickerGenerationService
 from app.service.sticker_template_save import StickerTemplateSaveService
@@ -28,7 +35,7 @@ include_in_schema=False
 )
 async def generate_stickers(
     data: BoxDataRequest,
-    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
+    service: Annotated[BoxStickerService, Depends(get_box_sticker_service_1)],
 ) -> StreamingResponse:
     """Сгенерировать PDF со стикерами для коробов."""
     try:
@@ -59,7 +66,7 @@ include_in_schema=False
 )
 async def get_sticker_template(
     article: Annotated[str, Path(..., description="Артикул товара для поиска шаблона")],
-    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
+    service: Annotated[BoxStickerService, Depends(get_box_sticker_service_1)],
 ) -> BoxStickerTemplate:
     """Получить шаблон стикера по артикулу."""
     return await service.get_template(article)
@@ -135,7 +142,7 @@ async def get_list_templates(
 include_in_schema=False
 )
 async def get_list_templates(
-    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
+    service: Annotated[BoxStickerService, Depends(get_box_sticker_service_1)],
 ) -> list[BoxStickerTemplateShort]:
     """Получить список существующих шаблонов для стикеров."""
     return await service.get_list_templates()
@@ -210,3 +217,20 @@ include_in_schema=False
 async def get_countries() -> list[str]:
     """Получить список стран."""
     return sorted(translation_manager.countries.keys())
+
+
+@router.get(
+        "/tasks",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Получить список задач на генерацию стикеров.**
+"""
+)
+async def get_generation_tasks(
+    service: Annotated[StickerGenerationService, Depends(get_sticker_generation_service)]
+) -> list[StickerGenerationTaskResult]:
+    """
+    Получить список задач на генерацию файлов.
+    """
+    result = await service.get_sticker_tasks()
+    return result
