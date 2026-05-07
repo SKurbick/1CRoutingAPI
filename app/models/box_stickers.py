@@ -121,7 +121,7 @@ class StickerLocalisationData(BaseModel):
     product_id: str
     field_name: str
     lang: str
-    translation: str
+    translation: str | None = None
 
 
 class StickerUserTemplateData(BaseModel):
