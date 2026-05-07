@@ -20,8 +20,7 @@ from asyncpg import Pool
         # routing_key="doc.generated.box_label",’
         queue=QueueName.RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE)
 async def handle_responses(data: dict, file_storage: IFileStorage = Context(), pool: Pool = Context()):
-        print("-"*25)
-        print(f"Получен ответ от брокера: {data}")
+        #TODO: логирование
         tasks_repo = StickerGenerationTasksRepository(pool)
         service = StickerGenerationService(
                                         generation_tasks_repo=tasks_repo,

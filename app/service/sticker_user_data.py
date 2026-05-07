@@ -24,7 +24,6 @@ class StickerUserDataService:
             produced_in=template_data.produced_in,
             certification_type=template_data.certification_type
         )
-        print("save_box_sticker_user_data ", user_data)
         await self.repo.upsert(user_data)
 
 
