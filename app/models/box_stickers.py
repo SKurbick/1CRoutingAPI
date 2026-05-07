@@ -121,7 +121,7 @@ class StickerLocalisationData(BaseModel):
     product_id: str
     field_name: str
     lang: str
-    translation: str
+    translation: str | None = None
 
 
 class StickerUserTemplateData(BaseModel):
@@ -149,9 +149,6 @@ class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающ�
     color_en: str | None = None
     gross_weight: float
     net_weight: float | None = None # TODO: в таблице в БД нет net_weight
-    # box_length: float
-    # box_width: float
-    # box_height: float
     box_size: BoxSize
     items_per_box: int
     total_boxes: int
@@ -184,11 +181,17 @@ class StickerGenerationTaskView(BaseModel):
 
 class StickerGenerationTaskResult(BaseModel):
     task_id: int
-    product_id: str
     generation_status: GenerationStatus
     document_path: str | None = None
-    task_uuid: UUID | str
+    task_uuid: UUID|str
     error_message: str | None = None
+
+
+class StickerGenerationTaskResultResponse(BaseModel):
+    task_id: int
+    generation_status: GenerationStatus
+    error_message: str | None = None
+    document_url: str | None = None
 
 
 class BoxStickerTemplateViewShort(BaseModel):

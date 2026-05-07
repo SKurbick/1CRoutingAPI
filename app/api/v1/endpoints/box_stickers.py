@@ -6,13 +6,14 @@ from fastapi.responses import StreamingResponse
 
 from app.dependencies import get_box_sticker_service
 from app.dependencies.box_stickers import get_box_sticker_service_1, get_sticker_generation_service, get_sticker_template_save_service
+from app.exceptions.stickers import TotalTaskLimit
 from app.models.box_stickers import (
-    BoxDataRequest,
-    BoxStickerTemplate,
-    BoxStickerTemplateShort,
-    BoxStickerTemplateView,
+    BoxDataRequest, 
+    BoxStickerTemplate, 
+    BoxStickerTemplateShort, 
+    BoxStickerTemplateView, 
     BoxStickerTemplateViewShort,
-    StickerGenerationTaskResult,
+    StickerGenerationTaskResultResponse,
 )
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
 from app.service.sticker_generation_service import StickerGenerationService
@@ -110,14 +111,17 @@ async def create_or_get_generation_task(
     user_id: int, #TODO: временное решение для тестирования
     # user_id: int = Depends(get_current_user_id), #TODO: как получит user_id?
     service: StickerGenerationService = Depends(get_sticker_generation_service),
-) -> StickerGenerationTaskResult:
+) -> StickerGenerationTaskResultResponse:
     try:
         return await service.create_or_get_box_generation_task(
             user_id=user_id,
             template_data=template_data,
         )
+        
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
+    except TotalTaskLimit as e:
+        raise HTTPException(status_code=429, detail=str(e))
     
 @router.get(
         "/NEWtemplates",
@@ -228,7 +232,7 @@ async def get_countries() -> list[str]:
 )
 async def get_generation_tasks(
     service: Annotated[StickerGenerationService, Depends(get_sticker_generation_service)]
-) -> list[StickerGenerationTaskResult]:
+) -> list[StickerGenerationTaskResultResponse]:
     """
     Получить список задач на генерацию файлов.
     """

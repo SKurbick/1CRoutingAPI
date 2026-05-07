@@ -2,8 +2,14 @@
 
 import logging
 from app.database.repositories.sticker_generation_tasks import StickerGenerationTasksRepository
+from app.exceptions.stickers import TotalTaskLimit
 from app.file_storage.base.interface import IFileStorage
-from app.models.box_stickers import BoxStickerTemplateView, StickerGenerationTaskResult, StickerType, GenerationStatus
+from app.models.box_stickers import (
+    BoxStickerTemplateView, 
+    StickerGenerationTaskResultResponse, 
+    StickerType,
+    GenerationStatus,
+)
 from app.service.localisation import LocalisationService
 from app.service.sticker_generation_publisher import StickerGenerationPublisher
 from app.service.sticker_template_hash import StickerTemplateHashService
@@ -32,10 +38,9 @@ class StickerGenerationService:
         self,
         user_id: int,
         template_data: BoxStickerTemplateView,
-        ) -> StickerGenerationTaskResult:
+        ) -> StickerGenerationTaskResultResponse:
         await self.user_data_service.save_box_sticker_user_data(template_data)
         await self.localisation_service.save_localisations(template_data)
-
         hash_payload = {
             "sticker_type": StickerType.TRANSPORT.value,
             "product_id": template_data.product_id,
@@ -53,45 +58,52 @@ class StickerGenerationService:
             "proforma_number": template_data.proforma_number,
             "certification_type": template_data.certification_type.value,
         }
-
         template_hash = StickerTemplateHashService.calculate(hash_payload)
-
         #проверяем существования таски по составному ключу (product_id, sticker_type, template_hash)
         existing_task = await self.generation_tasks_repo.get_by_unique_key(
             product_id=template_data.product_id,
             sticker_type=StickerType.TRANSPORT,
             template_hash=template_hash,
             )
-        #TODO: логирование 
+        #TODO: логирование
 
         if existing_task:
             await self.generation_tasks_repo.add_user_to_task(
                 task_id=existing_task.task_id,
                 user_id=user_id,
                 )
-            # print("нашел готовую") TODO: логирование
-            #TODO: если таска висит со статусом ошибки, то другому пользователю вернем чужую ошибку. Нужен ретрай!
-            url = await self.file_storage.get_presigned_url(
-                    file_key=existing_task.document_path, 
-                    expires_in=180
-                )
-            existing_task.document_path = url
-            return existing_task
+            #TODO: убрать пока не будет актуально ограничивать таски на каждого пользователя 
+            print("нашел готовую") #TODO: логирование
+            response = response = StickerGenerationTaskResultResponse(
+                    task_id=existing_task.task_id,
+                    generation_status=existing_task.generation_status,
+                    error_message=existing_task.error_message,
+                    document_url=None
+                    )
+
+            if existing_task.generation_status == GenerationStatus.COMPLETED:
+                document_url = await self.file_storage.get_presigned_url(
+                        file_key=existing_task.document_path, 
+                        expires_in=180
+                    )
+                response = StickerGenerationTaskResultResponse(
+                    task_id=existing_task.task_id,
+                    generation_status=existing_task.generation_status,
+                    error_message=existing_task.error_message,
+                    document_url=document_url
+                    )
+            return response
 
         # active_count = await self.generation_tasks_repo.count_active_tasks_by_user(user_id) TODO: добавляем проверку на общее количество активных запросов
 
         # if active_count >= self.max_active_tasks_per_user: TODO: использовать ограничения по количеству тасок на пользователя в конфиге?
         #     raise ValueError("Превышен лимит документов в обработке")
         
-        # #TODO: StickerType.TRANSPORT.value.lower() ? stickers/{template_data.product_id}_{StickerType.TRANSPORT.value}_{template_hash}.pdf лучше? хуже?
-        # document_path = (
-        #     f"stickers/{template_data.product_id}/"
-        #     f"{StickerType.TRANSPORT.value}/"
-        #     f"{template_hash}.pdf"
-        # )
+        total_active_tasks = await self.generation_tasks_repo.count_total_active_tasks()
+        if total_active_tasks > 80: #TODO: вынести константу
+            raise TotalTaskLimit("Превышен лимит общего количества активных задач")
         
         #TODO: логировать данные для стикеры
-
         generation_task = await self.generation_tasks_repo.create_task(
             product_id=template_data.product_id,
             sticker_type=StickerType.TRANSPORT,
@@ -103,49 +115,52 @@ class StickerGenerationService:
             task_id=generation_task.task_id,
             user_id=user_id,
         )
-
+        print("дошел до хэширования "*5)  
         broker_payload = {
-    "task_id": generation_task.task_uuid,
-    "limit": None,
-    "offset": None,
-    "data": {
-        "product_id": template_data.product_id,
-        "gross_weight": template_data.gross_weight,
-        "net_weight": template_data.net_weight,
-        "box_size": {
-            "length": template_data.box_size.box_length,
-            "width": template_data.box_size.box_width,
-            "height": template_data.box_size.box_height,
-        } if template_data.box_size else None,
-        "proforma_number": template_data.proforma_number,
-        "items_per_box": template_data.items_per_box,
-        "total_boxes": template_data.total_boxes,
-        "certification_type": template_data.certification_type.value,
-        "local_data": [
-            {
-                "local": "en",
-                "data": {
-                    "name": template_data.name_en,
-                    "color": template_data.color_en,
-                    "produced_in": template_data.produced_in_en,
-                }
+            "task_id": generation_task.task_uuid,
+            "limit": None,
+            "offset": None,
+            "data": {
+                "product_id": template_data.product_id,
+                "gross_weight": template_data.gross_weight,
+                "net_weight": template_data.net_weight,
+                "box_size": {
+                    "length": template_data.box_size.box_length,
+                    "width": template_data.box_size.box_width,
+                    "height": template_data.box_size.box_height,
+                } if template_data.box_size else None,
+                "proforma_number": template_data.proforma_number,
+                "items_per_box": template_data.items_per_box,
+                "total_boxes": template_data.total_boxes,
+                "certification_type": template_data.certification_type.value,
+                "local_data": [
+                    {
+                        "local": "en",
+                        "data": {
+                            "name": template_data.name_en,
+                            "color": template_data.color_en,
+                            "produced_in": template_data.produced_in_en,
+                        }
+                    }
+                ]
             }
-        ]
-    }
-}
+        }
 
         broker_task_id = await self.publisher.publish_generation_task(broker_payload)
-
         if broker_task_id:
-            print("попал в уловие!/!!!")
             await self.generation_tasks_repo.set_processing(
                 task_uuid=generation_task.task_uuid)
 
             updated = await self.generation_tasks_repo.get_by_id(generation_task.id)
             if updated:
                 return updated
-
-        return generation_task
+        response = StickerGenerationTaskResultResponse(
+                 task_id=generation_task.task_id,
+                 generation_status=generation_task.generation_status,
+                 error_message=generation_task.error_message,
+                 document_url=None
+                 )
+        return response
     
 
     async def handle_broker_response(self, data: dict) -> None:
@@ -167,7 +182,7 @@ class StickerGenerationService:
                 error_message=error_message
             )
     
-    async def get_sticker_tasks(self, user_id: int | None = None) -> list[StickerGenerationTaskResult]:
+    async def get_sticker_tasks(self, user_id: int | None = None) -> list[StickerGenerationTaskResultResponse]:
         """
         Получить список задач на генерацию стикеров.
         """
@@ -182,12 +197,10 @@ class StickerGenerationService:
                     expires_in=120,
                 )
 
-            result.append(StickerGenerationTaskResult(
+            result.append(StickerGenerationTaskResultResponse(
                 task_id=task.id,
-                product_id=task.product_id,
                 generation_status=task.generation_status,
-                document_path=url,
-                task_uuid=task.task_uuid,
+                document_url=url,
                 error_message=task.error_message,
             ))
 

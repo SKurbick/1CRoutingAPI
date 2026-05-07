@@ -598,6 +598,8 @@ class StickerTemplateBuilderService:
 
     async def get_box_sticker_template(self, product_id: str) -> BoxStickerTemplateView:
 
+        DEFAULT_PRODUCED_IN_RU = "Китай"
+        DEFAULT_PRODUCED_IN_EN = "China"
         #собираю данный по товару из таблицы stickers_storage
         product = await self.products_repo.get_by_product_id(product_id)
         if not product:
@@ -621,28 +623,11 @@ class StickerTemplateBuilderService:
                 box_width=user_data.box_width,
                 box_height=user_data.box_height
             )
-
-        # return BoxStickerTemplateView(
-        #     product_id=product.product_id,
-        #     name=product.name,
-        #     name_en=translations.get(("name", "en")),
-        #     color=product.color,
-        #     color_en=translations.get(("color", "en")),
-        #     gross_weight=product.gross_weight or 0,
-        #     net_weight=product.net_weight,
-        #     box_size=product.box_size,
-        #     items_per_box=user_data.items_per_box if user_data and user_data.items_per_box else 1,
-        #     total_boxes=user_data.total_boxes if user_data and user_data.total_boxes else 1,
-        #     produced_in=(user_data.produced_in if user_data and user_data.produced_in else product.produced_in),
-        #     produced_in_en=translations.get(("produced_in", "en")),
-        #     proforma_number=user_data.proforma_number if user_data else None,
-        #     certification_type=product.certification_type,
-        # )
         return BoxStickerTemplateView(
             product_id=product.product_id,
-            name=translations.get(("name", "ru")) or product.name,
+            name=translations.get(("name", "ru")),# or product.name
             name_en=translations.get(("name", "en")),
-            color=translations.get(("color", "ru")) or product.color,
+            color=translations.get(("color", "ru")), # or product.color
             color_en=translations.get(("color", "en")),
             gross_weight=(user_data.gross_weight if user_data and user_data.gross_weight is not None 
                         else (product.gross_weight or 0)),
@@ -652,9 +637,9 @@ class StickerTemplateBuilderService:
             items_per_box=user_data.items_per_box if user_data and user_data.items_per_box else 1,
             total_boxes=user_data.total_boxes if user_data and user_data.total_boxes else 1,
             proforma_number=user_data.proforma_number if user_data else None,
-            produced_in=(translations.get(("produced_in", "ru")) or #TODO: реализация в локализации
-                        (user_data.produced_in if user_data and user_data.produced_in else product.produced_in)),
-            produced_in_en=translations.get(("produced_in", "en")),
+            produced_in=(translations.get(("produced_in", "ru")) or (user_data.produced_in if user_data and user_data.produced_in else product.produced_in) or
+                        DEFAULT_PRODUCED_IN_RU),
+            produced_in_en=(translations.get(("produced_in", "en")) or DEFAULT_PRODUCED_IN_EN),
             certification_type=(user_data.certification_type if user_data and user_data.certification_type 
                                 else product.certification_type),
         )
