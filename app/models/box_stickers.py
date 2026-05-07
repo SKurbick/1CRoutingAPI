@@ -149,9 +149,6 @@ class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающ�
     color_en: str | None = None
     gross_weight: float
     net_weight: float | None = None # TODO: в таблице в БД нет net_weight
-    # box_length: float
-    # box_width: float
-    # box_height: float
     box_size: BoxSize
     items_per_box: int
     total_boxes: int
