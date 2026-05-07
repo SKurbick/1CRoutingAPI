@@ -4,7 +4,7 @@
 
 from asyncpg import Pool
 
-from app.models.box_stickers import GenerationStatus, StickerGenerationTaskResult, StickerType
+from app.models.box_stickers import GenerationStatus, StickerGenerationTaskResult, StickerType, StickerGenerationTaskView
 
 
 class StickerGenerationTasksRepository:
@@ -183,3 +183,54 @@ class StickerGenerationTasksRepository:
             document_path,
             error_message
         )
+    
+    async def get_tasks_list(self, user_id: int | None = None) -> list[StickerGenerationTaskView]:
+        """
+        Получить список задач по генерации стикеров.
+        """
+        params = []
+
+        user_filter_condition = ""
+
+        if user_id:
+            params.append(user_id)
+            user_filter_condition = f" AND user_id = ${len(params)}"
+
+        tasks_users_cte = f"""
+            tasks_users AS (
+                SELECT
+                    task_id,
+                    created_at,
+                    ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY created_at DESC) AS rn
+                FROM sticker_generation_task_users
+                WHERE 1=1
+                {user_filter_condition}
+            )
+        """
+
+        all_cte = f"""
+            WITH
+                {tasks_users_cte}
+        """
+
+        query = f"""
+            {all_cte}
+            SELECT
+                sgt.id,
+                sgt.product_id,
+                sgt.sticker_type,
+                sgt.template_hash,
+                LOWER(sgt.generation_status) as generation_status,
+                sgt.task_uuid,
+                sgt.document_path,
+                sgt.error_message
+            FROM sticker_generation_tasks sgt
+            JOIN tasks_users tu ON sgt.id = tu.task_id AND tu.rn = 1
+            ORDER BY tu.created_at DESC
+        """
+
+        rows = await self.pool.fetch(query, *params)
+
+        return [
+            StickerGenerationTaskView(**row) for row in rows
+        ]

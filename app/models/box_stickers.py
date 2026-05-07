@@ -175,7 +175,7 @@ class StickerGenerationTaskView(BaseModel):
     template_hash: str
     generation_status: GenerationStatus
     task_uuid: UUID
-    document_path: str
+    document_path: str | None = None
     error_message: str | None = None
 
 
@@ -189,6 +189,7 @@ class StickerGenerationTaskResult(BaseModel):
 
 class StickerGenerationTaskResultResponse(BaseModel):
     task_id: int
+    product_id: str
     generation_status: GenerationStatus
     error_message: str | None = None
     document_url: str | None = None
