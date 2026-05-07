@@ -136,6 +136,14 @@ class StickerGenerationService:
                             "color": template_data.color_en,
                             "produced_in": template_data.produced_in_en,
                         }
+                    },
+                    {
+                        "local": "ru",
+                        "data": {
+                            "name": template_data.name,
+                            "color": template_data.color,
+                            "produced_in": template_data.produced_in,
+                        }
                     }
                 ]
             }

@@ -625,9 +625,9 @@ class StickerTemplateBuilderService:
             )
         return BoxStickerTemplateView(
             product_id=product.product_id,
-            name=translations.get(("name", "ru")),# or product.name
+            name=translations.get(("name", "ru")) or product.name,
             name_en=translations.get(("name", "en")),
-            color=translations.get(("color", "ru")), # or product.color
+            color=translations.get(("color", "ru")) or product.color,
             color_en=translations.get(("color", "en")),
             gross_weight=(user_data.gross_weight if user_data and user_data.gross_weight is not None 
                         else (product.gross_weight or 0)),

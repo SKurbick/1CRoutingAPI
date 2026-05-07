@@ -143,15 +143,15 @@ class StickerUserTemplateData(BaseModel):
 class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающий класс для стикеров на коробки и индивидуальных с общими полями для типизации в async def save_localisations
     """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
     product_id: str
-    name: str
+    name: str | None = None
     name_en: str | None = None
     color: str | None = None
     color_en: str | None = None
     gross_weight: float
     net_weight: float | None = None # TODO: в таблице в БД нет net_weight
     box_size: BoxSize
-    items_per_box: int
-    total_boxes: int
+    items_per_box: int | None = None
+    total_boxes: int | None = None
     produced_in: str | None = None
     produced_in_en: str | None = None
     proforma_number: str | None = None
