@@ -4,7 +4,12 @@ import logging
 from app.database.repositories.sticker_generation_tasks import StickerGenerationTasksRepository
 from app.exceptions.stickers import TotalTaskLimit
 from app.file_storage.base.interface import IFileStorage
-from app.models.box_stickers import BoxStickerTemplateView, GenerationStatus, StickerGenerationTaskResultResponse, StickerType
+from app.models.box_stickers import (
+    BoxStickerTemplateView, 
+    StickerGenerationTaskResultResponse, 
+    StickerType,
+    GenerationStatus,
+)
 from app.service.localisation import LocalisationService
 from app.service.sticker_generation_publisher import StickerGenerationPublisher
 from app.service.sticker_template_hash import StickerTemplateHashService
@@ -71,6 +76,7 @@ class StickerGenerationService:
             print("нашел готовую") #TODO: логирование
             response = response = StickerGenerationTaskResultResponse(
                     task_id=existing_task.task_id,
+                    product_id=template_data.product_id,
                     generation_status=existing_task.generation_status,
                     error_message=existing_task.error_message,
                     document_url=None
@@ -83,6 +89,7 @@ class StickerGenerationService:
                     )
                 response = StickerGenerationTaskResultResponse(
                     task_id=existing_task.task_id,
+                    product_id=template_data.product_id,
                     generation_status=existing_task.generation_status,
                     error_message=existing_task.error_message,
                     document_url=document_url
@@ -151,6 +158,7 @@ class StickerGenerationService:
                 return updated
         response = StickerGenerationTaskResultResponse(
                  task_id=generation_task.task_id,
+                 product_id=template_data.product_id,
                  generation_status=generation_task.generation_status,
                  error_message=generation_task.error_message,
                  document_url=None
@@ -176,3 +184,28 @@ class StickerGenerationService:
                 document_path=document_path,
                 error_message=error_message
             )
+    
+    async def get_sticker_tasks(self, user_id: int | None = None) -> list[StickerGenerationTaskResultResponse]:
+        """
+        Получить список задач на генерацию стикеров.
+        """
+        tasks = await self.generation_tasks_repo.get_tasks_list(user_id=user_id)
+        result = []
+        for task in tasks:
+            url = None
+
+            if task.generation_status == GenerationStatus.COMPLETED:
+                url = await self.file_storage.get_presigned_url(
+                    file_key=task.document_path,
+                    expires_in=120,
+                )
+
+            result.append(StickerGenerationTaskResultResponse(
+                task_id=task.id,
+                product_id=task.product_id,
+                generation_status=task.generation_status,
+                document_url=url,
+                error_message=task.error_message,
+            ))
+
+        return result
