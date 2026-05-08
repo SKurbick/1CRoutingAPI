@@ -190,31 +190,31 @@ class StickerGenerationTasksRepository:
         """
         params = []
 
-        user_filter_condition = ""
+        # TODO: до времен авторизации в сервисе
+        # user_filter_condition = ""
 
-        if user_id:
-            params.append(user_id)
-            user_filter_condition = f" AND user_id = ${len(params)}"
+        # if user_id:
+        #     params.append(user_id)
+        #     user_filter_condition = f" AND user_id = ${len(params)}"
 
-        tasks_users_cte = f"""
-            tasks_users AS (
-                SELECT
-                    task_id,
-                    created_at,
-                    ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY created_at DESC) AS rn
-                FROM sticker_generation_task_users
-                WHERE 1=1
-                {user_filter_condition}
-            )
-        """
+        # tasks_users_cte = f"""
+        #     tasks_users AS (
+        #         SELECT
+        #             task_id,
+        #             created_at,
+        #             ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY created_at DESC) AS rn
+        #         FROM sticker_generation_task_users
+        #         WHERE 1=1
+        #         {user_filter_condition}
+        #     )
+        # """
 
-        all_cte = f"""
-            WITH
-                {tasks_users_cte}
-        """
+        # all_cte = f"""
+        #     WITH
+        #         {tasks_users_cte}
+        # """
 
         query = f"""
-            {all_cte}
             SELECT
                 sgt.id,
                 sgt.product_id,
@@ -225,8 +225,7 @@ class StickerGenerationTasksRepository:
                 sgt.document_path,
                 sgt.error_message
             FROM sticker_generation_tasks sgt
-            JOIN tasks_users tu ON sgt.id = tu.task_id AND tu.rn = 1
-            ORDER BY tu.created_at DESC
+            ORDER BY sgt.created_at DESC
         """
 
         rows = await self.pool.fetch(query, *params)
