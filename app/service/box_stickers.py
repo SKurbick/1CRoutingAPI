@@ -615,25 +615,45 @@ class StickerTemplateBuilderService:
             (item.field_name, item.lang): item.translation
             for item in localisations
         }
-
-        user_box_size = None
+        #обработка размеров коробки box_size
+        final_box_size = None
         if user_data and all([user_data.box_length, user_data.box_width, user_data.box_height]):
-            user_box_size = BoxSize(
+            final_box_size = BoxSize(
                 box_length=user_data.box_length,
                 box_width=user_data.box_width,
                 box_height=user_data.box_height
             )
+        else:
+            final_box_size = BoxSize(
+                box_length=product.box_size.box_length * 100 if product.box_size.box_length else 0,
+                box_width=product.box_size.box_width * 100 if product.box_size.box_width else 0,
+                box_height=product.box_size.box_height * 100 if product.box_size.box_height else 0
+            )
+            
+        current_gross = (
+        user_data.gross_weight 
+        if user_data and user_data.gross_weight is not None 
+        else (product.gross_weight or 0)
+        )
+        
+        #обработка net_weight    
+        current_net = None
+        if user_data and user_data.net_weight is not None:
+            current_net = user_data.net_weight
+        elif product.net_weight is not None:
+            current_net = product.net_weight
+        elif current_gross > 0:
+            current_net = max(current_gross - 0.5, 0)
+        
         return BoxStickerTemplateView(
             product_id=product.product_id,
             name=translations.get(("name", "ru")) or product.name,
             name_en=translations.get(("name", "en")),
             color=translations.get(("color", "ru")) or product.color,
             color_en=translations.get(("color", "en")),
-            gross_weight=(user_data.gross_weight if user_data and user_data.gross_weight is not None 
-                        else (product.gross_weight or 0)),
-            net_weight=(user_data.net_weight if user_data and user_data.net_weight is not None 
-                        else product.net_weight),
-            box_size=user_box_size or product.box_size,
+            gross_weight=current_gross,
+            net_weight=round(current_net, 2) if current_net is not None else 0,
+            box_size=final_box_size or product.box_size,
             items_per_box=user_data.items_per_box if user_data and user_data.items_per_box else 1,
             total_boxes=user_data.total_boxes if user_data and user_data.total_boxes else 1,
             proforma_number=user_data.proforma_number if user_data else None,

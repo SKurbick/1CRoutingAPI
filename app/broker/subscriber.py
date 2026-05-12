@@ -21,6 +21,7 @@ from asyncpg import Pool
         queue=QueueName.RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE)
 async def handle_responses(data: dict, file_storage: IFileStorage = Context(), pool: Pool = Context()):
         #TODO: логирование
+        print("privet")
         tasks_repo = StickerGenerationTasksRepository(pool)
         service = StickerGenerationService(
                                         generation_tasks_repo=tasks_repo,
