@@ -1,3 +1,4 @@
+import datetime
 from enum import Enum
 from uuid import UUID
 
@@ -208,11 +209,10 @@ class BoxStickerTemplateViewShort(BaseModel):
 class IndividualStickerTemplateView(BaseModel):
     product_id: str
     name: str
-    article: str
     color: str | None = None
     material: str | None = None
     manufacturer: str = "NINGBO GENERAL UNION CO., LTD" # Значение по умолчанию
     importer_details: str = "ООО СТАРТ" # Одно из двух по ТЗ (Сейчас два варианта: реквизиты)
     produced_in: str = "Китай"
-    production_date: str = Field(default_factory=lambda: datetime.now().strftime("%d.%m.%Y")) #TODO: оставить как поле только в бд?
+    production_date: str = Field(default_factory=lambda: datetime.datetime.now().strftime("%Y-%m-%d")) #TODO: оставить как поле только в бд?
     certification_type: CertificationType = CertificationType.NONE

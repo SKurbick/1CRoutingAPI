@@ -181,7 +181,7 @@ class StickerGenerationService:
             "product_id": template_data.product_id,
             "manufacturer": template_data.manufacturer,
             "importer_details": template_data.importer_details,
-            "production_date": template_data.production_date,
+            "production_date": template_data.production_date, #TODO: лишнее!
             "certification_type": template_data.certification_type.value,
             "name": template_data.name,
             "color": template_data.color,
