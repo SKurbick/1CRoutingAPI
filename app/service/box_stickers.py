@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 from app.database.repositories.localisation import LocalisationRepository
 from app.database.repositories.sticker_user_data import StickerUserDataRepository
 from app.database.repositories.stickers_storage import StickersStorageRepository
-from app.models.box_stickers import BoxDataRequest, BoxSize, BoxStickerTemplateView, BoxStickerTemplateViewShort, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort, StickerType
+from app.models.box_stickers import BoxDataRequest, BoxSize, BoxStickerTemplateView, BoxStickerTemplateViewShort, IndividualStickerTemplateView, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort, StickerType
 from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
 from app.service.goods_information import GoodsInformationService
 from app.service.translate_manager import translation_manager
@@ -667,3 +667,26 @@ class StickerTemplateBuilderService:
     async def get_list_templates(self) -> list[BoxStickerTemplateViewShort]:
         """Получить список шаблонов для стикеров."""
         return await self.products_repo.get_list()
+    
+    async def get_individual_sticker_template(self, product_id: str) -> IndividualStickerTemplateView:
+        """Получить данные по индивидуальному стикеру"""
+        product = await self.products_repo.get_by_product_id(product_id)
+        if not product:
+            raise ValueError(f"Product {product_id} not found")
+
+        # 2. Пытаемся взять последние правки пользователя для этого типа стикера
+        user_data = await self.user_data_repo.get_last(product_id, StickerType.INDIVIDUAL)
+
+        # 3. Собираем финальный вид
+        return IndividualStickerTemplateView(
+            product_id=product.product_id,
+            article=product.product_id, # Обычно артикул = product_id
+            name=product.name,
+            color=product.color,
+            material=product.material,
+            # Если пользователь уже выбирал импортера/производителя - берем его, иначе default
+            manufacturer=user_data.manufacturer if user_data else "NINGBO GENERAL UNION CO., LTD",
+            importer=user_data.importer if user_data else "ООО СТАРТ",
+            certification_type=product.certification_type,
+            # production_date=datetime.now().strftime("%d.%m.%Y")
+        )

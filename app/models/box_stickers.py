@@ -193,9 +193,26 @@ class StickerGenerationTaskResultResponse(BaseModel):
     generation_status: GenerationStatus
     error_message: str | None = None
     document_url: str | None = None
+    # sticker_type: StickerType #TODO: нужен?
 
 
 class BoxStickerTemplateViewShort(BaseModel):
     """Шаблон стикера с минимальной информацией."""
     product_id: str | None = Field(None, description="Артикул")
     name: str | None = Field(None, description="Название")
+
+
+# Individual stickers
+
+
+class IndividualStickerTemplateView(BaseModel):
+    product_id: str
+    name: str
+    article: str
+    color: str | None = None
+    material: str | None = None
+    manufacturer: str = "NINGBO GENERAL UNION CO., LTD" # Значение по умолчанию
+    importer_details: str = "ООО СТАРТ" # Одно из двух по ТЗ (Сейчас два варианта: реквизиты)
+    produced_in: str = "Китай"
+    production_date: str = Field(default_factory=lambda: datetime.now().strftime("%d.%m.%Y")) #TODO: оставить как поле только в бд?
+    certification_type: CertificationType = CertificationType.NONE

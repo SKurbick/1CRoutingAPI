@@ -47,6 +47,7 @@ class StickerGenerationTasksRepository:
     
     async def create_task (self, product_id: str, sticker_type: StickerType, hash: str, path: str) ->StickerGenerationTaskResult:
         #TODO: убарть путь к файлу из запроса. Путь будет генерировать сервис генерации
+        #TODO: переименовать document_path в document_key
         sql = """
             INSERT INTO sticker_generation_tasks (
                 product_id,

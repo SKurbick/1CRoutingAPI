@@ -13,6 +13,7 @@ from app.models.box_stickers import (
     BoxStickerTemplateShort, 
     BoxStickerTemplateView, 
     BoxStickerTemplateViewShort,
+    IndividualStickerTemplateView,
     StickerGenerationTaskResultResponse,
 )
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
@@ -75,6 +76,28 @@ async def create_or_get_generation_task(
         raise HTTPException(status_code=409, detail=str(e))
     except TotalTaskLimit as e:
         raise HTTPException(status_code=429, detail=str(e))
+
+@router.post("/sticker_generation_TEST",
+             status_code=status.HTTP_200_OK,
+            description="**Инициировать создание стикера**")
+async def create_or_get_generation_task(
+    template_data: IndividualStickerTemplateView,
+    # user_id: int, #TODO: временное решение для тестирования
+    # user_id: int = Depends(get_current_user_id), #TODO: как получит user_id?
+    service: StickerGenerationService = Depends(get_sticker_generation_service),
+) -> StickerGenerationTaskResultResponse:
+    print(template_data)
+    try:
+        return await service.create_or_get_individual_task(
+            # user_id=user_id,
+            template_data=template_data,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except TotalTaskLimit as e:
+        raise HTTPException(status_code=429, detail=str(e))    
+IndividualStickerTemplateView    
+
     
 @router.get(
         "/templates",
