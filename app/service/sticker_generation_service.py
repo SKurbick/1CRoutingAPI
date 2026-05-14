@@ -38,7 +38,7 @@ class StickerGenerationService:
     async def create_or_get_box_generation_task(
         self,
         # user_id: int, #TODO: пока нет авторизации польщователей
-        template_data: BoxStickerTemplateView,
+        template_data: BoxStickerTemplateView,#TODO: добавить offset 
         ) -> StickerGenerationTaskResultResponse:
         await self.user_data_service.save_box_sticker_user_data(template_data)
         await self.localisation_service.save_localisations(template_data)
@@ -182,7 +182,7 @@ class StickerGenerationService:
             "product_id": template_data.product_id,
             "manufacturer": template_data.manufacturer,
             "importer_details": template_data.importer_details,
-            "production_date": template_data.production_date, #TODO: лишнее!
+            "production_date": template_data.production_date,
             "certification_type": template_data.certification_type.value,
             "name": template_data.name,
             "color": template_data.color,

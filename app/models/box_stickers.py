@@ -1,5 +1,6 @@
 import datetime
 from enum import Enum
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -143,6 +144,8 @@ class StickerUserTemplateData(BaseModel):
 
 class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающий класс для стикеров на коробки и индивидуальных с общими полями для типизации в async def save_localisations
     """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
+    sticker_type: Literal[StickerType.TRANSPORT] = StickerType.TRANSPORT
+    # sticker_type: Literal["TRANSPORT"] = "TRANSPORT"
     product_id: str
     name: str | None = None
     name_en: str | None = None
@@ -207,12 +210,14 @@ class BoxStickerTemplateViewShort(BaseModel):
 
 
 class IndividualStickerTemplateView(BaseModel):
+    sticker_type: Literal[StickerType.INDIVIDUAL] = StickerType.INDIVIDUAL
+    # sticker_type: Literal["INDIVIDUAL"] = "INDIVIDUAL"
     product_id: str
     name: str
     color: str | None = None
     material: str | None = None
-    manufacturer: str = "NINGBO GENERAL UNION CO., LTD" # Значение по умолчанию
-    importer_details: str = "ООО СТАРТ" # Одно из двух по ТЗ (Сейчас два варианта: реквизиты)
+    manufacturer: str = "NINGBO GENERAL UNION CO., LTD"
+    importer_details: str = "ООО СТАРТ"
     produced_in: str = "Китай"
     production_date: str = Field(default_factory=lambda: datetime.datetime.now().strftime("%Y-%m-%d")) #TODO: оставить как поле только в бд?
     certification_type: CertificationType = CertificationType.NONE

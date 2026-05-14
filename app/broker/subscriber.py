@@ -18,7 +18,7 @@ from asyncpg import Pool
         exchange=ExchangeName.DOCGEN_EVENT,
         # routing_key="doc.generated.box_label",’
         queue=QueueName.RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE)
-async def handle_responses1(data: dict, file_storage: IFileStorage = Context(), pool: Pool = Context()):
+async def handle_responses_box(data: dict, file_storage: IFileStorage = Context(), pool: Pool = Context()):
         #TODO: логирование
         print("privet")
         tasks_repo = StickerGenerationTasksRepository(pool)
@@ -36,8 +36,9 @@ async def handle_responses1(data: dict, file_storage: IFileStorage = Context(), 
         exchange=ExchangeName.DOCGEN_EVENT,
         # routing_key="doc.generated.box_label",’
         queue=QueueName.RABBIT_Q_DOCGEN_UNIT_LABEL_RESPONSE)
-async def handle_responses2(data: dict, file_storage: IFileStorage = Context(), pool: Pool = Context()):
+async def handle_responses_unit(data: dict, file_storage: IFileStorage = Context(), pool: Pool = Context()):
         #TODO: логирование
+        print("---"*8,"получил ответ","---"*5)
         tasks_repo = StickerGenerationTasksRepository(pool)
         service = StickerGenerationService(
                                         generation_tasks_repo=tasks_repo,

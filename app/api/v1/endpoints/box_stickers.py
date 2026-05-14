@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Union
 
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Path
+from fastapi import APIRouter, Body, HTTPException, status, Depends, Query, Path
 from fastapi.responses import StreamingResponse
 
 from app.dependencies import get_box_sticker_service
@@ -61,43 +61,50 @@ async def get_sticker_template_(
              status_code=status.HTTP_200_OK,
             description="**Инициировать создание стикера**")
 async def create_or_get_generation_task(
-    template_data: BoxStickerTemplateView,
+    template_data: Annotated[
+        Union[BoxStickerTemplateView, IndividualStickerTemplateView],
+        Body(discriminator="sticker_type")],
     # user_id: int, #TODO: временное решение для тестирования
     # user_id: int = Depends(get_current_user_id), #TODO: как получит user_id?
     service: StickerGenerationService = Depends(get_sticker_generation_service),
 ) -> StickerGenerationTaskResultResponse:
     try:
+        if isinstance(template_data, IndividualStickerTemplateView):
+            print("принял форму для IndividualStickerTemplateView")
+            return await service.create_or_get_individual_task(
+                template_data=template_data
+            )
+        print("принял форму для BoxStickerTemplateView")
         return await service.create_or_get_box_generation_task(
-            # user_id=user_id,
-            template_data=template_data,
+            template_data=template_data
         )
         
     except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except TotalTaskLimit as e:
-        raise HTTPException(status_code=429, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e))
 
-@router.post("/sticker_generation_TEST",
-             status_code=status.HTTP_200_OK,
-            description="**Инициировать создание стикера**")
-async def create_or_get_generation_task(
-    template_data: IndividualStickerTemplateView,
-    # user_id: int, #TODO: временное решение для тестирования
-    # user_id: int = Depends(get_current_user_id), #TODO: как получит user_id?
-    service: StickerGenerationService = Depends(get_sticker_generation_service),
-) -> StickerGenerationTaskResultResponse:
-    print("направил POST запрос с данными:")
-    print(template_data)
-    try:
-        return await service.create_or_get_individual_task(
-            # user_id=user_id,
-            template_data=template_data,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e))
-    except TotalTaskLimit as e:
-        raise HTTPException(status_code=429, detail=str(e))    
-IndividualStickerTemplateView    
+# @router.post("/sticker_generation_TEST",
+#              status_code=status.HTTP_200_OK,
+#             description="**Инициировать создание стикера**")
+# async def create_or_get_generation_task(
+#     template_data: IndividualStickerTemplateView,
+#     # user_id: int, #TODO: временное решение для тестирования
+#     # user_id: int = Depends(get_current_user_id), #TODO: как получит user_id?
+#     service: StickerGenerationService = Depends(get_sticker_generation_service),
+# ) -> StickerGenerationTaskResultResponse:
+#     print("направил POST запрос с данными:")
+#     print(template_data)
+#     try:
+#         return await service.create_or_get_individual_task(
+#             # user_id=user_id,
+#             template_data=template_data,
+#         )
+#     except ValueError as e:
+#         raise HTTPException(status_code=409, detail=str(e))
+#     except TotalTaskLimit as e:
+#         raise HTTPException(status_code=429, detail=str(e))    
+# IndividualStickerTemplateView    
 
     
 @router.get(

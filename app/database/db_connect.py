@@ -12,9 +12,9 @@ async def init_db() -> Pool:
         database=settings.POSTGRES_DB,
         host=settings.POSTGRES_HOST,
         port=settings.POSTGRES_PORT,
-        min_size=20,
-        max_size=50,
-        max_inactive_connection_lifetime=1800
+        min_size=5,
+        max_size=15,
+        max_inactive_connection_lifetime=300
     )
     # Проверим какие параметры установились по умолчанию
     print("📊 ДЕФОЛТНЫЕ параметры asyncpg:")
