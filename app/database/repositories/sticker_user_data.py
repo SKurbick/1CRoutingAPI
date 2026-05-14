@@ -7,8 +7,8 @@ class StickerUserDataRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
-    async def get_last(self, product_id: str, sticker_type: StickerType) -> StickerUserTemplateData | None:
-        """Возвращает последни пользовательский ввод"""
+    async def get_last(self, product_id: str) -> StickerUserTemplateData | None:
+        """Возвращает последний пользовательский ввод"""
         sql = """
             SELECT
                 product_id,
@@ -25,9 +25,8 @@ class StickerUserDataRepository:
                 certification_type
             FROM sticker_user_data
             WHERE product_id = $1
-            AND sticker_type = $2;
         """
-        row = await self.pool.fetchrow(sql, product_id, sticker_type.value)
+        row = await self.pool.fetchrow(sql, product_id)
         if not row:
             return None
 

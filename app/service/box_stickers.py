@@ -1,5 +1,6 @@
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
+import datetime
 import io
 from pathlib import Path
 
@@ -589,11 +590,12 @@ class StickerTemplateBuilderService:
         self,
         products_repo: StickersStorageRepository,
         localisation_repo: LocalisationRepository,
-        user_data_repo: StickerUserDataRepository,
+        user_box_data_repo: StickerUserDataRepository,
+
     ):
         self.products_repo = products_repo
         self.localisation_repo = localisation_repo
-        self.user_data_repo = user_data_repo
+        self.user_box_data_repo = user_box_data_repo
 
 
     async def get_box_sticker_template(self, product_id: str) -> BoxStickerTemplateView:
@@ -605,10 +607,7 @@ class StickerTemplateBuilderService:
         if not product:
             raise ValueError("Товар не найден")
         #собираю данные по ранее заполненными пользователем поля для данного товара
-        user_data = await self.user_data_repo.get_last(
-            product_id=product.product_id,
-            sticker_type=StickerType.TRANSPORT,
-        )
+        user_data = await self.user_box_data_repo.get_last(product_id=product.product_id)
         #собираю данные по локализации, если были сохранены ранее
         localisations = await self.localisation_repo.get_by_product_id(product.product_id)
         translations = {
@@ -675,7 +674,7 @@ class StickerTemplateBuilderService:
             raise ValueError(f"Product {product_id} not found")
 
         # 2. Пытаемся взять последние правки пользователя для этого типа стикера
-        user_data = await self.user_data_repo.get_last(product_id, StickerType.INDIVIDUAL)
+        user_data = await self.user_box_data_repo.get_last(product_id)
 
         # 3. Собираем финальный вид
         return IndividualStickerTemplateView(
@@ -688,5 +687,69 @@ class StickerTemplateBuilderService:
             manufacturer=user_data.manufacturer if user_data else "NINGBO GENERAL UNION CO., LTD",
             importer=user_data.importer if user_data else "ООО СТАРТ",
             certification_type=product.certification_type,
-            # production_date=datetime.now().strftime("%d.%m.%Y")
+            production_date=datetime.datetime.now().strftime("%Y-%m-%d")
         )
+    
+    async def get_unit_sticker_template(self, product_id: str) -> IndividualStickerTemplateView:
+
+        #собираю данный по товару из таблицы stickers_storage
+        product = await self.products_repo.get_by_product_id(product_id)
+        if not product:
+            raise ValueError("Товар не найден")
+        #собираю данные по ранее заполненными пользователем поля для данного товара
+        user_data = await self.user_box_data_repo.get_last(product_id=product.product_id)
+        #собираю данные по локализации, если были сохранены ранее
+        localisations = await self.localisation_repo.get_by_product_id(product.product_id)
+        translations = {
+            (item.field_name, item.lang): item.translation
+            for item in localisations
+        }
+        #обработка размеров коробки box_size
+        final_box_size = None
+        if user_data and all([user_data.box_length, user_data.box_width, user_data.box_height]):
+            final_box_size = BoxSize(
+                box_length=user_data.box_length,
+                box_width=user_data.box_width,
+                box_height=user_data.box_height
+            )
+        else:
+            final_box_size = BoxSize(
+                box_length=product.box_size.box_length * 100 if product.box_size.box_length else 0,
+                box_width=product.box_size.box_width * 100 if product.box_size.box_width else 0,
+                box_height=product.box_size.box_height * 100 if product.box_size.box_height else 0
+            )
+            
+        current_gross = (
+        user_data.gross_weight 
+        if user_data and user_data.gross_weight is not None 
+        else (product.gross_weight or 0)
+        )
+        
+        #обработка net_weight    
+        current_net = None
+        if user_data and user_data.net_weight is not None:
+            current_net = user_data.net_weight
+        elif product.net_weight is not None:
+            current_net = product.net_weight
+        elif current_gross > 0:
+            current_net = max(current_gross - 0.5, 0)
+        
+        # return BoxStickerTemplateView(
+        #     product_id=product.product_id,
+        #     name=translations.get(("name", "ru")) or product.name,
+        #     name_en=translations.get(("name", "en")),
+        #     color=translations.get(("color", "ru")) or product.color,
+        #     color_en=translations.get(("color", "en")),
+        #     gross_weight=current_gross,
+        #     net_weight=round(current_net, 2) if current_net is not None else 0,
+        #     box_size=final_box_size or product.box_size,
+        #     items_per_box=user_data.items_per_box if user_data and user_data.items_per_box else 1,
+        #     total_boxes=user_data.total_boxes if user_data and user_data.total_boxes else 1,
+        #     proforma_number=user_data.proforma_number if user_data else None,
+        #     produced_in=(translations.get(("produced_in", "ru")) or (user_data.produced_in if user_data and user_data.produced_in else product.produced_in) or
+        #                 DEFAULT_PRODUCED_IN_RU),
+        #     produced_in_en=(translations.get(("produced_in", "en")) or DEFAULT_PRODUCED_IN_EN),
+        #     certification_type=(user_data.certification_type if user_data and user_data.certification_type 
+        #                         else product.certification_type),
+        # )
+        return IndividualStickerTemplateView()

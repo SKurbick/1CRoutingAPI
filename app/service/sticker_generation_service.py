@@ -176,7 +176,9 @@ class StickerGenerationService:
         return response
     
     async def create_or_get_individual_task(self, template_data: IndividualStickerTemplateView) -> StickerGenerationTaskResultResponse:
-        
+
+        await self.user_data_service.save_unit_sticker_user_data(template_data)
+        # await self.localisation_service.save_localisations(template_data)
         hash_payload = {
             "sticker_type": StickerType.INDIVIDUAL.value,
             "product_id": template_data.product_id,
