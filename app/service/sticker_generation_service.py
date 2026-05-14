@@ -159,12 +159,13 @@ class StickerGenerationService:
 
         broker_task_id = await self.publisher.publish_generation_task(broker_payload)
         # if broker_task_id:
-        #     await self.generation_tasks_repo.set_processing(
-        #         task_uuid=generation_task.task_uuid)
+        #     # await self.generation_tasks_repo.set_processing(
+        #     #     task_uuid=generation_task.task_uuid)
+        #     print("пришел broker_task_id ", broker_task_id)
 
-        updated = await self.generation_tasks_repo.get_by_id(generation_task.id)
-        if updated:
-            return updated
+        # updated = await self.generation_tasks_repo.get_by_id(generation_task.task_id)
+        # if updated:
+        #     return updated
         response = StickerGenerationTaskResultResponse(
                  task_id=generation_task.task_id,
                  product_id=template_data.product_id,

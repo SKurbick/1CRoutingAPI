@@ -12,6 +12,10 @@ async def publish_box_sticker_generation_task(message: dict) -> None:
 
 async def publish_individual_sticker_generation_task(message: dict) -> None:
     print("отправил в", RoutingKey.DOC_UNIT_LABEL, message)
+    print("-"*25)
+    print(message)
+    print(RoutingKey.DOC_UNIT_LABEL)
+    print(ExchangeName.DOCGEN_REQUEST)
     await broker_manager.publish(
         message=message,
         routing_key=RoutingKey.DOC_UNIT_LABEL,

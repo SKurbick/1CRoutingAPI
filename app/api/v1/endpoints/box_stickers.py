@@ -86,6 +86,7 @@ async def create_or_get_generation_task(
     # user_id: int = Depends(get_current_user_id), #TODO: как получит user_id?
     service: StickerGenerationService = Depends(get_sticker_generation_service),
 ) -> StickerGenerationTaskResultResponse:
+    print("направил POST запрос с данными:")
     print(template_data)
     try:
         return await service.create_or_get_individual_task(
