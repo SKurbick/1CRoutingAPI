@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
@@ -178,6 +178,8 @@ class StickerGenerationTaskView(BaseModel):
     task_uuid: UUID
     document_path: str | None = None
     error_message: str | None = None
+    created_at: datetime
+    updated_at: datetime
 
 
 class StickerGenerationTaskResult(BaseModel):
@@ -197,6 +199,38 @@ class StickerGenerationTaskResultResponse(BaseModel):
     # sticker_type: StickerType #TODO: нужен?
 
 
+class StickerGenerationTaskInfo(BaseModel):
+    """
+    Информация о задаче по генерации стикеров.
+    """
+
+    task_id: int = Field(..., description="ID задачи на генерацию.")
+    product_id: str = Field(..., description="Артикул товара")
+    generation_status: GenerationStatus = Field(..., description="Статус задачи")
+    error_message: str | None = Field(None, description="Сообщение об ошибках во время выполнения задачи.")
+    document_url: str | None = Field(None, description="Ссылка на файл, если файл готов.")
+    sticker_type: StickerType = Field(..., description="Тип стикеров в готовом файле")
+    created_at: datetime = Field(..., description="Дата создания задачи")
+    updated_at: datetime = Field(..., description="Дата обновления информации о задаче")
+
+
+class StickerGenerationTaskEvent(str, Enum):
+    """
+    Тип события задачи генерации стикеров.
+    """
+
+    UPDATE_STATUS = "update_status"
+
+
+class StickerGenerationTaskNotice(BaseModel):
+    """
+    Уведомление по задаче генерации стикеров.
+    """
+
+    event: StickerGenerationTaskEvent = Field(..., description="Тип события в уведомлении.")
+    task_data: StickerGenerationTaskInfo = Field(..., description="Информация о задаче")
+
+
 class BoxStickerTemplateViewShort(BaseModel):
     """Шаблон стикера с минимальной информацией."""
     product_id: str | None = Field(None, description="Артикул")
@@ -214,5 +248,5 @@ class IndividualStickerTemplateView(BaseModel):
     manufacturer: str = "NINGBO GENERAL UNION CO., LTD" # Значение по умолчанию
     importer_details: str = "ООО СТАРТ" # Одно из двух по ТЗ (Сейчас два варианта: реквизиты)
     produced_in: str = "Китай"
-    production_date: str = Field(default_factory=lambda: datetime.datetime.now().strftime("%Y-%m-%d")) #TODO: оставить как поле только в бд?
+    production_date: str = Field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d")) #TODO: оставить как поле только в бд?
     certification_type: CertificationType = CertificationType.NONE

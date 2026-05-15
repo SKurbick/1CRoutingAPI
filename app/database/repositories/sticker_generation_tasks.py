@@ -224,7 +224,9 @@ class StickerGenerationTasksRepository:
                 LOWER(sgt.generation_status) as generation_status,
                 sgt.task_uuid,
                 sgt.document_path,
-                sgt.error_message
+                sgt.error_message,
+                sgt.created_at,
+                sgt.updated_at
             FROM sticker_generation_tasks sgt
             ORDER BY sgt.created_at DESC
         """

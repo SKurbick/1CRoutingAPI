@@ -10,6 +10,7 @@ from app.models.box_stickers import (
     StickerGenerationTaskResultResponse, 
     StickerType,
     GenerationStatus,
+    StickerGenerationTaskInfo,
 )
 from app.service.localisation import LocalisationService
 from app.service.sticker_generation_publisher import StickerGenerationPublisher
@@ -292,8 +293,8 @@ class StickerGenerationService:
                 document_path=document_path,
                 error_message=error_message
             )
-    
-    async def get_sticker_tasks(self, user_id: int | None = None) -> list[StickerGenerationTaskResultResponse]:
+
+    async def get_sticker_tasks(self, user_id: int | None = None) -> list[StickerGenerationTaskInfo]:
         """
         Получить список задач на генерацию стикеров.
         """
@@ -308,12 +309,15 @@ class StickerGenerationService:
                     expires_in=120,
                 )
 
-            result.append(StickerGenerationTaskResultResponse(
+            result.append(StickerGenerationTaskInfo(
                 task_id=task.id,
                 product_id=task.product_id,
                 generation_status=task.generation_status,
-                document_url=url,
                 error_message=task.error_message,
+                document_url=url,
+                sticker_type=task.sticker_type,
+                created_at=task.created_at,
+                updated_at=task.updated_at,
             ))
 
         return result

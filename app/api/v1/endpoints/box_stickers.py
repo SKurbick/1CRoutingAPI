@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, status, Depends, Query, Path
 from fastapi.responses import StreamingResponse
+from sse_starlette import EventSourceResponse
 
 from app.dependencies import get_box_sticker_service
 from app.dependencies.box_stickers import get_box_sticker_service_1, get_sticker_generation_service, get_sticker_template_save_service
@@ -15,11 +16,14 @@ from app.models.box_stickers import (
     BoxStickerTemplateViewShort,
     IndividualStickerTemplateView,
     StickerGenerationTaskResultResponse,
+    StickerGenerationTaskInfo,
 )
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
 from app.service.sticker_generation_service import StickerGenerationService
 from app.service.sticker_template_save import StickerTemplateSaveService
 from app.service.translate_manager import translation_manager
+from app.service.sticker_tasks_notification import StickerTasksNotificationsService
+from app.dependencies.sticker_tasks_notification import get_sticker_tasks_notification_service
 
 
 router = APIRouter(prefix="/stickers", tags=["Стикеры для коробов"])
@@ -122,9 +126,27 @@ async def get_list_templates(
 )
 async def get_generation_tasks(
     service: Annotated[StickerGenerationService, Depends(get_sticker_generation_service)]
-) -> list[StickerGenerationTaskResultResponse]:
+) -> list[StickerGenerationTaskInfo]:
     """
     Получить список задач на генерацию файлов.
     """
     result = await service.get_sticker_tasks()
     return result
+
+
+@router.get(
+        "/tasks/events",
+        description="""
+    **Устанавливает SSE-соединение с клиентом и возвращает уведомления по задачам генерации файлов.**
+
+    Возвращает media_type: text/event-stream.
+"""
+)
+async def stream_tasks_notifications(
+    service: Annotated[StickerTasksNotificationsService, Depends(get_sticker_tasks_notification_service)],
+) -> StreamingResponse:
+    """
+    Устанавливает SSE-соединение с клиентом и возвращает уведомления по задачам генерации файлов.
+    """
+
+    return EventSourceResponse(service.listen())

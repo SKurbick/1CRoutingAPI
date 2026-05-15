@@ -14,7 +14,7 @@ router = APIRouter(prefix="/financial_transactions", tags=["Финансовые
 
 @router.post("/income_on_bank_account", response_model=FinancialTransactionsResponse, status_code=status.HTTP_201_CREATED)
 async def income_on_bank_account(
-        data: List[IncomeOnBankAccountUpdate] = Body(example=example_income_on_bank_account_data),
+        data: List[IncomeOnBankAccountUpdate] = Body(examples=[example_income_on_bank_account_data]),
         service: IncomeOnBankAccountService = Depends(get_financial_transactions_service)
 ):
     result = await service.add_income_on_bank_account(data)
@@ -34,7 +34,7 @@ async def income_on_bank_account(
 
 @router.post("/write_off_of_non_cash_funds", response_model=FinancialTransactionsResponse, status_code=status.HTTP_201_CREATED)
 async def write_off_of_non_cash_funds(
-        data: List[WriteOffOfNonCashFunds] = Body(example=write_off_of_non_cash_funds_example),
+        data: List[WriteOffOfNonCashFunds] = Body(examples=[write_off_of_non_cash_funds_example]),
         service: IncomeOnBankAccountService = Depends(get_financial_transactions_service)
 ):
     result = await service.add_data_by_write_off_of_non_cash_funds(data)
@@ -53,7 +53,7 @@ async def write_off_of_non_cash_funds(
 
 @router.post("/cash_disbursement_order", response_model=FinancialTransactionsResponse, status_code=status.HTTP_201_CREATED)
 async def cash_disbursement_order(
-        data: List[CashDisbursementOrder] = Body(example=cash_disbursement_order_example),
+        data: List[CashDisbursementOrder] = Body(examples=[cash_disbursement_order_example]),
         service: IncomeOnBankAccountService = Depends(get_financial_transactions_service)
 ):
     result = await service.add_data_cash_disbursement_order(data)
