@@ -1,6 +1,6 @@
 
 
-
+from uuid import UUID
 
 from asyncpg import Pool
 
@@ -236,3 +236,28 @@ class StickerGenerationTasksRepository:
         return [
             StickerGenerationTaskView(**row) for row in rows
         ]
+
+    async def get_task_by_uuid(self, task_uuid: UUID) -> StickerGenerationTaskView | None:
+        """
+        Получить задачу по task_id.
+        """
+
+        query = f"""
+            SELECT
+                sgt.id,
+                sgt.product_id,
+                sgt.sticker_type,
+                sgt.template_hash,
+                LOWER(sgt.generation_status) as generation_status,
+                sgt.task_uuid,
+                sgt.document_path,
+                sgt.error_message,
+                sgt.created_at,
+                sgt.updated_at
+            FROM sticker_generation_tasks sgt
+            WHERE sgt.task_uuid = $1;
+        """
+
+        row = await self.pool.fetchrow(query, task_uuid)
+
+        return StickerGenerationTaskView(**row) if row else None

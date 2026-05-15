@@ -7,7 +7,7 @@ from redis.asyncio.client import PubSub
 from sse_starlette import JSONServerSentEvent
 
 from app.cache.client import RedisClient
-from app.models.box_stickers import StickerGenerationTaskEvent
+from app.models.box_stickers import StickerGenerationTaskNotice
 
 
 class StickerTasksNotificationsService:
@@ -68,11 +68,11 @@ class StickerTasksNotificationsService:
                 print(f"Необработанное исключение: {e}")
                 raise
 
-    async def publish_notice(self, notice: StickerGenerationTaskEvent):
+    async def publish_notice(self, notice: StickerGenerationTaskNotice):
         """
         Отправить уведомление подписчикам.
         """
-        message = json.dumps(notice, ensure_ascii=False)
+        message = notice.model_dump_json()
         await self._redis_client.publish(
             channel=self.CHANNEL,
             message=message
