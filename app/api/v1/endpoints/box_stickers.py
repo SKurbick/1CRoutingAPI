@@ -22,13 +22,13 @@ from app.service.translate_manager import translation_manager
 router = APIRouter(prefix="/stickers", tags=["Стикеры для коробов"])
 
 @router.get(
-        "/templates/{product_id}",
+        "/transport_templates/{product_id}",
         status_code=status.HTTP_200_OK,
         description="""
     **Получить шаблон стикера по артикулу.**
 """
 )
-async def get_sticker_template_(
+async def get_transport_sticker_template_(
     product_id: Annotated[str, Path(..., description="Артикул товара для поиска шаблона")],
     service: Annotated[StickerTemplateBuilderService, Depends(get_box_sticker_service_1)],
 ) -> BoxStickerTemplateView:
@@ -41,6 +41,28 @@ async def get_sticker_template_(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
+  
+  
+@router.get(
+        "/individual_templates/{product_id}",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Получить шаблон стикера по артикулу.**
+"""
+)
+async def get_individual_sticker_template_(
+    product_id: Annotated[str, Path(..., description="Артикул товара для поиска шаблона")],
+    service: Annotated[StickerTemplateBuilderService, Depends(get_box_sticker_service_1)],
+) -> IndividualStickerTemplateView:
+    """Получить шаблон транспортного стикера по артикулу."""
+    # return await service.get_box_sticker_template(product_id)
+    try:
+        return await service.get_unit_sticker_template(product_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )      
 
 # @router.post(
 #     "/templates/save",

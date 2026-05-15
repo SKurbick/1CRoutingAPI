@@ -23,3 +23,10 @@ class ManufacturerRepository:
             RETURNING id;
         """
         return await self.pool.fetchval(query, name)
+    
+    async def get_name_by_id(self, manufacturer_id: int) -> str:
+        """Получить название изготовителя по id"""
+        
+        sql = "SELECT name FROM manufacturers WHERE id = $1;"
+        name = await self.pool.fetchval(sql, manufacturer_id)
+        return name

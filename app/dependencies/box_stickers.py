@@ -74,12 +74,16 @@ def get_box_sticker_service(
 def get_box_sticker_service_1(
         products_repo: StickersStorageRepository = Depends(get_box_stickers_templates_repo),
         localisation_repo: LocalisationRepository = Depends(get_localisation_repo),
-        user_box_data_repo: StickerUserDataRepository = Depends(get_user_data_repo)
+        user_box_data_repo: StickerUserDataRepository = Depends(get_user_data_repo),
+        user_unit_data_repo: IndividualUserDataRepository = Depends(get_individual_user_data_repo),
+        manufacturer_repo: ManufacturerRepository = Depends(get_manufacturer_repo)
 ) -> StickerTemplateBuilderService:
     return StickerTemplateBuilderService(
         products_repo=products_repo,
         localisation_repo=localisation_repo,
-        user_box_data_repo=user_box_data_repo
+        user_box_data_repo=user_box_data_repo,
+        user_unit_data_repo=user_unit_data_repo,
+        manufacturer_repo=manufacturer_repo
     )
 
 def get_sticker_user_data_service(

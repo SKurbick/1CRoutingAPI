@@ -48,7 +48,6 @@ class StickerUserDataService:
     async def save_unit_sticker_user_data(self, template_data: IndividualStickerTemplateView) -> None:
         """Сохранить данные по стикеру для индивидуального стикера в бд"""
 
-
         manufacturer_id = await self.manufacturer_repo.get_or_create(template_data.manufacturer)
 
         user_data = StickerIndividualUserData(
