@@ -39,7 +39,7 @@ class StickerGenerationService:
     async def create_or_get_box_generation_task(
         self,
         # user_id: int, #TODO: пока нет авторизации польщователей
-        template_data: BoxStickerTemplateView,
+        template_data: BoxStickerTemplateView,#TODO: добавить offset 
         ) -> StickerGenerationTaskResultResponse:
         await self.user_data_service.save_box_sticker_user_data(template_data)
         await self.localisation_service.save_localisations(template_data)
@@ -160,12 +160,13 @@ class StickerGenerationService:
 
         broker_task_id = await self.publisher.publish_generation_task(broker_payload)
         # if broker_task_id:
-        #     await self.generation_tasks_repo.set_processing(
-        #         task_uuid=generation_task.task_uuid)
+        #     # await self.generation_tasks_repo.set_processing(
+        #     #     task_uuid=generation_task.task_uuid)
+        #     print("пришел broker_task_id ", broker_task_id)
 
-        updated = await self.generation_tasks_repo.get_by_id(generation_task.id)
-        if updated:
-            return updated
+        # updated = await self.generation_tasks_repo.get_by_id(generation_task.task_id)
+        # if updated:
+        #     return updated
         response = StickerGenerationTaskResultResponse(
                  task_id=generation_task.task_id,
                  product_id=template_data.product_id,
@@ -176,13 +177,15 @@ class StickerGenerationService:
         return response
     
     async def create_or_get_individual_task(self, template_data: IndividualStickerTemplateView) -> StickerGenerationTaskResultResponse:
-        
+
+        await self.user_data_service.save_unit_sticker_user_data(template_data)
+        # await self.localisation_service.save_localisations(template_data)
         hash_payload = {
             "sticker_type": StickerType.INDIVIDUAL.value,
             "product_id": template_data.product_id,
             "manufacturer": template_data.manufacturer,
             "importer_details": template_data.importer_details,
-            "production_date": template_data.production_date, #TODO: лишнее!
+            "production_date": template_data.production_date,
             "certification_type": template_data.certification_type.value,
             "name": template_data.name,
             "color": template_data.color,

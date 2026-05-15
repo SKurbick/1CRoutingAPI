@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -143,9 +144,11 @@ class StickerUserTemplateData(BaseModel):
 
 class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающий класс для стикеров на коробки и индивидуальных с общими полями для типизации в async def save_localisations
     """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
+    # sticker_type: Literal[StickerType.TRANSPORT] = StickerType.TRANSPORT
+    # sticker_type: Literal["TRANSPORT"] = "TRANSPORT"
     product_id: str
-    name: str | None = None
-    name_en: str | None = None
+    name: str
+    name_en: str
     color: str | None = None
     color_en: str | None = None
     gross_weight: float
@@ -241,12 +244,35 @@ class BoxStickerTemplateViewShort(BaseModel):
 
 
 class IndividualStickerTemplateView(BaseModel):
-    product_id: str
-    name: str
-    color: str | None = None
-    material: str | None = None
-    manufacturer: str = "NINGBO GENERAL UNION CO., LTD" # Значение по умолчанию
-    importer_details: str = "ООО СТАРТ" # Одно из двух по ТЗ (Сейчас два варианта: реквизиты)
+    # sticker_type: Literal[StickerType.INDIVIDUAL] = StickerType.INDIVIDUAL
+    # sticker_type: Literal["INDIVIDUAL"] = "INDIVIDUAL"
+    product_id: str = Field(..., description="Артикул")
+    name: str = Field(..., description="Название")
+    color: str | None = Field(None, description="Цвет")
+    material: str | None = Field(None, description="Материал")
+    manufacturer: str = "NINGBO GENERAL UNION CO., LTD"
+    importer_details: str = "ООО СТАРТ"
     produced_in: str = "Китай"
     production_date: str = Field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d")) #TODO: оставить как поле только в бд?
     certification_type: CertificationType = CertificationType.NONE
+    quantity: int
+
+
+class StickerIndividualUserData(BaseModel):
+    """Модель пользовательских данных для индивидуального стикера"""
+
+    product_id: str = Field(..., description="Артикул")
+    name: str = Field(..., description="Название")
+    manufacturer_id: int | None = Field(None, description="Изготовитель")
+    color: str | None = Field(None, description="Цвет")
+    material: str | None = Field(None, description="Материал")
+    importer_details: str = Field(..., description="Импортер")
+    produced_in: str = Field(default="Китай", description="Страна производства")
+    certification_type: CertificationType = Field(
+        default=CertificationType.NONE, 
+        description="Тип сертификации (ЕАС, СТР или отсутствует)")
+    production_date: datetime = Field(
+        default_factory=datetime.now, 
+        description="Дата производства")
+    
+

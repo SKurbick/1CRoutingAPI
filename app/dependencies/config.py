@@ -25,6 +25,7 @@ class Settings(BaseSettings):
 
     # rabbit queues
     RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE: str = "docgen.box_label.event.queue"
+    RABBIT_Q_DOCGEN_UNIT_LABEL_RESPONSE: str = "docgen.unit_label.event.queue"
 
     # rabbit routing keys
     RABBIT_RK_DOC_BOX_LABEL: str = "doc.box_label"

@@ -6,5 +6,5 @@ class TotalTaskLimit(StickerServiceError):
     pass
 
 class UserTaskLimitError(StickerServiceError):
-    """Слишком много запросов от польщователя"""
+    """Слишком много запросов от пользователя"""
     pass
