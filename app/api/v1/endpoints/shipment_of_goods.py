@@ -65,7 +65,7 @@ async def write_off_according_to_fbs(
 @router.post("/update", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED, deprecated=True)
 async def create_data(
         delivery_type: DeliveryType = Query(..., description="принимает ФБС или ФБО"),
-        data: List[ShipmentOfGoodsUpdate] = Body(example=example_shipment_of_goods_data),
+        data: List[ShipmentOfGoodsUpdate] = Body(examples=[example_shipment_of_goods_data]),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
     print("delivery_type",delivery_type)
@@ -131,7 +131,7 @@ async def add_shipped_goods_by_id(
 
 @router.post("/add_shipped_goods", response_model=List[ReserveOfGoodsResponse]|ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_shipped_goods(
-        data: List[ShippedGoods] = Body(example=example_shipped_goods_data),
+        data: List[ShippedGoods] = Body(examples=[example_shipped_goods_data]),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
     result = await service.add_shipped_goods(data)

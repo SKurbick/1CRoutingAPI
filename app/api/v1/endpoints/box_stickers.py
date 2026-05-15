@@ -1,65 +1,105 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Union
 
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Path
+from fastapi import APIRouter, Body, HTTPException, status, Depends, Query, Path
 from fastapi.responses import StreamingResponse
+from sse_starlette import EventSourceResponse
 
 from app.dependencies import get_box_sticker_service
-from app.models.box_stickers import BoxDataRequest, BoxStickerTemplate, BoxStickerTemplateShort
-from app.service.box_stickers import BoxStickerService
+from app.dependencies.box_stickers import get_box_sticker_service_1, get_sticker_generation_service, get_sticker_template_save_service
+from app.exceptions.stickers import TotalTaskLimit
+from app.models.box_stickers import (
+    BoxStickerTemplateView, 
+    BoxStickerTemplateViewShort,
+    IndividualStickerTemplateView,
+    StickerGenerationTaskResultResponse,
+    StickerGenerationTaskInfo,
+)
+from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
+from app.service.sticker_generation_service import StickerGenerationService
+from app.service.sticker_template_save import StickerTemplateSaveService
 from app.service.translate_manager import translation_manager
+from app.service.sticker_tasks_notification import StickerTasksNotificationsService
+from app.dependencies.sticker_tasks_notification import get_sticker_tasks_notification_service
 
 
 router = APIRouter(prefix="/stickers", tags=["Стикеры для коробов"])
 
-
-@router.post(
-        "/generate",
-        status_code=status.HTTP_200_OK,
-        description="""
-    **Сгенерировать PDF со стикерами для коробов.**
-
-    Возвращает: PDF файл для скачивания
-"""
-)
-async def generate_stickers(
-    data: BoxDataRequest,
-    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
-) -> StreamingResponse:
-    """Сгенерировать PDF со стикерами для коробов."""
-    try:
-        result = await service.generate_stickers(data)
-        return StreamingResponse(
-            iter([result]),
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": 
-                f"attachment; filename=stickers_{data.article}_{datetime.now()}.pdf"
-            }
-        )
-    except Exception as e:
-        print(f"Ошибка во время генерации стикеров: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error"
-        )
-
-
 @router.get(
-        "/templates/{article}",
+        "/templates/{product_id}",
         status_code=status.HTTP_200_OK,
         description="""
     **Получить шаблон стикера по артикулу.**
 """
 )
-async def get_sticker_template(
-    article: Annotated[str, Path(..., description="Артикул товара для поиска шаблона")],
-    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
-) -> BoxStickerTemplate:
-    """Получить шаблон стикера по артикулу."""
-    return await service.get_template(article)
+async def get_sticker_template_(
+    product_id: Annotated[str, Path(..., description="Артикул товара для поиска шаблона")],
+    service: Annotated[StickerTemplateBuilderService, Depends(get_box_sticker_service_1)],
+) -> BoxStickerTemplateView:
+    """Получить шаблон транспортного стикера по артикулу."""
+    # return await service.get_box_sticker_template(product_id)
+    try:
+        return await service.get_box_sticker_template(product_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
+# @router.post(
+#     "/templates/save",
+#     status_code=status.HTTP_200_OK,
+#     description="**Сохранить пользовательские данные и локализации шаблона**",
+# )
+# async def save_sticker_template_new(
+#     data: BoxStickerTemplateView,
+#     service: Annotated[StickerTemplateSaveService, Depends(get_sticker_template_save_service)],
+# ) -> BoxStickerTemplateView:
+#     return await service.save_box_sticker_template(data)
 
 
+@router.post("/sticker_generation_transport",
+             status_code=status.HTTP_200_OK,
+            description="**Инициировать создание стикера**")
+async def create_or_get_generation_task(
+    template_data:BoxStickerTemplateView,
+    # user_id: int, #TODO: временное решение для тестирования
+    # user_id: int = Depends(get_current_user_id), #TODO: как получит user_id?
+    service: StickerGenerationService = Depends(get_sticker_generation_service),
+) -> StickerGenerationTaskResultResponse:
+    try:
+        print("принял форму для BoxStickerTemplateView")
+        return await service.create_or_get_box_generation_task(
+            template_data=template_data
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except TotalTaskLimit as e:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e))
+
+@router.post("/sticker_generation_individual",
+             status_code=status.HTTP_200_OK,
+            description="**Инициировать создание стикера**")
+async def create_or_get_generation_task(
+    template_data: IndividualStickerTemplateView,
+    # user_id: int, #TODO: временное решение для тестирования
+    # user_id: int = Depends(get_current_user_id), #TODO: как получит user_id?
+    service: StickerGenerationService = Depends(get_sticker_generation_service),
+) -> StickerGenerationTaskResultResponse:
+    print("направил POST запрос с данными:")
+    print(template_data)
+    try:
+        return await service.create_or_get_individual_task(
+            # user_id=user_id,
+            template_data=template_data,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except TotalTaskLimit as e:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e))   
+  
+
+    
 @router.get(
         "/templates",
         status_code=status.HTTP_200_OK,
@@ -68,73 +108,42 @@ async def get_sticker_template(
 """
 )
 async def get_list_templates(
-    service: Annotated[BoxStickerService, Depends(get_box_sticker_service)],
-) -> list[BoxStickerTemplateShort]:
+    service: Annotated[StickerTemplateBuilderService, Depends(get_box_sticker_service_1)],
+) -> list[BoxStickerTemplateViewShort]:
     """Получить список существующих шаблонов для стикеров."""
     return await service.get_list_templates()
 
 
 @router.get(
-        "/color/translate",
+        "/tasks",
         status_code=status.HTTP_200_OK,
         description="""
-    **Получить перевод цвета или его транслитерацию.**
+    **Получить список задач на генерацию стикеров.**
 """
 )
-async def translate_color(
-    color: Annotated[str, Query(..., min_length=3, description="Цвет на русском языке.")]
-) -> str:
-    """Получить перевод цвета или его транслитерацию."""
-    return translation_manager.translate_color(color)
+async def get_generation_tasks(
+    service: Annotated[StickerGenerationService, Depends(get_sticker_generation_service)]
+) -> list[StickerGenerationTaskInfo]:
+    """
+    Получить список задач на генерацию файлов.
+    """
+    result = await service.get_sticker_tasks()
+    return result
 
 
 @router.get(
-        "/country/translate",
-        status_code=status.HTTP_200_OK,
+        "/tasks/events",
         description="""
-    **Получить перевод названия страны или транслитерацию названия.**
+    **Устанавливает SSE-соединение с клиентом и возвращает уведомления по задачам генерации файлов.**
+
+    Возвращает media_type: text/event-stream.
 """
 )
-async def translate_country(
-    country: Annotated[str, Query(..., min_length=3, description="Страна производства на русском языке.")]
-) -> str:
-    """Получить перевод названия страны или транслитерацию названия."""
-    return translation_manager.translate_country(country)
+async def stream_tasks_notifications(
+    service: Annotated[StickerTasksNotificationsService, Depends(get_sticker_tasks_notification_service)],
+) -> StreamingResponse:
+    """
+    Устанавливает SSE-соединение с клиентом и возвращает уведомления по задачам генерации файлов.
+    """
 
-
-@router.get(
-        "/title/transliterate",
-        status_code=status.HTTP_200_OK,
-        description="""
-    **Сделать транслитерацию названия на русском латиницей.**
-"""
-)
-async def transliterate_title(
-    title: Annotated[str, Query(..., min_length=3, description="Название товара на русском языке.")]
-) -> str:
-    """Сделать транслитерацию названия на русском латиницей."""
-    return translation_manager.transliterate_string(title)
-
-
-@router.get(
-        "/colors",
-        status_code=status.HTTP_200_OK,
-        description="""
-    **Получить список цветов.**
-"""
-)
-async def get_colors() -> list[str]:
-    """Получить список цветов."""
-    return [color.capitalize() for  color in sorted(translation_manager.colors.keys())]
-
-
-@router.get(
-        "/countries",
-        status_code=status.HTTP_200_OK,
-        description="""
-    **Получить список стран.**
-"""
-)
-async def get_countries() -> list[str]:
-    """Получить список стран."""
-    return sorted(translation_manager.countries.keys())
+    return EventSourceResponse(service.listen())

@@ -38,7 +38,7 @@ async def create_data(
 
 @router.post("/add_incoming_receipt", response_model=ReceiptOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_incoming_receipt(
-        data: List[AddIncomingReceiptUpdate] = Body(example=example_add_incoming_receipt_data),
+        data: List[AddIncomingReceiptUpdate] = Body(examples=[example_add_incoming_receipt_data]),
         service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service)
 ):
     """Оприходование товаров (от акта приемки) на основной склад продавца. Временное решение пока нет актуализации поступлений в 1С"""
