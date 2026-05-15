@@ -17,7 +17,9 @@ from app.service.sticker_generation_publisher import StickerGenerationPublisher
 from app.service.sticker_generation_service import StickerGenerationService
 from app.service.sticker_template_save import StickerTemplateSaveService
 from app.service.sticker_user_data import StickerUserDataService
+from app.service.sticker_tasks_notification import StickerTasksNotificationsService
 from .goods_information import get_goods_information_service, GoodsInformationService
+from .sticker_tasks_notification import get_sticker_tasks_notification_service
 
 
 def get_pool(request: Request) -> Pool:
@@ -130,13 +132,14 @@ def get_sticker_generation_service(
         get_localisation_service),
     publisher: StickerGenerationPublisher = Depends(
         get_sticker_generation_publisher),
-    file_storage: IFileStorage = Depends(get_file_storage)
-
-    
+    file_storage: IFileStorage = Depends(get_file_storage),
+    task_notification_service: StickerTasksNotificationsService = Depends(get_sticker_tasks_notification_service),
 ) -> StickerGenerationService:
     return StickerGenerationService(
         generation_tasks_repo=generation_tasks_repo,
         user_data_service=user_data_service,
         localisation_service=localisation_service,
         publisher=publisher,
-        file_storage=file_storage)
+        file_storage=file_storage,
+        task_notification_service=task_notification_service,
+    )

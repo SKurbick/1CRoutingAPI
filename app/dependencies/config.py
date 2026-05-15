@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # app
+    APP_NAME: str = "1CRouting"
     APP_IP_ADDRESS: str
     APP_PORT: int
     INITIAL_SERVICE_TOKEN: str
@@ -38,6 +39,9 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_HOST: str
     POSTGRES_PORT: str
+    POSTGRES_MIN_CONN_COUNT: int = 1
+    POSTGRES_MAX_CONN_COUNT: int = 10
+    POSTGRES_MAX_CONN_INACTIVE_LIFETIME: int = 300
 
     # 1C
     ONE_C_LOGIN: str
@@ -54,6 +58,14 @@ class Settings(BaseSettings):
     FILE_STORAGE_HOST: str = "http://localhost:9000"
     FILE_STORAGE_DNS_SUBDOMAIN: str | None = None
     DOCGEN_BUCKET_NAME: str
+
+    # redis
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: int
+    REDIS_PASSWORD: str
+    REDIS_TIMEOUT: float
+    REDIS_MAX_CONNECTIONS: int
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
