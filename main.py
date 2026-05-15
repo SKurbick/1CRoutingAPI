@@ -21,17 +21,26 @@ from app.dependencies.config import settings
 from app.monitoring import MetricsMiddleware, monitoring_router
 from app.limiter import limiter
 from app.file_storage import S3StorageManager
+from app.cache.client import redis_client
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("Старт приложения.")
+    print("Инициализация пула процессов...")
     process_pool = ProcessPoolExecutor(max_workers=4)
+
     async with AsyncExitStack() as stack:    
         # db
+        print("Инициализация подключения к БД...")
         pool = await init_db()
         stack.push_async_callback(close_db, pool)
+        print("Инициализация подключения к Redis...")
+        await redis_client.connect()
+        stack.push_async_callback(redis_client.disconnect)
 
         # s3
+        print("Инициализация подключения к S3...")
         storage_manager = await stack.enter_async_context(
             S3StorageManager(
                 region_name=settings.AWS_REGION_NAME,
@@ -42,17 +51,19 @@ async def lifespan(app: FastAPI):
                 dns_subdomain=settings.FILE_STORAGE_DNS_SUBDOMAIN,
             )
         )
-
         file_storage = storage_manager.storage
 
         # rabbitmq
+        print("Инициализация подключения к RabbitMQ...")
         broker = broker_manager.broker
 
         # faststream
         if settings.CONSUMERS_START:
+            print("Инициализация консъемера...")
             broker_app = FastStream(broker)
             broker_app.context.set_global("pool", pool)
             broker_app.context.set_global("file_storage", file_storage)
+            broker_app.context.set_global("redis_client", redis_client)
             await broker_app.start()
             stack.push_async_callback(broker_app.stop)
         else:
@@ -63,11 +74,15 @@ async def lifespan(app: FastAPI):
         app.state.process_pool = process_pool
         app.state.pool = pool
         app.state.file_storage = file_storage
+        app.state.redis_client = redis_client
+
+        print("Приложение настроено.")
         yield
 
     if process_pool:
+        print("Закрываем процессы.")
         process_pool.shutdown(wait=True)
-
+    print("Приложение завершено.")
 
 app = FastAPI(lifespan=lifespan, title="1CRoutingAPI")
 
@@ -107,6 +122,7 @@ app.include_router(products_dimensions_router, prefix="/api")
 app.include_router(box_stickers_router, prefix="/api")
 app.include_router(cash_flow_writeoff_router, prefix="/api")
 app.include_router(return_to_supplier_router, prefix="/api")
+
 
 
 if __name__ == "__main__":

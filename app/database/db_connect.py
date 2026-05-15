@@ -12,9 +12,12 @@ async def init_db() -> Pool:
         database=settings.POSTGRES_DB,
         host=settings.POSTGRES_HOST,
         port=settings.POSTGRES_PORT,
-        min_size=5,
-        max_size=15,
-        max_inactive_connection_lifetime=300
+        min_size=settings.POSTGRES_MIN_CONN_COUNT,
+        max_size=settings.POSTGRES_MAX_CONN_COUNT,
+        max_inactive_connection_lifetime=settings.POSTGRES_MAX_CONN_INACTIVE_LIFETIME,
+        server_settings={
+            "application_name": settings.APP_NAME
+        }
     )
     # Проверим какие параметры установились по умолчанию
     print("📊 ДЕФОЛТНЫЕ параметры asyncpg:")
@@ -59,9 +62,11 @@ async def init_db() -> Pool:
     #     print(f"   timeout: {db_info['timeout']}")
     #     print(f"   tcp_keepalives_idle: {db_info['keepalive_idle']}")
 
+    print("Создан пул подключений к Базе Данных.")
     return pool
 
 
 async def close_db(pool: Pool) -> None:
     """Закрытие пула соединений."""
     await pool.close()
+    print("Пул соединений к базе данных закрыт.")

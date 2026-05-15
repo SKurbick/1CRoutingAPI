@@ -10,11 +10,15 @@ from app.models.box_stickers import (
     StickerGenerationTaskResultResponse, 
     StickerType,
     GenerationStatus,
+    StickerGenerationTaskInfo,
+    StickerGenerationTaskEvent,
+    StickerGenerationTaskNotice,
 )
 from app.service.localisation import LocalisationService
 from app.service.sticker_generation_publisher import StickerGenerationPublisher
 from app.service.sticker_template_hash import StickerTemplateHashService
 from app.service.sticker_user_data import StickerUserDataService
+from app.service.sticker_tasks_notification import StickerTasksNotificationsService
 
 
 logger = logging.getLogger(__name__)
@@ -27,13 +31,14 @@ class StickerGenerationService:
         localisation_service: LocalisationService,
         publisher: StickerGenerationPublisher,
         file_storage: IFileStorage,
+        task_notification_service: StickerTasksNotificationsService,
     ):
         self.generation_tasks_repo = generation_tasks_repo
         self.user_data_service = user_data_service
         self.localisation_service = localisation_service
         self.publisher = publisher
         self.file_storage = file_storage
-
+        self.task_notification_service = task_notification_service
 
     async def create_or_get_box_generation_task(
         self,
@@ -113,6 +118,19 @@ class StickerGenerationService:
             hash=template_hash,
             path=None,
         )
+
+        task_info = await self.generation_tasks_repo.get_task_by_uuid(generation_task.task_uuid)
+        if task_info:
+            await self.send_notice_with_updated_task_status(StickerGenerationTaskInfo(
+                task_id=task_info.id,
+                product_id=task_info.product_id,
+                generation_status=task_info.generation_status,
+                error_message=task_info.error_message,
+                document_url=None,
+                sticker_type=task_info.sticker_type,
+                created_at=task_info.created_at,
+                updated_at=task_info.updated_at,
+            ))
 
         # await self.generation_tasks_repo.add_user_to_task(
         #     task_id=generation_task.task_id,
@@ -231,6 +249,19 @@ class StickerGenerationService:
         print(generation_task)
         print("----generation_task----"*4,)
         
+        task_info = await self.generation_tasks_repo.get_task_by_uuid(generation_task.task_uuid)
+        if task_info:
+            await self.send_notice_with_updated_task_status(StickerGenerationTaskInfo(
+                task_id=task_info.id,
+                product_id=task_info.product_id,
+                generation_status=task_info.generation_status,
+                error_message=task_info.error_message,
+                document_url=None,
+                sticker_type=task_info.sticker_type,
+                created_at=task_info.created_at,
+                updated_at=task_info.updated_at,
+            ))
+
         broker_payload = {
         "task_id": str(generation_task.task_uuid),
         "quantity": 5, #не понял откуда количество стикеров
@@ -295,8 +326,22 @@ class StickerGenerationService:
                 document_path=document_path,
                 error_message=error_message
             )
-    
-    async def get_sticker_tasks(self, user_id: int | None = None) -> list[StickerGenerationTaskResultResponse]:
+        
+        task_info = await self.generation_tasks_repo.get_task_by_uuid(task_uuid)
+
+        if task_info:
+            await self.send_notice_with_updated_task_status(StickerGenerationTaskInfo(
+                task_id=task_info.id,
+                product_id=task_info.product_id,
+                generation_status=task_info.generation_status,
+                error_message=task_info.error_message,
+                document_url=None,
+                sticker_type=task_info.sticker_type,
+                created_at=task_info.created_at,
+                updated_at=task_info.updated_at,
+            ))
+
+    async def get_sticker_tasks(self, user_id: int | None = None) -> list[StickerGenerationTaskInfo]:
         """
         Получить список задач на генерацию стикеров.
         """
@@ -311,12 +356,26 @@ class StickerGenerationService:
                     expires_in=120,
                 )
 
-            result.append(StickerGenerationTaskResultResponse(
+            result.append(StickerGenerationTaskInfo(
                 task_id=task.id,
                 product_id=task.product_id,
                 generation_status=task.generation_status,
-                document_url=url,
                 error_message=task.error_message,
+                document_url=url,
+                sticker_type=task.sticker_type,
+                created_at=task.created_at,
+                updated_at=task.updated_at,
             ))
 
         return result
+
+    async def send_notice_with_updated_task_status(self, task_info: StickerGenerationTaskInfo):
+        """
+        Отправить уведомление об изменении статуса задачи на генерацию.
+        """
+        notice = StickerGenerationTaskNotice(
+            event=StickerGenerationTaskEvent.UPDATE_STATUS,
+            task_data=task_info,
+        )
+
+        await self.task_notification_service.publish_notice(notice)
