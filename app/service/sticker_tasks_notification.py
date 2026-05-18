@@ -16,10 +16,10 @@ class StickerTasksNotificationsService:
     """
 
     CHANNEL = "stickers-tasks-notifications"
-    
+
     def __init__(
-            self,
-            redis_client: RedisClient,
+        self,
+        redis_client: RedisClient,
     ):
         self._redis_client = redis_client
         self._pubsub = None
@@ -32,16 +32,22 @@ class StickerTasksNotificationsService:
         """
         if not self._pubsub:
             self._pubsub = self._redis_client.get_pubsub()
-            print("Создан подписчик на уведомления о задачах по генерации стикеров.")
-        
+            print(
+                "Создан подписчик на уведомления о задачах по генерации стикеров."
+            )
+
         await self._pubsub.subscribe(self.CHANNEL)
         try:
             yield self._pubsub
         finally:
             await self._pubsub.unsubscribe(self.CHANNEL)
-            print("Подписчик на уведомления о задачах по генерации стикеров отписался.")
+            print(
+                "Подписчик на уведомления о задачах по генерации стикеров отписался."
+            )
             await self._pubsub.close()
-            print("Подписчик на уведомления о задачах по генерации стикеров закрыт.")
+            print(
+                "Подписчик на уведомления о задачах по генерации стикеров закрыт."
+            )
 
     async def listen(self) -> AsyncGenerator[JSONServerSentEvent, None]:
         """
@@ -51,10 +57,9 @@ class StickerTasksNotificationsService:
             try:
                 while True:
                     try:
-                        message = await asyncio.wait_for(
-                            listener.get_message(ignore_subscribe_messages=True),
-                            timeout=1.0
-                        )
+                        message = await asyncio.wait_for(listener.get_message(
+                            ignore_subscribe_messages=True),
+                                                         timeout=1.0)
 
                         if message and message["type"] == "message":
                             print(f"Получено сообщение: {message}")
@@ -73,7 +78,4 @@ class StickerTasksNotificationsService:
         Отправить уведомление подписчикам.
         """
         message = notice.model_dump_json()
-        await self._redis_client.publish(
-            channel=self.CHANNEL,
-            message=message
-        )
+        await self._redis_client.publish(channel=self.CHANNEL, message=message)

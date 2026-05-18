@@ -13,9 +13,9 @@ class StickerType(str, Enum):
 
 class CertificationType(str, Enum):
     """Тип сертификата или знака соответствия."""
-    EAC = "ЕАС"       # Евразийское соответствие
-    STR = "СТР"       # Свидетельство о госрегистрации
-    NONE = "NONE"     # Отсутствует / Не требуется
+    EAC = "ЕАС"  # Евразийское соответствие
+    STR = "СТР"  # Свидетельство о госрегистрации
+    NONE = "NONE"  # Отсутствует / Не требуется
 
 
 class BoxSize(BaseModel):
@@ -33,17 +33,29 @@ class BoxDataRequest(BaseModel):
     gross_weight: float = Field(..., description="Вес брутто, кг", gt=0)
     net_weight: float = Field(..., description="Вес нетто, кг", gt=0)
     box_size: BoxSize = Field(..., description="Размер короба, см")
-    produced_in: str | None = Field(None, description="Произведено в", max_length=64)
-    proforma_number: str | None = Field(None, description="Номер проформы", max_length=128)
-    items_per_box: int | None = Field(None, description="Количество в коробе", gt=0)
-    total_boxes: int = Field(..., description="Количество коробов", gt=0, le=500)
-    name_en: str | None = Field(None, description="Название, en", max_length=128)
+    produced_in: str | None = Field(None,
+                                    description="Произведено в",
+                                    max_length=64)
+    proforma_number: str | None = Field(None,
+                                        description="Номер проформы",
+                                        max_length=128)
+    items_per_box: int | None = Field(None,
+                                      description="Количество в коробе",
+                                      gt=0)
+    total_boxes: int = Field(...,
+                             description="Количество коробов",
+                             gt=0,
+                             le=500)
+    name_en: str | None = Field(None,
+                                description="Название, en",
+                                max_length=128)
     color_en: str | None = Field(None, description="Цвет, en", max_length=64)
-    produced_in_en: str | None = Field(None, description="Произведено в, en", max_length=64)
+    produced_in_en: str | None = Field(None,
+                                       description="Произведено в, en",
+                                       max_length=64)
     certification_type: CertificationType = Field(
-        default=CertificationType.NONE, 
-        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)"
-    )
+        default=CertificationType.NONE,
+        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)")
 
 
 class QRCodeData(BaseModel):
@@ -67,9 +79,8 @@ class StickerData(QRCodeData):
     color_en: str = Field(..., description="Цвет, en")
     produced_in_en: str = Field(..., description="Произведено в, en")
     certification_type: CertificationType = Field(
-        default=CertificationType.NONE, 
-        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)"
-    )
+        default=CertificationType.NONE,
+        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)")
 
 
 class BoxStickerTemplate(BaseModel):
@@ -90,9 +101,8 @@ class BoxStickerTemplate(BaseModel):
     produced_in_en: str | None = Field(None, description="Произведено в, en")
     proforma_number: str | None = Field(None, description="Номер проформы")
     certification_type: CertificationType = Field(
-        default=CertificationType.NONE, 
-        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)"
-    )
+        default=CertificationType.NONE,
+        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)")
 
 
 class BoxStickerTemplateShort(BaseModel):
@@ -101,21 +111,19 @@ class BoxStickerTemplateShort(BaseModel):
     name: str | None = Field(None, description="Название")
 
 
-
 class StickerProductData(BaseModel):
     """Данные товара (временно тянутся из гугл дока)"""
     product_id: str = Field(..., description="Артикул")
     name: str = Field(..., description="Название")
     color: str | None = Field(None, description="Цвет")
     material: str | None = Field(None, description="Материал")
-    gross_weight: float | None= Field(None, description="Вес брутто, кг")
+    gross_weight: float | None = Field(None, description="Вес брутто, кг")
     net_weight: float | None = Field(None, description="Вес нетто, кг")
     box_size: BoxSize | None = None
     produced_in: str | None = Field(None, description="Произведено в")
     certification_type: CertificationType = Field(
-        default=CertificationType.NONE, 
-        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)"
-    )
+        default=CertificationType.NONE,
+        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)")
 
 
 class StickerLocalisationData(BaseModel):
@@ -142,7 +150,9 @@ class StickerUserTemplateData(BaseModel):
     certification_type: CertificationType | None = None
 
 
-class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающий класс для стикеров на коробки и индивидуальных с общими полями для типизации в async def save_localisations
+class BoxStickerTemplateView(
+        BaseModel
+):  #TODO: сделать обобщающий класс для стикеров на коробки и индивидуальных с общими полями для типизации в async def save_localisations
     """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
     # sticker_type: Literal[StickerType.TRANSPORT] = StickerType.TRANSPORT
     # sticker_type: Literal["TRANSPORT"] = "TRANSPORT"
@@ -152,7 +162,7 @@ class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающ�
     color: str | None = None
     color_en: str | None = None
     gross_weight: float
-    net_weight: float | None = None # TODO: в таблице в БД нет net_weight
+    net_weight: float | None = None  # TODO: в таблице в БД нет net_weight
     box_size: BoxSize
     items_per_box: int | None = None
     total_boxes: int | None = None
@@ -174,6 +184,7 @@ class GenerationStatus(str, Enum):
     FAILED = "failed"  # Ошибка генерации (retry исчерпаны или неустранимая)
     CANCELLED = "cancelled"  # Задача отменена пользователем или системой
 
+
 class StickerGenerationTaskView(BaseModel):
     id: int
     product_id: str
@@ -191,7 +202,7 @@ class StickerGenerationTaskResult(BaseModel):
     task_id: int
     generation_status: GenerationStatus
     document_path: str | None = None
-    task_uuid: UUID|str
+    task_uuid: UUID | str
     error_message: str | None = None
 
 
@@ -211,12 +222,17 @@ class StickerGenerationTaskInfo(BaseModel):
 
     task_id: int = Field(..., description="ID задачи на генерацию.")
     product_id: str = Field(..., description="Артикул товара")
-    generation_status: GenerationStatus = Field(..., description="Статус задачи")
-    error_message: str | None = Field(None, description="Сообщение об ошибках во время выполнения задачи.")
-    document_url: str | None = Field(None, description="Ссылка на файл, если файл готов.")
-    sticker_type: StickerType = Field(..., description="Тип стикеров в готовом файле")
+    generation_status: GenerationStatus = Field(...,
+                                                description="Статус задачи")
+    error_message: str | None = Field(
+        None, description="Сообщение об ошибках во время выполнения задачи.")
+    document_url: str | None = Field(
+        None, description="Ссылка на файл, если файл готов.")
+    sticker_type: StickerType = Field(
+        ..., description="Тип стикеров в готовом файле")
     created_at: datetime = Field(..., description="Дата создания задачи")
-    updated_at: datetime = Field(..., description="Дата обновления информации о задаче")
+    updated_at: datetime = Field(
+        ..., description="Дата обновления информации о задаче")
 
 
 class StickerGenerationTaskEvent(str, Enum):
@@ -232,14 +248,17 @@ class StickerGenerationTaskNotice(BaseModel):
     Уведомление по задаче генерации стикеров.
     """
 
-    event: StickerGenerationTaskEvent = Field(..., description="Тип события в уведомлении.")
-    task_data: StickerGenerationTaskInfo = Field(..., description="Информация о задаче")
+    event: StickerGenerationTaskEvent = Field(
+        ..., description="Тип события в уведомлении.")
+    task_data: StickerGenerationTaskInfo = Field(
+        ..., description="Информация о задаче")
 
 
 class BoxStickerTemplateViewShort(BaseModel):
     """Шаблон стикера с минимальной информацией."""
     product_id: str | None = Field(None, description="Артикул")
     name: str | None = Field(None, description="Название")
+
 
 class ManufacturerView(BaseModel):
     id: int
@@ -259,7 +278,8 @@ class IndividualStickerTemplateView(BaseModel):
     manufacturer: str = "NINGBO GENERAL UNION CO., LTD"
     importer_details: str = "ООО СТАРТ"
     produced_in: str = "Китай"
-    production_date: str = Field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d")) #TODO: оставить как поле только в бд?
+    production_date: str = Field(default_factory=lambda: datetime.now(
+    ).strftime("%Y-%m-%d"))  #TODO: оставить как поле только в бд?
     certification_type: CertificationType = CertificationType.NONE
     quantity: int
 
@@ -273,12 +293,10 @@ class StickerIndividualUserData(BaseModel):
     color: str | None = Field(None, description="Цвет")
     material: str | None = Field(None, description="Материал")
     importer_details: str = Field(..., description="Импортер")
-    produced_in: str = Field(default="Китай", description="Страна производства")
+    produced_in: str = Field(default="Китай",
+                             description="Страна производства")
     certification_type: CertificationType = Field(
-        default=CertificationType.NONE, 
+        default=CertificationType.NONE,
         description="Тип сертификации (ЕАС, СТР или отсутствует)")
-    production_date: datetime = Field(
-        default_factory=datetime.now, 
-        description="Дата производства")
-    
-
+    production_date: datetime = Field(default_factory=datetime.now,
+                                      description="Дата производства")

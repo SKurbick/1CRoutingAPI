@@ -22,12 +22,7 @@ from app.service.translate_manager import translation_manager
 class StickerCreator:
     """Генератор изображений стикеров."""
 
-    def __init__(
-        self,
-        width: int,
-        height: int,
-        icons_dir: str | None = None
-    ):
+    def __init__(self, width: int, height: int, icons_dir: str | None = None):
         self._width = width
         self._height = height
         self._half_width = width // 2
@@ -45,7 +40,9 @@ class StickerCreator:
         self._cyrillic_font_path = self._find_cyrillic_font()
 
         if not self._cyrillic_font_path:
-            print("Не найден шрифт с поддержкой кириллицы. Кириллические символы могут не отображаться.")
+            print(
+                "Не найден шрифт с поддержкой кириллицы. Кириллические символы могут не отображаться."
+            )
 
     def _find_cyrillic_font(self) -> str | None:
         """Найти системный шрифт с поддержкой кириллицы."""
@@ -80,7 +77,7 @@ class StickerCreator:
 
         meta_icons_names = {"moisture", "fragile"}
         certificate_icons = {"eac", "rostest"}
-    
+
         for icon_key, filename in icon_files.items():
             icon_path = icons_dir / filename
             if icon_path.exists():
@@ -93,7 +90,8 @@ class StickerCreator:
 
                     icon_ratio = icon_hight / icon_img.height
                     icon_width = int(icon_img.width * icon_ratio)
-                    icon_img = icon_img.resize((icon_width, icon_hight), Image.Resampling.LANCZOS)
+                    icon_img = icon_img.resize((icon_width, icon_hight),
+                                               Image.Resampling.LANCZOS)
                     icons[icon_key] = icon_img
                 except Exception as e:
                     print(f"Ошибка загрузки иконки '{filename}': {e}")
@@ -108,7 +106,9 @@ class StickerCreator:
 
         # Добавление иконок
         icon_y = default_margin
-        meta_icons = [self._icons[k] for k in ["moisture", "fragile"] if k in self._icons]
+        meta_icons = [
+            self._icons[k] for k in ["moisture", "fragile"] if k in self._icons
+        ]
 
         certificate_icon = None
 
@@ -116,14 +116,18 @@ class StickerCreator:
             certificate_icon = self._icons["eac"]
         elif payload.certification_type == CertificationType.STR:
             certificate_icon = self._icons["rostest"]
-        
+
         if certificate_icon is not None:
             certificate_icon_size, _ = certificate_icon.size
             certificate_icon_x = self._width - default_margin - certificate_icon_size
             certificate_icon_y = self._height - certificate_icon_size - default_margin
-            image.paste(certificate_icon, (certificate_icon_x, certificate_icon_y), certificate_icon)
+            image.paste(certificate_icon,
+                        (certificate_icon_x, certificate_icon_y),
+                        certificate_icon)
             certificate_icon_x -= self._half_width
-            image.paste(certificate_icon, (certificate_icon_x, certificate_icon_y), certificate_icon)
+            image.paste(certificate_icon,
+                        (certificate_icon_x, certificate_icon_y),
+                        certificate_icon)
 
         if meta_icons:
             total_width = sum(icon.width for icon in meta_icons)
@@ -141,10 +145,8 @@ class StickerCreator:
 
         # добавление текстовых изображений
         ru_lines = [
-            f"Название: {payload.name}",
-            f"Артикул: {payload.article}",
-            f"Цвет: {payload.color}",
-            f"Вес брутто: {payload.gross_weight}кг",
+            f"Название: {payload.name}", f"Артикул: {payload.article}",
+            f"Цвет: {payload.color}", f"Вес брутто: {payload.gross_weight}кг",
             f"Вес нетто: {payload.net_weight}кг",
             f"Размер короба: {payload.box_size.length}×{payload.box_size.width}×{payload.box_size.height}см",
             f"Произведено: {payload.produced_in}",
@@ -154,32 +156,27 @@ class StickerCreator:
         ]
 
         en_lines = [
-            f"Product: {payload.name_en}",
-            f"Item No: {payload.article}",
-            f"Color: {payload.color_en}",
-            f"G. W.: {payload.gross_weight}kg",
+            f"Product: {payload.name_en}", f"Item No: {payload.article}",
+            f"Color: {payload.color_en}", f"G. W.: {payload.gross_weight}kg",
             f"N. W: {payload.net_weight}kg",
             f"Carton Size: {payload.box_size.length}×{payload.box_size.width}×{payload.box_size.height}cm",
             f"Made in: {payload.produced_in_en}",
             f"\nQty: {payload.items_per_box} per box",
-            f"N: {payload.box_number}/{payload.total_boxes}",
-            ""
+            f"N: {payload.box_number}/{payload.total_boxes}", ""
         ]
 
         ru_text = "\n".join(ru_lines)
         en_text = "\n".join(en_lines)
 
-        ru_text_image = self._draw_text_boxed(
-            text=ru_text,
-            width=self._half_width - (default_margin * 2),
-            height=int(self._height * 0.5)
-        )
+        ru_text_image = self._draw_text_boxed(text=ru_text,
+                                              width=self._half_width -
+                                              (default_margin * 2),
+                                              height=int(self._height * 0.5))
 
-        en_text_image = self._draw_text_boxed(
-            text=en_text,
-            width=self._half_width - (default_margin * 2),
-            height=int(self._height * 0.5)
-        )
+        en_text_image = self._draw_text_boxed(text=en_text,
+                                              width=self._half_width -
+                                              (default_margin * 2),
+                                              height=int(self._height * 0.5))
 
         text_y_start = icon_y + self._meta_icon_height + default_margin
         text_en_x = default_margin
@@ -190,14 +187,11 @@ class StickerCreator:
 
         # Добавление QR-кода
         qr_image = self._create_qr_code_image(
-            data=QRCodeData(
-                article=payload.article,
-                items_per_box=payload.items_per_box,
-                proforma_number=payload.proforma_number,
-                box_number=payload.box_number,
-                total_boxes=payload.total_boxes
-            )
-        )
+            data=QRCodeData(article=payload.article,
+                            items_per_box=payload.items_per_box,
+                            proforma_number=payload.proforma_number,
+                            box_number=payload.box_number,
+                            total_boxes=payload.total_boxes))
 
         if qr_image.mode != "RGB":
             qr_image = qr_image.convert("RGB")
@@ -210,22 +204,22 @@ class StickerCreator:
         image.paste(qr_image, (qr_x, qr_y))
 
         # Отрисовка рамок
-        draw.rectangle(
-            [(0, 0), (self._width - 1, self._height - 1)],
-            outline="black",
-            width=2
-        )
+        draw.rectangle([(0, 0), (self._width - 1, self._height - 1)],
+                       outline="black",
+                       width=2)
 
         center_x = self._half_width
-        draw.line(
-            [(center_x, 0), (center_x, self._height)],
-            fill="black",
-            width=2
-        )
+        draw.line([(center_x, 0), (center_x, self._height)],
+                  fill="black",
+                  width=2)
 
         # Сохранение стикера
         buffer = io.BytesIO()
-        image.save(buffer, format="PNG", dpi=(self._dpi * 25.4, self._dpi * 25.4), compress_level=2, optimize=True)
+        image.save(buffer,
+                   format="PNG",
+                   dpi=(self._dpi * 25.4, self._dpi * 25.4),
+                   compress_level=2,
+                   optimize=True)
         buffer.seek(0)
         return buffer
 
@@ -244,12 +238,10 @@ class StickerCreator:
                 font = self._create_font(font_size=font_size)
                 line_height = font.getbbox("A")[3] + 3
 
-                lines = self._get_lines_for_text_boxed(
-                    text=text,
-                    width=width,
-                    font=font,
-                    draw=draw
-                )
+                lines = self._get_lines_for_text_boxed(text=text,
+                                                       width=width,
+                                                       font=font,
+                                                       draw=draw)
 
                 total_height = len(lines) * line_height
 
@@ -279,13 +271,9 @@ class StickerCreator:
 
         return ImageFont.load_default(size=font_size)
 
-    def _get_lines_for_text_boxed(
-            self, 
-            text: str,
-            width: int,
-            font: ImageFont.FreeTypeFont, 
-            draw: ImageDraw.Draw
-    ) -> list[str]:
+    def _get_lines_for_text_boxed(self, text: str, width: int,
+                                  font: ImageFont.FreeTypeFont,
+                                  draw: ImageDraw.Draw) -> list[str]:
         """Разбить текст на строки с переносом слов."""
         paragraphs = text.split("\n")
         lines = []
@@ -299,7 +287,8 @@ class StickerCreator:
             current_line = []
 
             for word in words:
-                test_line = " ".join(current_line + [word]) if current_line else word
+                test_line = " ".join(current_line +
+                                     [word]) if current_line else word
                 bbox = draw.textbbox((0, 0), test_line, font=font)
                 text_width = bbox[2] - bbox[0]
 
@@ -315,11 +304,10 @@ class StickerCreator:
 
         return lines
 
-    def _create_qr_code_image(self,  data: QRCodeData) -> Image.Image:
+    def _create_qr_code_image(self, data: QRCodeData) -> Image.Image:
         """Сгенерировать изображение QR кода."""
         qr_info = [
-            f"Артикул/Item No: {data.article}",
-            f"Doc: {data.proforma_number}",
+            f"Артикул/Item No: {data.article}", f"Doc: {data.proforma_number}",
             f"Кол-во/Qty: {data.items_per_box} шт./p.b.",
             f"Номер короба/N: {data.box_number}/{data.total_boxes}"
         ]
@@ -337,9 +325,10 @@ class StickerCreator:
         qr.make(fit=True)
 
         img = qr.make_image(fill_color="black", back_color="white")
-        pil_img = img.get_image() 
+        pil_img = img.get_image()
         qr_width = int(self._half_width * 0.45)
-        qr_image = pil_img.resize((qr_width, qr_width), Image.Resampling.NEAREST)
+        qr_image = pil_img.resize((qr_width, qr_width),
+                                  Image.Resampling.NEAREST)
 
         return qr_image
 
@@ -347,7 +336,9 @@ class StickerCreator:
 class PDFStickerGenerator:
     """Генератор PDF документа со стикерами."""
 
-    def __init__(self, sticker_width_mm: int = 140, sticker_height_mm: int = 100):
+    def __init__(self,
+                 sticker_width_mm: int = 140,
+                 sticker_height_mm: int = 100):
         self._sticker_width_mm = sticker_width_mm
         self._sticker_height_mm = sticker_height_mm
         self._a4_width_mm = 297
@@ -359,12 +350,15 @@ class PDFStickerGenerator:
 
     def _write_page(self, images: list[io.BytesIO]):
         """Добавить стикеры на одну страницу А4."""
-        page = self.document.new_page(width=self._a4_width_mm, height=self._a4_height_mm)
+        page = self.document.new_page(width=self._a4_width_mm,
+                                      height=self._a4_height_mm)
 
         total_width = self._stickers_per_row * self._sticker_width_mm
         total_height = self._stickers_per_column * self._sticker_height_mm
-        margin_x = (self._a4_width_mm - total_width) / (self._stickers_per_row + 1)
-        margin_y = (self._a4_height_mm - total_height) / (self._stickers_per_column + 1)
+        margin_x = (self._a4_width_mm -
+                    total_width) / (self._stickers_per_row + 1)
+        margin_y = (self._a4_height_mm -
+                    total_height) / (self._stickers_per_column + 1)
 
         for idx, image in enumerate(images):
             col = idx % self._stickers_per_row
@@ -373,7 +367,8 @@ class PDFStickerGenerator:
             y = margin_y + row * (self._sticker_height_mm + margin_y)
 
             page.insert_image(
-                pymupdf.Rect(x, y, x + self._sticker_width_mm, y + self._sticker_height_mm),
+                pymupdf.Rect(x, y, x + self._sticker_width_mm,
+                             y + self._sticker_height_mm),
                 stream=image.getvalue(),
                 keep_proportion=False,
             )
@@ -387,14 +382,12 @@ class PDFStickerGenerator:
     def get_bytes_and_close(self) -> bytes:
         """Вернуть PDF как байты и закрыть все ресурсы."""
         buffer = io.BytesIO()
-        self.document.save(
-            buffer,
-            garbage=4,
-            clean=True,
-            deflate=True,
-            deflate_images=True,
-            expand=0
-        )
+        self.document.save(buffer,
+                           garbage=4,
+                           clean=True,
+                           deflate=True,
+                           deflate_images=True,
+                           expand=0)
         self.document.close()
         buffer.seek(0)
         return buffer.getvalue()
@@ -403,10 +396,11 @@ class PDFStickerGenerator:
 class BoxStickerService:
     """Сервис для генерации стикеров коробов."""
 
-    def __init__(self,
-            template_repo: BoxStickersTemplateRepository,
-            goods_info_service: GoodsInformationService,
-            process_pool: ProcessPoolExecutor,
+    def __init__(
+        self,
+        template_repo: BoxStickersTemplateRepository,
+        goods_info_service: GoodsInformationService,
+        process_pool: ProcessPoolExecutor,
     ):
         self._process_pool = process_pool
         self._template_repo = template_repo
@@ -431,7 +425,7 @@ class BoxStickerService:
 
             template.article = product_data.id
             template.name = product_data.name
-        
+
         if not template.color:
             parts = product_data.name.split()
 
@@ -439,20 +433,24 @@ class BoxStickerService:
                 colors = translation_manager.colors
                 if item.lower() in colors:
                     template.color = item.capitalize()
-                    template.color_en = translation_manager.translate_color(template.color)
+                    template.color_en = translation_manager.translate_color(
+                        template.color)
 
         if not template.color_en:
-            template.color_en = translation_manager.translate_color(template.color or "") or None
-        
+            template.color_en = translation_manager.translate_color(
+                template.color or "") or None
+
         if not template.name_en:
-            template.name_en = translation_manager.transliterate_string(template.name or "") or None
-        
+            template.name_en = translation_manager.transliterate_string(
+                template.name or "") or None
+
         if not template.produced_in_en:
-            template.produced_in_en = translation_manager.translate_country(template.produced_in or "") or None
+            template.produced_in_en = translation_manager.translate_country(
+                template.produced_in or "") or None
 
         return template
 
-    async def generate_stickers(self,  data: BoxDataRequest) -> bytes:
+    async def generate_stickers(self, data: BoxDataRequest) -> bytes:
         """Сгенерировать документ со стикерами."""
         template = BoxStickerTemplate(
             article=data.article,
@@ -476,23 +474,21 @@ class BoxStickerService:
         await self._template_repo.update(template)
 
         payloads = [
-            StickerData(
-                name=data.name,
-                name_en=data.name_en,
-                article=data.article,
-                color=data.color,
-                color_en=data.color_en,
-                gross_weight=data.gross_weight,
-                net_weight=data.net_weight,
-                box_size=data.box_size,
-                produced_in=data.produced_in,
-                produced_in_en=data.produced_in_en,
-                proforma_number=data.proforma_number,
-                items_per_box=data.items_per_box,
-                box_number=i,
-                total_boxes=data.total_boxes,
-                certification_type=data.certification_type
-            )
+            StickerData(name=data.name,
+                        name_en=data.name_en,
+                        article=data.article,
+                        color=data.color,
+                        color_en=data.color_en,
+                        gross_weight=data.gross_weight,
+                        net_weight=data.net_weight,
+                        box_size=data.box_size,
+                        produced_in=data.produced_in,
+                        produced_in_en=data.produced_in_en,
+                        proforma_number=data.proforma_number,
+                        items_per_box=data.items_per_box,
+                        box_number=i,
+                        total_boxes=data.total_boxes,
+                        certification_type=data.certification_type)
             for i in range(1, data.total_boxes + 1)
         ]
 
@@ -501,16 +497,13 @@ class BoxStickerService:
 
         return await self._generate_large_document(payloads)
 
-    async def _generate_document(self,  data: list[StickerData]) -> bytes:
+    async def _generate_document(self, data: list[StickerData]) -> bytes:
         """Сгенерировать документ со стикерами в отдельном процессе."""
         loop = asyncio.get_running_loop()
-        images = await loop.run_in_executor(
-            self._process_pool,
-            self._create_sticker_batch,
-            data,
-            self._sticker_width_mm,
-            self._sticker_hight_mm
-        )
+        images = await loop.run_in_executor(self._process_pool,
+                                            self._create_sticker_batch, data,
+                                            self._sticker_width_mm,
+                                            self._sticker_hight_mm)
 
         result = await loop.run_in_executor(
             self._process_pool,
@@ -522,7 +515,7 @@ class BoxStickerService:
 
         return result
 
-    async def _generate_large_document(self,  data: list[StickerData]) -> bytes:
+    async def _generate_large_document(self, data: list[StickerData]) -> bytes:
         """
         Сгенерировать документ со стикерами в отдельном процессе.
 
@@ -533,7 +526,7 @@ class BoxStickerService:
 
         tasks = []
         for i in range(0, len(data), batch_size):
-            batch = data[i:i+batch_size]
+            batch = data[i:i + batch_size]
             tasks.append(
                 loop.run_in_executor(
                     self._process_pool,
@@ -541,8 +534,7 @@ class BoxStickerService:
                     batch,
                     self._sticker_width_mm,
                     self._sticker_hight_mm,
-                )
-            )
+                ))
 
         results = await asyncio.gather(*tasks)
         images = [img for batch in results for img in batch]
@@ -559,9 +551,9 @@ class BoxStickerService:
 
     @staticmethod
     def _create_sticker_batch(
-            payloads: list[StickerData],
-            width_mm: int,
-            height_mm: int,
+        payloads: list[StickerData],
+        width_mm: int,
+        height_mm: int,
     ) -> list[io.BytesIO]:
         """Создать стикеры коробов."""
         creator = StickerCreator(
@@ -572,38 +564,33 @@ class BoxStickerService:
 
     @staticmethod
     def _create_pdf_file(
-            images: list[io.BytesIO],
-            sticker_width: int,
-            sticker_hight: int,
+        images: list[io.BytesIO],
+        sticker_width: int,
+        sticker_hight: int,
     ) -> io.BytesIO:
         """Создать PDF-документ со стикерами."""
-        generator = PDFStickerGenerator(
-            sticker_width_mm=sticker_width,
-            sticker_height_mm=sticker_hight
-        )
+        generator = PDFStickerGenerator(sticker_width_mm=sticker_width,
+                                        sticker_height_mm=sticker_hight)
 
         generator.create_document(images)
         return generator.get_bytes_and_close()
-    
+
 
 class StickerTemplateBuilderService:
 
-    def __init__(
-        self,
-        products_repo: StickersStorageRepository,
-        localisation_repo: LocalisationRepository,
-        user_box_data_repo: StickerUserDataRepository,
-        user_unit_data_repo: IndividualUserDataRepository,
-        manufacturer_repo: ManufacturerRepository
-
-    ):
+    def __init__(self, products_repo: StickersStorageRepository,
+                 localisation_repo: LocalisationRepository,
+                 user_box_data_repo: StickerUserDataRepository,
+                 user_unit_data_repo: IndividualUserDataRepository,
+                 manufacturer_repo: ManufacturerRepository):
         self.products_repo = products_repo
         self.localisation_repo = localisation_repo
         self.user_box_data_repo = user_box_data_repo
         self.user_unit_data_repo = user_unit_data_repo
         self.manufacturer_repo = manufacturer_repo
 
-    async def get_box_sticker_template(self, product_id: str) -> BoxStickerTemplateView:
+    async def get_box_sticker_template(
+            self, product_id: str) -> BoxStickerTemplateView:
 
         DEFAULT_PRODUCED_IN_RU = "Китай"
         DEFAULT_PRODUCED_IN_EN = "China"
@@ -612,35 +599,36 @@ class StickerTemplateBuilderService:
         if not product:
             raise ValueError("Товар не найден")
         #собираю данные по ранее заполненными пользователем поля для данного товара
-        user_data = await self.user_box_data_repo.get_last(product_id=product.product_id)
+        user_data = await self.user_box_data_repo.get_last(
+            product_id=product.product_id)
         #собираю данные по локализации, если были сохранены ранее
-        localisations = await self.localisation_repo.get_by_product_id(product.product_id)
+        localisations = await self.localisation_repo.get_by_product_id(
+            product.product_id)
         translations = {
             (item.field_name, item.lang): item.translation
             for item in localisations
         }
         #обработка размеров коробки box_size
         final_box_size = None
-        if user_data and all([user_data.box_length, user_data.box_width, user_data.box_height]):
-            final_box_size = BoxSize(
-                box_length=user_data.box_length,
-                box_width=user_data.box_width,
-                box_height=user_data.box_height
-            )
+        if user_data and all(
+            [user_data.box_length, user_data.box_width, user_data.box_height]):
+            final_box_size = BoxSize(box_length=user_data.box_length,
+                                     box_width=user_data.box_width,
+                                     box_height=user_data.box_height)
         else:
             final_box_size = BoxSize(
-                box_length=round(product.box_size.box_length * 100) if product.box_size.box_length else 0,
-                box_width=round(product.box_size.box_width * 100) if product.box_size.box_width else 0,
-                box_height=round(product.box_size.box_height * 100) if product.box_size.box_height else 0
-            )
-            
-        current_gross = (
-        user_data.gross_weight 
-        if user_data and user_data.gross_weight is not None 
-        else (product.gross_weight or 0)
-        )
-        
-        #обработка net_weight    
+                box_length=round(product.box_size.box_length *
+                                 100) if product.box_size.box_length else 0,
+                box_width=round(product.box_size.box_width *
+                                100) if product.box_size.box_width else 0,
+                box_height=round(product.box_size.box_height *
+                                 100) if product.box_size.box_height else 0)
+
+        current_gross = (user_data.gross_weight if user_data
+                         and user_data.gross_weight is not None else
+                         (product.gross_weight or 0))
+
+        #обработка net_weight
         current_net = None
         if user_data and user_data.net_weight is not None:
             current_net = user_data.net_weight
@@ -648,62 +636,72 @@ class StickerTemplateBuilderService:
             current_net = product.net_weight
         elif current_gross > 0:
             current_net = max(current_gross - 0.5, 0)
-        
+
         return BoxStickerTemplateView(
             product_id=product.product_id,
             name=translations.get(("name", "ru")) or product.name,
-            name_en=translations.get(("name", "en")) or product.name, # необходимо для случая когда нет перевода в БД
+            name_en=translations.get(("name", "en"))
+            or product.name,  # необходимо для случая когда нет перевода в БД
             color=translations.get(("color", "ru")) or product.color,
             color_en=translations.get(("color", "en")),
             gross_weight=current_gross,
             net_weight=round(current_net, 2) if current_net is not None else 0,
             box_size=final_box_size or product.box_size,
-            items_per_box=user_data.items_per_box if user_data and user_data.items_per_box else 1,
-            total_boxes=user_data.total_boxes if user_data and user_data.total_boxes else 1,
+            items_per_box=user_data.items_per_box
+            if user_data and user_data.items_per_box else 1,
+            total_boxes=user_data.total_boxes
+            if user_data and user_data.total_boxes else 1,
             proforma_number=user_data.proforma_number if user_data else None,
-            produced_in=(translations.get(("produced_in", "ru")) or (user_data.produced_in if user_data and user_data.produced_in else product.produced_in) or
-                        DEFAULT_PRODUCED_IN_RU),
-            produced_in_en=(translations.get(("produced_in", "en")) or DEFAULT_PRODUCED_IN_EN),
-            certification_type=(user_data.certification_type if user_data and user_data.certification_type 
+            produced_in=(translations.get(("produced_in", "ru")) or
+                         (user_data.produced_in if user_data
+                          and user_data.produced_in else product.produced_in)
+                         or DEFAULT_PRODUCED_IN_RU),
+            produced_in_en=(translations.get(("produced_in", "en"))
+                            or DEFAULT_PRODUCED_IN_EN),
+            certification_type=(user_data.certification_type
+                                if user_data and user_data.certification_type
                                 else product.certification_type),
-            limit = 1,
-            offset = 1,
+            limit=1,
+            offset=1,
         )
-    
+
     async def get_list_templates(self) -> list[BoxStickerTemplateViewShort]:
         """Получить список шаблонов для стикеров."""
         return await self.products_repo.get_list()
-    
-    async def get_unit_sticker_template(self, product_id: str) -> IndividualStickerTemplateView:
+
+    async def get_unit_sticker_template(
+            self, product_id: str) -> IndividualStickerTemplateView:
         """Получить данные по индивидуальному стикеру"""
-        
+
         DEFAULT_MANUFACTURER = "NINGBO GENERAL UNION CO., LTD"
         DEFAULT_IMPORTER_DETAILS = "ООО СТАРТ"
-        
+
         #собираю данный по товару из таблицы stickers_storage
         product = await self.products_repo.get_by_product_id(product_id)
         if not product:
             raise ValueError("Товар не найден")
-        
+
         #собираю данные по ранее заполненными пользователем поля для данного товара
-        user_data = await self.user_unit_data_repo.get_last(product_id=product.product_id)
-        
+        user_data = await self.user_unit_data_repo.get_last(
+            product_id=product.product_id)
+
         manufacturer_name = DEFAULT_MANUFACTURER
         if user_data and user_data.manufacturer_id:
-            manufacturer_name = await self.manufacturer_repo.get_name_by_id(user_data.manufacturer_id)
-        
+            manufacturer_name = await self.manufacturer_repo.get_name_by_id(
+                user_data.manufacturer_id)
+
         return IndividualStickerTemplateView(
-            product_id = product_id,
+            product_id=product_id,
             name=user_data.name if user_data else product.name,
             color=user_data.color if user_data else product.color,
             material=user_data.material if user_data else product.material,
             manufacturer=manufacturer_name,
-            importer_details=user_data.importer_details if user_data else DEFAULT_IMPORTER_DETAILS,
+            importer_details=user_data.importer_details
+            if user_data else DEFAULT_IMPORTER_DETAILS,
             certification_type=product.certification_type,
             production_date=datetime.datetime.now().strftime("%Y-%m-%d"),
-            quantity=1
-            )
-    
+            quantity=1)
+
     async def get_list_manufacturers(self) -> list[ManufacturerView]:
         """Получить список произоводителей"""
 
