@@ -20,6 +20,7 @@ from app.service.sticker_user_data import StickerUserDataService
 from app.service.sticker_tasks_notification import StickerTasksNotificationsService
 from .goods_information import get_goods_information_service, GoodsInformationService
 from .sticker_tasks_notification import get_sticker_tasks_notification_service
+from faststream import Context
 
 
 def get_pool(request: Request) -> Pool:
@@ -147,3 +148,20 @@ def get_sticker_generation_service(
         file_storage=file_storage,
         task_notification_service=task_notification_service,
     )
+    
+async def get_sticker_generation_service_ev(
+        file_storage: IFileStorage = Context(),
+        pool: Pool = Context(),
+        task_notification_service: StickerTasksNotificationsService = Depends(get_sticker_tasks_notification_service)
+    ) -> StickerGenerationService:
+        
+        tasks_repo = StickerGenerationTasksRepository(pool)
+        
+        return StickerGenerationService(
+            generation_tasks_repo=tasks_repo,
+            user_data_service=None,
+            localisation_service=None,
+            publisher=None,
+            file_storage=file_storage,
+            task_notification_service=task_notification_service
+        )

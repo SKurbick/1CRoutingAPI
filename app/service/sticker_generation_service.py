@@ -264,13 +264,13 @@ class StickerGenerationService:
 
         broker_payload = {
         "task_id": str(generation_task.task_uuid),
-        "quantity": 5, #не понял откуда количество стикеров
+        "quantity": template_data.quantity,
         "data": {
             "product_id": template_data.product_id,
             "manufacturer": template_data.manufacturer,
             "importer_details": template_data.importer_details,
             "production_date": template_data.production_date,
-            "certification_type": template_data.certification_type.value, #if template_data.certification_type != CertificationType.NONE else ""
+            "certification_type": template_data.certification_type.value,
             "local_data": [
                 {
                     "local": "ru",
