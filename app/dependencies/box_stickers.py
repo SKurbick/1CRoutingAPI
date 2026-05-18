@@ -27,6 +27,9 @@ def get_pool(request: Request) -> Pool:
     """Получение пула соединений из состояния приложения."""
     return request.app.state.pool
 
+# def get_pool_for_subscriber(pool: Pool = Context()):
+#     return pool
+
 
 def get_process_pool(request: Request):
     """Получения пула процессов из состояния приложения."""

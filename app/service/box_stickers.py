@@ -629,9 +629,9 @@ class StickerTemplateBuilderService:
             )
         else:
             final_box_size = BoxSize(
-                box_length=product.box_size.box_length * 100 if product.box_size.box_length else 0,
-                box_width=product.box_size.box_width * 100 if product.box_size.box_width else 0,
-                box_height=product.box_size.box_height * 100 if product.box_size.box_height else 0
+                box_length=round(product.box_size.box_length * 100) if product.box_size.box_length else 0,
+                box_width=round(product.box_size.box_width * 100) if product.box_size.box_width else 0,
+                box_height=round(product.box_size.box_height * 100) if product.box_size.box_height else 0
             )
             
         current_gross = (
@@ -652,7 +652,7 @@ class StickerTemplateBuilderService:
         return BoxStickerTemplateView(
             product_id=product.product_id,
             name=translations.get(("name", "ru")) or product.name,
-            name_en=translations.get(("name", "en")),
+            name_en=translations.get(("name", "en")) or product.name, # необходимо для случая когда нет перевода в БД
             color=translations.get(("color", "ru")) or product.color,
             color_en=translations.get(("color", "en")),
             gross_weight=current_gross,
