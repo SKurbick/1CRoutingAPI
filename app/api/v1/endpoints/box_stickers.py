@@ -139,7 +139,7 @@ async def get_list_templates(
         "/manufacturers",
         status_code=status.HTTP_200_OK,
         description="""
-    **Получить список существующих шаблонов для стикеров.**
+    **Получить список существующих производителей для стикеров.**
 """
 )
 async def get_list_manufacturers(
