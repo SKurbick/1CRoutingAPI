@@ -12,6 +12,7 @@ from app.models.box_stickers import (
     BoxStickerTemplateView, 
     BoxStickerTemplateViewShort,
     IndividualStickerTemplateView,
+    ManufacturerView,
     StickerGenerationTaskResultResponse,
     StickerGenerationTaskInfo,
 )
@@ -132,6 +133,20 @@ async def get_list_templates(
 ) -> list[BoxStickerTemplateViewShort]:
     """Получить список существующих шаблонов для стикеров."""
     return await service.get_list_templates()
+
+
+@router.get(
+        "/manufacturers",
+        status_code=status.HTTP_200_OK,
+        description="""
+    **Получить список существующих шаблонов для стикеров.**
+"""
+)
+async def get_list_manufacturers(
+    service: Annotated[StickerTemplateBuilderService, Depends(get_box_sticker_service_1)],
+) -> list[ManufacturerView]:
+    """Получить список существующих шаблонов для стикеров."""
+    return await service.get_list_manufacturers()
 
 
 @router.get(

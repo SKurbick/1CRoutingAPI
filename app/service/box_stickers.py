@@ -13,7 +13,7 @@ from app.database.repositories.manufacturers import ManufacturerRepository
 from app.database.repositories.sticker_individual_user_data import IndividualUserDataRepository
 from app.database.repositories.sticker_user_data import StickerUserDataRepository
 from app.database.repositories.stickers_storage import StickersStorageRepository
-from app.models.box_stickers import BoxDataRequest, BoxSize, BoxStickerTemplateView, BoxStickerTemplateViewShort, IndividualStickerTemplateView, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort, StickerType
+from app.models.box_stickers import BoxDataRequest, BoxSize, BoxStickerTemplateView, BoxStickerTemplateViewShort, IndividualStickerTemplateView, ManufacturerView, StickerData, QRCodeData, CertificationType, BoxStickerTemplate, BoxStickerTemplateShort, StickerType
 from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
 from app.service.goods_information import GoodsInformationService
 from app.service.translate_manager import translation_manager
@@ -703,3 +703,8 @@ class StickerTemplateBuilderService:
             production_date=datetime.datetime.now().strftime("%Y-%m-%d"),
             quantity=1
             )
+    
+    async def get_list_manufacturers(self) -> list[ManufacturerView]:
+        """Получить список произоводителей"""
+
+        return await self.manufacturer_repo.get_all()

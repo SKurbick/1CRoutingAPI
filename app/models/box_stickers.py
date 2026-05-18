@@ -241,6 +241,10 @@ class BoxStickerTemplateViewShort(BaseModel):
     product_id: str | None = Field(None, description="Артикул")
     name: str | None = Field(None, description="Название")
 
+class ManufacturerView(BaseModel):
+    id: int
+    name: str
+
 
 # Individual stickers
 
