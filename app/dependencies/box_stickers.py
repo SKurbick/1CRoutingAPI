@@ -139,9 +139,6 @@ def get_sticker_generation_publisher() -> StickerGenerationPublisher:
 
 
 def get_file_storage(request: Request) -> IFileStorage:
-    """
-    Берет уже инициализированное хранилище из состояния приложения.
-    """
     return request.app.state.file_storage
 
 
@@ -168,19 +165,19 @@ def get_sticker_generation_service(
     )
 
 
-async def get_sticker_generation_service_ev(
-        file_storage: IFileStorage = Context(),
-        pool: Pool = Context(),
-        task_notification_service: StickerTasksNotificationsService = Depends(
-            get_sticker_tasks_notification_service)
-) -> StickerGenerationService:
+# async def get_sticker_generation_service_ev(
+#         file_storage: IFileStorage = Context(),
+#         pool: Pool = Context(),
+#         task_notification_service: StickerTasksNotificationsService = Depends(
+#             get_sticker_tasks_notification_service)
+# ) -> StickerGenerationService:
 
-    tasks_repo = StickerGenerationTasksRepository(pool)
+#     tasks_repo = StickerGenerationTasksRepository(pool)
 
-    return StickerGenerationService(
-        generation_tasks_repo=tasks_repo,
-        user_data_service=None,
-        localisation_service=None,
-        publisher=None,
-        file_storage=file_storage,
-        task_notification_service=task_notification_service)
+#     return StickerGenerationService(
+#         generation_tasks_repo=tasks_repo,
+#         user_data_service=None,
+#         localisation_service=None,
+#         publisher=None,
+#         file_storage=file_storage,
+#         task_notification_service=task_notification_service)

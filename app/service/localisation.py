@@ -10,6 +10,7 @@ class LocalisationService:
     async def save_localisations(
         self, template_data
     ) -> None:  #template_data: BoxStickerTemplateView #TODO: сделать универсальный метод для всех видо стикеров(сохранять локлизацию для товара, а не для стикера) #TODO: добавить сохранение русских записей
+        """Сохраняет пользовательский ввод в поля с переводом"""
         items: list[StickerLocalisationData] = []
         items.append(
             StickerLocalisationData(
