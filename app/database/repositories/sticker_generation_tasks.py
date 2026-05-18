@@ -140,22 +140,22 @@ class StickerGenerationTasksRepository:
         """
         return await self.pool.fetchval(sql)
 
-    async def set_processing(self, task_uuid: str) -> None:
-        """Обновляет данные о задаче по генерации стикера после ответа брокера по задаче"""
+    # async def set_processing(self, task_uuid: str) -> None:
+    #     """Обновляет данные о задаче по генерации стикера после ответа брокера по задаче"""
 
-        sql = """
-            UPDATE sticker_generation_tasks
-            SET
-                generation_status = $2,
-                updated_at = now()
-            WHERE task_uuid = $1
-            """
+    #     sql = """
+    #         UPDATE sticker_generation_tasks
+    #         SET
+    #             generation_status = $2,
+    #             updated_at = now()
+    #         WHERE task_uuid = $1
+    #         """Опубликовано сообщение в 
 
-        await self.pool.execute(
-            sql,
-            task_uuid,
-            GenerationStatus.PROCESSING.value,
-        )
+    #     await self.pool.execute(
+    #         sql,
+    #         task_uuid,
+    #         GenerationStatus.PROCESSING.value,
+    #     )
 
     async def update_task_result(self,
                                  task_uuid: str,

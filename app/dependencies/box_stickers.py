@@ -82,7 +82,7 @@ def get_box_sticker_service(
     )
 
 
-def get_box_sticker_service_1(
+def get_box_sticker_service(
         products_repo: StickersStorageRepository = Depends(
             get_box_stickers_templates_repo),
         localisation_repo: LocalisationRepository = Depends(

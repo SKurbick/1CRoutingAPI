@@ -4,9 +4,7 @@ from typing import Annotated, Union
 from fastapi import APIRouter, Body, HTTPException, status, Depends, Query, Path
 from fastapi.responses import StreamingResponse
 from sse_starlette import EventSourceResponse
-
-from app.dependencies import get_box_sticker_service
-from app.dependencies.box_stickers import get_box_sticker_service_1, get_sticker_generation_service, get_sticker_template_save_service
+from app.dependencies.box_stickers import get_box_sticker_service, get_sticker_generation_service, get_sticker_template_save_service
 from app.exceptions.stickers import TotalTaskLimit
 from app.models.box_stickers import (
     BoxStickerTemplateView,
@@ -26,16 +24,17 @@ from app.dependencies.sticker_tasks_notification import get_sticker_tasks_notifi
 router = APIRouter(prefix="/stickers", tags=["Стикеры для коробов"])
 
 
-@router.get("/transport_templates/{product_id}",# TODO: templates/transport/{product_id}
-            status_code=status.HTTP_200_OK,
-            description="""
+@router.get(
+    "/transport_templates/{product_id}",  # TODO: templates/transport/{product_id}
+    status_code=status.HTTP_200_OK,
+    description="""
     **Получить шаблон стикера по артикулу.**
 """)
 async def get_transport_sticker_template_(
     product_id: Annotated[
         str, Path(..., description="Артикул товара для поиска шаблона")],
     service: Annotated[StickerTemplateBuilderService,
-                       Depends(get_box_sticker_service_1)],
+                       Depends(get_box_sticker_service)],
 ) -> BoxStickerTemplateView:
     """Получить шаблон транспортного стикера по артикулу."""
     try:
@@ -45,16 +44,17 @@ async def get_transport_sticker_template_(
                             detail=str(e))
 
 
-@router.get("/individual_templates/{product_id}",# TODO: templates/individual/{product_id}
-            status_code=status.HTTP_200_OK,
-            description="""
+@router.get(
+    "/individual_templates/{product_id}",  # TODO: templates/individual/{product_id}
+    status_code=status.HTTP_200_OK,
+    description="""
     **Получить шаблон стикера по артикулу.**
 """)
 async def get_individual_sticker_template_(
     product_id: Annotated[
         str, Path(..., description="Артикул товара для поиска шаблона")],
     service: Annotated[StickerTemplateBuilderService,
-                       Depends(get_box_sticker_service_1)],
+                       Depends(get_box_sticker_service)],
 ) -> IndividualStickerTemplateView:
     """Получить шаблон индивидуального стикера по артикулу."""
     # return await service.get_box_sticker_template(product_id)
@@ -65,26 +65,15 @@ async def get_individual_sticker_template_(
                             detail=str(e))
 
 
-# @router.post(
-#     "/templates/save",
-#     status_code=status.HTTP_200_OK,
-#     description="**Сохранить пользовательские данные и локализации шаблона**",
-# )
-# async def save_sticker_template_new(
-#     data: BoxStickerTemplateView,
-#     service: Annotated[StickerTemplateSaveService, Depends(get_sticker_template_save_service)],
-# ) -> BoxStickerTemplateView:
-#     return await service.save_box_sticker_template(data)
-
-
-@router.post("/sticker_generation_transport", # TODO: sticker_generation/transport
-             status_code=status.HTTP_200_OK,
-             description="**Инициировать создание стикера**")
+@router.post(
+    "/sticker_generation_transport",  # TODO: sticker_generation/transport
+    status_code=status.HTTP_200_OK,
+    description="**Инициировать создание стикера**")
 async def create_or_get_generation_task(
     template_data: BoxStickerTemplateView,
     # user_id: int, #TODO: временное решение до авторизации пользователей
-    service: StickerGenerationService = Depends(
-        get_sticker_generation_service),
+    service: Annotated[StickerGenerationService,
+                       Depends(get_sticker_generation_service)],
 ) -> StickerGenerationTaskResultResponse:
     try:
         print("принял форму для BoxStickerTemplateView")
@@ -98,17 +87,17 @@ async def create_or_get_generation_task(
                             detail=str(e))
 
 
-@router.post("/sticker_generation_individual", # TODO: sticker_generation/individual
-             status_code=status.HTTP_200_OK,
-             description="**Инициировать создание стикера**")
+@router.post(
+    "/sticker_generation_individual",  # TODO: sticker_generation/individual
+    status_code=status.HTTP_200_OK,
+    description="**Инициировать создание стикера**")
 async def create_or_get_generation_task(
     template_data: IndividualStickerTemplateView,
     # user_id: int, #TODO: временное решение до авторизации пользователей
-    service: StickerGenerationService = Depends(
-        get_sticker_generation_service),
+    service: Annotated[StickerGenerationService,
+                       Depends(get_sticker_generation_service)],
 ) -> StickerGenerationTaskResultResponse:
-    print("направил POST запрос с данными:")
-    print(template_data)
+    #TODO: Логирование
     try:
         return await service.create_or_get_individual_task(
             # user_id=user_id,
@@ -128,7 +117,7 @@ async def create_or_get_generation_task(
 """)
 async def get_list_templates(
     service: Annotated[StickerTemplateBuilderService,
-                       Depends(get_box_sticker_service_1)],
+                       Depends(get_box_sticker_service)],
 ) -> list[BoxStickerTemplateViewShort]:
     """Получить список существующих шаблонов для стикеров."""
     return await service.get_list_templates()
@@ -141,7 +130,7 @@ async def get_list_templates(
 """)
 async def get_list_manufacturers(
     service: Annotated[StickerTemplateBuilderService,
-                       Depends(get_box_sticker_service_1)],
+                       Depends(get_box_sticker_service)],
 ) -> list[ManufacturerView]:
     """Получить список существующих шаблонов для стикеров."""
     return await service.get_list_manufacturers()
@@ -178,3 +167,15 @@ async def stream_tasks_notifications(
     """
 
     return EventSourceResponse(service.listen())
+
+
+# @router.post(
+#     "/templates/save",
+#     status_code=status.HTTP_200_OK,
+#     description="**Сохранить пользовательские данные и локализации шаблона**",
+# )
+# async def save_sticker_template_new(
+#     data: BoxStickerTemplateView,
+#     service: Annotated[StickerTemplateSaveService, Depends(get_sticker_template_save_service)],
+# ) -> BoxStickerTemplateView:
+#     return await service.save_box_sticker_template(data)

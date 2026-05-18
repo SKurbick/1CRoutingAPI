@@ -8,7 +8,7 @@ class IndividualUserDataRepository:
         self.pool = pool
 
 
-    async def get_last(self, product_id: str) -> StickerIndividualUserData | None:
+    async def get_last(self, product_id: str) -> StickerIndividualUserData | None: #TODO: убрать sticker_type, реализовано с помощью 2 таблиц
         """Возвращает последний пользовательский ввод для индивидуального стикера"""
         sql = """
             SELECT

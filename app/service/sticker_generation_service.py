@@ -293,7 +293,6 @@ class StickerGenerationService:
             }
         }
         #TODO: логирование
-
         broker_task_id = await self.publisher.publish_generation_task_for_individual(
             broker_payload)
         updated = await self.generation_tasks_repo.get_by_id(

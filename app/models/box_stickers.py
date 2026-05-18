@@ -154,8 +154,6 @@ class BoxStickerTemplateView(
         BaseModel
 ):  #TODO: сделать обобщающий класс для стикеров на коробки и индивидуальных с общими полями для типизации в async def save_localisations
     """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
-    # sticker_type: Literal[StickerType.TRANSPORT] = StickerType.TRANSPORT
-    # sticker_type: Literal["TRANSPORT"] = "TRANSPORT"
     product_id: str
     name: str
     name_en: str
