@@ -16,7 +16,7 @@ class StickerUserDataService:
         self.individual_repo = individual_repo
         self.manufacturer_repo = manufacturer_repo
 
-    async def save_box_sticker_user_data(self, template_data: BoxStickerTemplateView) -> None:
+    async def save_box_sticker_user_data(self, template_data: BoxStickerTemplateView) -> None: #TODO: не сохраняет offset и limit
         """Сохраняет данные по стикеру для коробки в БД"""
         user_data = StickerUserTemplateData(
             product_id=template_data.product_id,

@@ -666,6 +666,8 @@ class StickerTemplateBuilderService:
             produced_in_en=(translations.get(("produced_in", "en")) or DEFAULT_PRODUCED_IN_EN),
             certification_type=(user_data.certification_type if user_data and user_data.certification_type 
                                 else product.certification_type),
+            limit = 1,
+            offset = 1,
         )
     
     async def get_list_templates(self) -> list[BoxStickerTemplateViewShort]:

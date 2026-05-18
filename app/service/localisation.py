@@ -3,7 +3,7 @@
 
 
 from app.database.repositories.localisation import LocalisationRepository
-from app.models.box_stickers import BoxStickerTemplateView, StickerLocalisationData
+from app.models.box_stickers import StickerLocalisationData
 
 
 class LocalisationService:

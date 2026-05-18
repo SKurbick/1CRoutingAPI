@@ -160,6 +160,8 @@ class BoxStickerTemplateView(BaseModel): #TODO: сделать обобщающ�
     produced_in_en: str | None = None
     proforma_number: str | None = None
     certification_type: CertificationType = CertificationType.NONE
+    limit: int | None = 0,
+    offset: int | None = 0,
 
 
 class GenerationStatus(str, Enum):
