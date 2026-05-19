@@ -6,7 +6,7 @@ from typing import AsyncGenerator
 from redis.asyncio.client import PubSub
 from sse_starlette import JSONServerSentEvent
 
-from app.cache.client import RedisClient
+from app.cache.client import RedisClient, PubSubConnLimitError
 from app.models.box_stickers import StickerGenerationTaskNotice
 
 
@@ -33,40 +33,43 @@ class StickerTasksNotificationsService:
         if not self._pubsub:
             self._pubsub = self._redis_client.get_pubsub()
             print("Создан подписчик на уведомления о задачах по генерации стикеров.")
-        
+
         await self._pubsub.subscribe(self.CHANNEL)
         try:
             yield self._pubsub
         finally:
             await self._pubsub.unsubscribe(self.CHANNEL)
             print("Подписчик на уведомления о задачах по генерации стикеров отписался.")
-            await self._pubsub.close()
-            print("Подписчик на уведомления о задачах по генерации стикеров закрыт.")
+            await self._redis_client.close_pubsub(self._pubsub)
 
     async def listen(self) -> AsyncGenerator[JSONServerSentEvent, None]:
         """
         Генератор, слушает канал Redis и возвращает новые сообщения.
         """
-        async with self.listener() as listener:
-            try:
-                while True:
-                    try:
-                        message = await asyncio.wait_for(
-                            listener.get_message(ignore_subscribe_messages=True),
-                            timeout=1.0
-                        )
+        try:
+            async with self.listener() as listener:
+                    while True:
+                        try:
+                            message = await asyncio.wait_for(
+                                listener.get_message(ignore_subscribe_messages=True),
+                                timeout=1.0
+                            )
 
-                        if message and message["type"] == "message":
-                            print(f"Получено сообщение: {message}")
-                            data = json.loads(message["data"])
-                            yield JSONServerSentEvent(data)
-                    except asyncio.TimeoutError:
-                        continue
-                    except asyncio.CancelledError:
-                        break
-            except Exception as e:
-                print(f"Необработанное исключение: {e}")
-                raise
+                            if message and message["type"] == "message":
+                                print(f"Получено сообщение: {message}")
+                                data = json.loads(message["data"])
+                                yield JSONServerSentEvent(data)
+                        except asyncio.TimeoutError:
+                            continue
+                        except asyncio.CancelledError:
+                            print(f"Галя! У нас ОТМЕНА подписки на SSE: {listener.channels}")
+                            break
+        except PubSubConnLimitError as e:
+            print(str(e))
+            yield JSONServerSentEvent({"message": "Превышено количество подписчиков на события."})
+        except Exception as e:
+            print(f"Необработанное исключение: {e}")
+            raise
 
     async def publish_notice(self, notice: StickerGenerationTaskNotice):
         """

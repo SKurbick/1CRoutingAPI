@@ -7,11 +7,18 @@ from redis.exceptions import ConnectionError, TimeoutError
 from app.dependencies.config import settings
 
 
+class PubSubConnLimitError(Exception):
+    """
+    Превышение максимального количества подключений подписчиков к Redis.
+    """
+
+
 class RedisClient:
     def __init__(self):
         self.pool: Optional[ConnectionPool] = None
         self.client: Optional[Redis] = None
-        self._pubsubs: list[PubSub] = []
+        self.max_pubsub_count = settings.REDIS_MAX_CONNECTIONS // 2
+        self._pubsubs_count = 0
 
     def _build_pool(self) -> ConnectionPool:
         print("Создаем пул соединений к Redis...")
@@ -42,21 +49,6 @@ class RedisClient:
         return self.client
 
     async def disconnect(self):
-        if self._pubsubs:
-            print("Закрываем всех подписчиков Redis.Pubsub...")
-            for ps in self._pubsubs:
-                try:
-                    print(f"Закрываем подписчика Redis: {ps.channels}")
-                    await ps.unsubscribe()
-                    print(f"Pubsub отписан от всех каналов: {ps.channels}")
-                    await ps.close()
-                    print("Pubsub закрыт")
-                except Exception as e:
-                    print(f"Ошибка при закрытии Pubsub Redis: {e}")
-
-            self._pubsubs = []
-            print(f"Закрыли всех Pubsubs.")
-
         if self.client:
             await self.client.aclose()
             self.client = None
@@ -83,10 +75,26 @@ class RedisClient:
         return self.client
 
     def get_pubsub(self) -> PubSub:
+        if self._pubsubs_count >= self.max_pubsub_count:
+            raise PubSubConnLimitError("Превышено максимально допустимое количество подписчиков Redis!")
+
         print("Создаем нового подписчика Redis Pubsub...")
         new_pubsub = self.get_client().pubsub()
-        self._pubsubs.append(new_pubsub)
+        self._pubsubs_count += 1
+        print(f"Всего подписчиков Redis: {self._pubsubs_count}/{self.max_pubsub_count}")
         return new_pubsub
+
+    async def close_pubsub(self, pubsub: PubSub):
+        print("Закрываем подписчика...")
+        try:
+            await pubsub.aclose()
+            print("Подписчик закрыт.")
+        finally:
+            await pubsub.aclose()
+            print("Подписчик закрыт принудительно.")
+            self._pubsubs_count -= 1
+            print(f"Всего подписчиков Redis: {self._pubsubs_count}/{self.max_pubsub_count}")
+            print(await pubsub.ping())
 
 
 redis_client = RedisClient()
