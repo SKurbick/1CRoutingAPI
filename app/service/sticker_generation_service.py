@@ -333,15 +333,13 @@ class StickerGenerationService:
 
         task_info = await self.generation_tasks_repo.get_task_by_uuid(task_uuid
                                                                       )
-        url = None
-
-        if task_info.generation_status == GenerationStatus.COMPLETED:
-            url = await self.file_storage.get_presigned_url(
-                file_key=task_info.document_path,
-                expires_in=120,
-            )
-
         if task_info:
+            url = None
+            if task_info.generation_status == GenerationStatus.COMPLETED:
+                url = await self.file_storage.get_presigned_url(
+                    file_key=task_info.document_path,
+                    expires_in=120,
+                )
             await self.send_notice_with_updated_task_status(
                 StickerGenerationTaskInfo(
                     task_id=task_info.id,
