@@ -674,7 +674,8 @@ class StickerTemplateBuilderService:
         """Получить данные по индивидуальному стикеру"""
 
         DEFAULT_MANUFACTURER = "NINGBO GENERAL UNION CO., LTD"
-        DEFAULT_IMPORTER_DETAILS = "ООО СТАРТ"
+        DEFAULT_IMPORTER_DETAILS = 'ООО "СТАРТ", 141031, Московская область, г.о. Мытищи, п Вешки, д. 24А, Тел. 79774915476'
+        # список доступных импортеров внесен в отдельную таблицу importers
 
         #собираю данный по товару из таблицы stickers_storage
         product = await self.products_repo.get_by_product_id(product_id)

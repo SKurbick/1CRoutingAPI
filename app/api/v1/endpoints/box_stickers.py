@@ -9,12 +9,14 @@ from app.exceptions.stickers import TotalTaskLimit
 from app.models.box_stickers import (
     BoxStickerTemplateView,
     BoxStickerTemplateViewShort,
+    ImporterView,
     IndividualStickerTemplateView,
     ManufacturerView,
     StickerGenerationTaskResultResponse,
     StickerGenerationTaskInfo,
 )
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
+from app.service.importers import ImporterService
 from app.service.sticker_generation_service import StickerGenerationService
 from app.service.sticker_template_save import StickerTemplateSaveService
 from app.service.translate_manager import translation_manager
@@ -134,6 +136,18 @@ async def get_list_manufacturers(
 ) -> list[ManufacturerView]:
     """Получить список существующих шаблонов для стикеров."""
     return await service.get_list_manufacturers()
+
+@router.get("/importers",
+            status_code=status.HTTP_200_OK,
+            description="""
+    **Получить список существующих импортеров для стикеров.**
+""")
+async def get_list_importers(
+    service: Annotated[ImporterService,
+                       Depends(get_box_sticker_service)],
+) -> list[ImporterView]:
+    """Получить список существующих шаблонов для стикеров."""
+    return await service.get_list_importers()
 
 
 @router.get("/tasks",

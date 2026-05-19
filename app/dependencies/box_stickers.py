@@ -4,6 +4,7 @@ from fastapi import Depends, Request
 from asyncpg import Pool
 
 from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
+from app.database.repositories.importers import ImporterRepository
 from app.database.repositories.localisation import LocalisationRepository
 from app.database.repositories.manufacturers import ManufacturerRepository
 from app.database.repositories.sticker_generation_tasks import StickerGenerationTasksRepository
@@ -12,6 +13,7 @@ from app.database.repositories.sticker_user_data import StickerUserDataRepositor
 from app.database.repositories.stickers_storage import StickersStorageRepository
 from app.file_storage.base.interface import IFileStorage
 from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
+from app.service.importers import ImporterService
 from app.service.localisation import LocalisationService
 from app.service.sticker_generation_publisher import StickerGenerationPublisher
 from app.service.sticker_generation_service import StickerGenerationService
@@ -165,19 +167,12 @@ def get_sticker_generation_service(
     )
 
 
-# async def get_sticker_generation_service_ev(
-#         file_storage: IFileStorage = Context(),
-#         pool: Pool = Context(),
-#         task_notification_service: StickerTasksNotificationsService = Depends(
-#             get_sticker_tasks_notification_service)
-# ) -> StickerGenerationService:
+def get_importer_repo(pool: Pool = Depends(get_pool), ) -> ImporterRepository:
+    return ImporterRepository(pool)
 
-#     tasks_repo = StickerGenerationTasksRepository(pool)
 
-#     return StickerGenerationService(
-#         generation_tasks_repo=tasks_repo,
-#         user_data_service=None,
-#         localisation_service=None,
-#         publisher=None,
-#         file_storage=file_storage,
-#         task_notification_service=task_notification_service)
+def get_box_sticker_service(
+        importer_repo: ImporterRepository = Depends(
+            get_importer_repo)) -> ImporterService:
+    return ImporterService(
+        importer_repo=importer_repo)

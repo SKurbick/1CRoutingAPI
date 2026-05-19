@@ -264,12 +264,14 @@ class ManufacturerView(BaseModel):
     name: str
 
 
+class ImporterView(BaseModel):
+    id: int
+    name: str
+
 # Individual stickers
 
 
 class IndividualStickerTemplateView(BaseModel):
-    # sticker_type: Literal[StickerType.INDIVIDUAL] = StickerType.INDIVIDUAL
-    # sticker_type: Literal["INDIVIDUAL"] = "INDIVIDUAL"
     product_id: str = Field(..., description="Артикул")
     name: str = Field(..., description="Название")
     color: str | None = Field(None, description="Цвет")
@@ -299,3 +301,6 @@ class StickerIndividualUserData(BaseModel):
         description="Тип сертификации (ЕАС, СТР или отсутствует)")
     production_date: datetime = Field(default_factory=datetime.now,
                                       description="Дата производства")
+    
+
+
