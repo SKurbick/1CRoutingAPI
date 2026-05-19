@@ -295,16 +295,17 @@ class StickerGenerationService:
         #TODO: логирование
         broker_task_id = await self.publisher.publish_generation_task_for_individual(
             broker_payload)
-        updated = await self.generation_tasks_repo.get_by_id(
-            generation_task.task_id)
-        if updated:
-            return StickerGenerationTaskResultResponse(
-                task_id=updated.task_id,
-                product_id=template_data.product_id,
-                generation_status=updated.generation_status,
-                error_message=updated.error_message,
-                document_url=None)
-
+        # updated = await self.generation_tasks_repo.get_by_id(
+        #     generation_task.task_id)
+        # if updated:
+        #     print(f"--> updated получил таску {updated}")
+        #     return StickerGenerationTaskResultResponse(
+        #         task_id=updated.task_id,
+        #         product_id=template_data.product_id,
+        #         generation_status=updated.generation_status,
+        #         error_message=updated.error_message,
+        #         document_url=None)
+        print(f" финальный ретурн со статусом{generation_task.generation_status}")
         return StickerGenerationTaskResultResponse(
             task_id=generation_task.task_id,
             product_id=template_data.product_id,
@@ -332,6 +333,13 @@ class StickerGenerationService:
 
         task_info = await self.generation_tasks_repo.get_task_by_uuid(task_uuid
                                                                       )
+        url = None
+
+        if task_info.generation_status == GenerationStatus.COMPLETED:
+            url = await self.file_storage.get_presigned_url(
+                file_key=task_info.document_path,
+                expires_in=120,
+            )
 
         if task_info:
             await self.send_notice_with_updated_task_status(
@@ -340,7 +348,7 @@ class StickerGenerationService:
                     product_id=task_info.product_id,
                     generation_status=task_info.generation_status,
                     error_message=task_info.error_message,
-                    document_url=None,
+                    document_url=url,
                     sticker_type=task_info.sticker_type,
                     created_at=task_info.created_at,
                     updated_at=task_info.updated_at,
