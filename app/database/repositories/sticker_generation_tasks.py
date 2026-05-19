@@ -70,7 +70,7 @@ class StickerGenerationTasksRepository:
             product_id,
             sticker_type,
             hash,
-            GenerationStatus.PENDING.value,
+            GenerationStatus.INITIATED.value,
             path,
         )
         data = dict(row)
@@ -120,23 +120,23 @@ class StickerGenerationTasksRepository:
         await self.pool.execute(sql, task_id, user_id)
 
     async def count_active_tasks_by_user(self, user_id: int) -> int:
-        """Считает такси в статусе PENDING и PROCESSING на пользователе. Считает активные задачи"""
+        """Считает такси в статусе INITIATED, PENDING и PROCESSING на пользователе. Считает активные задачи"""
         sql = """
             SELECT COUNT(*)
             FROM sticker_generation_task_users tu
             JOIN sticker_generation_tasks t ON t.id = tu.task_id
             WHERE tu.user_id = $1
-            AND t.generation_status IN ('PENDING', 'PROCESSING');
+            AND t.generation_status IN ('PENDING', 'PROCESSING', 'INITIATED');
         """
         return await self.pool.fetchval(sql, user_id)
 
     async def count_total_active_tasks(self) -> int:
-        """Считает все такси в статусе PENDING и PROCESSING. Считает активные задачи"""
+        """Считает все такси в статусе INITIATED, PENDING и PROCESSING. Считает активные задачи"""
         sql = """
             SELECT COUNT(*)
             FROM sticker_generation_task_users tu
             JOIN sticker_generation_tasks t ON t.id = tu.task_id
-            WHERE t.generation_status IN ('PENDING', 'PROCESSING');
+            WHERE t.generation_status IN ('PENDING', 'PROCESSING', 'INITIATED');
         """
         return await self.pool.fetchval(sql)
 

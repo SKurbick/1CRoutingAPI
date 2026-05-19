@@ -176,6 +176,7 @@ class GenerationStatus(str, Enum):
     """
     Статус задачи.
     """
+    INITIATED = "initiated" # Запрос создан и направлен на обработку
     PENDING = "pending"  # Запрос принят, задача ждёт в очереди
     PROCESSING = "processing"  # Воркер взял задачу, идёт генерация
     COMPLETED = "completed"  # Документ сохранён, ссылка готова
