@@ -16,10 +16,10 @@ class StickerTasksNotificationsService:
     """
 
     CHANNEL = "stickers-tasks-notifications"
-    
+
     def __init__(
-            self,
-            redis_client: RedisClient,
+        self,
+        redis_client: RedisClient,
     ):
         self._redis_client = redis_client
         self._pubsub = None
@@ -76,7 +76,4 @@ class StickerTasksNotificationsService:
         Отправить уведомление подписчикам.
         """
         message = notice.model_dump_json()
-        await self._redis_client.publish(
-            channel=self.CHANNEL,
-            message=message
-        )
+        await self._redis_client.publish(channel=self.CHANNEL, message=message)

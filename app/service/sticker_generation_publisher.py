@@ -2,14 +2,12 @@ from app.broker.publisher import publish_box_sticker_generation_task, publish_in
 
 
 class StickerGenerationPublisher:
+
     async def publish_generation_task(self, payload: dict) -> None:
-        print("----publisher------"*4)
-        print(payload)
-        print("----publisher------"*4)
+        #TODO: логирование
         await publish_box_sticker_generation_task(payload)
 
-    async def publish_generation_task_for_individual(self, payload: dict) -> None:
-        print("----publisher------"*4)
-        print(payload)
-        print("----publisher------"*4)
+    async def publish_generation_task_for_individual(self,
+                                                     payload: dict) -> None:
+        #TODO: логирование
         await publish_individual_sticker_generation_task(payload)

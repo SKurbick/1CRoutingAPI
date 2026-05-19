@@ -1,5 +1,7 @@
 from asyncpg import Pool
 
+from app.models.box_stickers import ManufacturerView
+
 
 class ManufacturerRepository:
 
@@ -12,8 +14,10 @@ class ManufacturerRepository:
                 "FROM manufacturers " \
                 "ORDER BY name;"
 
-        return await self.pool.fetch(query)
-    
+        rows = await self.pool.fetch(query)
+
+        return [ManufacturerView(**row) for row in rows]
+
     async def get_or_create(self, name: str) -> int:
         """Реализация возможности добавить нового изготовителя"""
         query = """
@@ -23,3 +27,10 @@ class ManufacturerRepository:
             RETURNING id;
         """
         return await self.pool.fetchval(query, name)
+
+    async def get_name_by_id(self, manufacturer_id: int) -> str:
+        """Получить название изготовителя по id"""
+
+        sql = "SELECT name FROM manufacturers WHERE id = $1;"
+        name = await self.pool.fetchval(sql, manufacturer_id)
+        return name

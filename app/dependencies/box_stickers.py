@@ -20,11 +20,16 @@ from app.service.sticker_user_data import StickerUserDataService
 from app.service.sticker_tasks_notification import StickerTasksNotificationsService
 from .goods_information import get_goods_information_service, GoodsInformationService
 from .sticker_tasks_notification import get_sticker_tasks_notification_service
+from faststream import Context
 
 
 def get_pool(request: Request) -> Pool:
     """Получение пула соединений из состояния приложения."""
     return request.app.state.pool
+
+
+# def get_pool_for_subscriber(pool: Pool = Context()):
+#     return pool
 
 
 def get_process_pool(request: Request):
@@ -37,35 +42,38 @@ def get_process_pool(request: Request):
 # ) -> BoxStickersTemplateRepository:
 #     return BoxStickersTemplateRepository(pool)
 
+
 def get_box_stickers_templates_repo(
-        pool: Pool = Depends(get_pool),
-) -> StickersStorageRepository:
+        pool: Pool = Depends(get_pool), ) -> StickersStorageRepository:
     return StickersStorageRepository(pool)
 
+
 def get_localisation_repo(
-        pool: Pool = Depends(get_pool),
-) -> LocalisationRepository:
+        pool: Pool = Depends(get_pool), ) -> LocalisationRepository:
     return LocalisationRepository(pool)
 
+
 def get_user_data_repo(
-        pool: Pool = Depends(get_pool),
-) -> StickerUserDataRepository:
+        pool: Pool = Depends(get_pool), ) -> StickerUserDataRepository:
     return StickerUserDataRepository(pool)
 
+
 def get_manufacturer_repo(
-    pool: Pool = Depends(get_pool),
-) -> ManufacturerRepository:
+        pool: Pool = Depends(get_pool), ) -> ManufacturerRepository:
     return ManufacturerRepository(pool)
 
+
 def get_individual_user_data_repo(
-    pool: Pool = Depends(get_pool),
-) -> IndividualUserDataRepository:
+        pool: Pool = Depends(get_pool), ) -> IndividualUserDataRepository:
     return IndividualUserDataRepository(pool)
 
+
 def get_box_sticker_service(
-        process_pool: ProcessPoolExecutor = Depends(get_process_pool),
-        template_repo: BoxStickersTemplateRepository = Depends(get_box_stickers_templates_repo),
-        goods_info_service: GoodsInformationService = Depends(get_goods_information_service),
+    process_pool: ProcessPoolExecutor = Depends(get_process_pool),
+    template_repo: BoxStickersTemplateRepository = Depends(
+        get_box_stickers_templates_repo),
+    goods_info_service: GoodsInformationService = Depends(
+        get_goods_information_service),
 ) -> BoxStickerService:
     return BoxStickerService(
         process_pool=process_pool,
@@ -73,55 +81,66 @@ def get_box_sticker_service(
         goods_info_service=goods_info_service,
     )
 
-def get_box_sticker_service_1(
-        products_repo: StickersStorageRepository = Depends(get_box_stickers_templates_repo),
-        localisation_repo: LocalisationRepository = Depends(get_localisation_repo),
-        user_box_data_repo: StickerUserDataRepository = Depends(get_user_data_repo)
-) -> StickerTemplateBuilderService:
+
+def get_box_sticker_service(
+        products_repo: StickersStorageRepository = Depends(
+            get_box_stickers_templates_repo),
+        localisation_repo: LocalisationRepository = Depends(
+            get_localisation_repo),
+        user_box_data_repo: StickerUserDataRepository = Depends(
+            get_user_data_repo),
+        user_unit_data_repo: IndividualUserDataRepository = Depends(
+            get_individual_user_data_repo),
+        manufacturer_repo: ManufacturerRepository = Depends(
+            get_manufacturer_repo)) -> StickerTemplateBuilderService:
     return StickerTemplateBuilderService(
         products_repo=products_repo,
         localisation_repo=localisation_repo,
-        user_box_data_repo=user_box_data_repo
-    )
+        user_box_data_repo=user_box_data_repo,
+        user_unit_data_repo=user_unit_data_repo,
+        manufacturer_repo=manufacturer_repo)
+
 
 def get_sticker_user_data_service(
-        box_repo: StickerUserDataRepository = Depends(get_user_data_repo),
-        individual_repo: IndividualUserDataRepository = Depends(get_individual_user_data_repo),
-        manufacturer_repo: ManufacturerRepository = Depends(get_manufacturer_repo),
+    box_repo: StickerUserDataRepository = Depends(get_user_data_repo),
+    individual_repo: IndividualUserDataRepository = Depends(
+        get_individual_user_data_repo),
+    manufacturer_repo: ManufacturerRepository = Depends(get_manufacturer_repo),
 ) -> StickerUserDataService:
     return StickerUserDataService(box_repo=box_repo,
                                   individual_repo=individual_repo,
-                                  manufacturer_repo=manufacturer_repo
-                                  )
+                                  manufacturer_repo=manufacturer_repo)
 
-def get_localisation_service(
-        repo: LocalisationRepository = Depends(get_localisation_repo)
-) -> LocalisationService:
+
+def get_localisation_service(repo: LocalisationRepository = Depends(
+    get_localisation_repo)) -> LocalisationService:
     return LocalisationService(repo)
 
+
 def get_sticker_template_save_service(
-    user_data_service: StickerUserDataService = Depends(get_sticker_user_data_service),
-    localisation_service: LocalisationService = Depends(get_localisation_service),
+    user_data_service: StickerUserDataService = Depends(
+        get_sticker_user_data_service),
+    localisation_service: LocalisationService = Depends(
+        get_localisation_service),
 ) -> StickerTemplateSaveService:
     return StickerTemplateSaveService(
         user_data_service=user_data_service,
         localisation_service=localisation_service,
     )
 
+
 def get_sticker_generation_tasks_repo(
-    pool: Pool = Depends(get_pool),
-) -> StickerGenerationTasksRepository:
+        pool: Pool = Depends(get_pool), ) -> StickerGenerationTasksRepository:
     return StickerGenerationTasksRepository(pool)
 
 
 def get_sticker_generation_publisher() -> StickerGenerationPublisher:
     return StickerGenerationPublisher()
 
+
 def get_file_storage(request: Request) -> IFileStorage:
-    """
-    Берет уже инициализированное хранилище из состояния приложения.
-    """
     return request.app.state.file_storage
+
 
 def get_sticker_generation_service(
     generation_tasks_repo: StickerGenerationTasksRepository = Depends(
@@ -133,7 +152,8 @@ def get_sticker_generation_service(
     publisher: StickerGenerationPublisher = Depends(
         get_sticker_generation_publisher),
     file_storage: IFileStorage = Depends(get_file_storage),
-    task_notification_service: StickerTasksNotificationsService = Depends(get_sticker_tasks_notification_service),
+    task_notification_service: StickerTasksNotificationsService = Depends(
+        get_sticker_tasks_notification_service),
 ) -> StickerGenerationService:
     return StickerGenerationService(
         generation_tasks_repo=generation_tasks_repo,
@@ -143,3 +163,21 @@ def get_sticker_generation_service(
         file_storage=file_storage,
         task_notification_service=task_notification_service,
     )
+
+
+# async def get_sticker_generation_service_ev(
+#         file_storage: IFileStorage = Context(),
+#         pool: Pool = Context(),
+#         task_notification_service: StickerTasksNotificationsService = Depends(
+#             get_sticker_tasks_notification_service)
+# ) -> StickerGenerationService:
+
+#     tasks_repo = StickerGenerationTasksRepository(pool)
+
+#     return StickerGenerationService(
+#         generation_tasks_repo=tasks_repo,
+#         user_data_service=None,
+#         localisation_service=None,
+#         publisher=None,
+#         file_storage=file_storage,
+#         task_notification_service=task_notification_service)

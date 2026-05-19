@@ -1,5 +1,3 @@
-
-
 from uuid import UUID
 
 from asyncpg import Pool
@@ -8,11 +6,13 @@ from app.models.box_stickers import GenerationStatus, StickerGenerationTaskResul
 
 
 class StickerGenerationTasksRepository:
-    
+
     def __init__(self, pool: Pool):
         self.pool = pool
 
-    async def get_by_unique_key(self, product_id: str, sticker_type: StickerType, template_hash: str) -> StickerGenerationTaskResult | None:
+    async def get_by_unique_key(
+            self, product_id: str, sticker_type: StickerType,
+            template_hash: str) -> StickerGenerationTaskResult | None:
         sql = """
             SELECT
                 id AS task_id,
@@ -44,10 +44,11 @@ class StickerGenerationTasksRepository:
             task_uuid=data.get("task_uuid"),
             error_message=data.get("error_message"),
         )
-    
-    async def create_task (self, product_id: str, sticker_type: StickerType, hash: str, path: str) ->StickerGenerationTaskResult:
+
+    async def create_task(self, product_id: str, sticker_type: StickerType,
+                          hash: str, path: str) -> StickerGenerationTaskResult:
         #TODO: убарть путь к файлу из запроса. Путь будет генерировать сервис генерации
-        #TODO: переименовать document_path в document_key
+        #TODO: переименовать document_path в document_key или storage key
         sql = """
             INSERT INTO sticker_generation_tasks (
                 product_id,
@@ -80,9 +81,10 @@ class StickerGenerationTasksRepository:
             task_uuid=data.get("task_uuid"),
             error_message=data.get("error_message"),
         )
-    
 
-    async def get_by_id(self, task_id: int) -> StickerGenerationTaskResult | None:
+    async def get_by_id(self,
+                        task_id: int) -> StickerGenerationTaskResult | None:
+
         sql = """
             SELECT
                 id AS task_id,
@@ -105,7 +107,7 @@ class StickerGenerationTasksRepository:
             task_uuid=data.get("task_uuid"),
             error_message=data.get("error_message"),
         )
-    
+
     async def add_user_to_task(self, task_id: int, user_id: int) -> None:
         """Добавляет каждой задаче id пользователя, ее инициировавшего.
         Необходимо для контроля максимального количества задач на каждом пользователе"""
@@ -117,7 +119,6 @@ class StickerGenerationTasksRepository:
         """
         await self.pool.execute(sql, task_id, user_id)
 
-
     async def count_active_tasks_by_user(self, user_id: int) -> int:
         """Считает такси в статусе PENDING и PROCESSING на пользователе. Считает активные задачи"""
         sql = """
@@ -128,7 +129,6 @@ class StickerGenerationTasksRepository:
             AND t.generation_status IN ('PENDING', 'PROCESSING');
         """
         return await self.pool.fetchval(sql, user_id)
-    
 
     async def count_total_active_tasks(self) -> int:
         """Считает все такси в статусе PENDING и PROCESSING. Считает активные задачи"""
@@ -139,32 +139,29 @@ class StickerGenerationTasksRepository:
             WHERE t.generation_status IN ('PENDING', 'PROCESSING');
         """
         return await self.pool.fetchval(sql)
-    
 
-    async def set_processing(self, task_uuid: str) -> None:
-        """Обновляет данные о задаче по генерации стикера после ответа брокера по задаче"""
+    # async def set_processing(self, task_uuid: str) -> None:
+    #     """Обновляет данные о задаче по генерации стикера после ответа брокера по задаче"""
 
-        sql = """
-            UPDATE sticker_generation_tasks
-            SET
-                generation_status = $2,
-                updated_at = now()
-            WHERE task_uuid = $1
-            """
+    #     sql = """
+    #         UPDATE sticker_generation_tasks
+    #         SET
+    #             generation_status = $2,
+    #             updated_at = now()
+    #         WHERE task_uuid = $1
+    #         """Опубликовано сообщение в 
 
-        await self.pool.execute(
-            sql,
-            task_uuid,
-            GenerationStatus.PROCESSING.value,
-        )
+    #     await self.pool.execute(
+    #         sql,
+    #         task_uuid,
+    #         GenerationStatus.PROCESSING.value,
+    #     )
 
-    async def update_task_result(
-            self, 
-            task_uuid: str, 
-            status: GenerationStatus, 
-            document_path: str | None = None, 
-            error_message: str | None = None
-        ) -> None:
+    async def update_task_result(self,
+                                 task_uuid: str,
+                                 status: GenerationStatus,
+                                 document_path: str | None = None,
+                                 error_message: str | None = None) -> None:
         """Обновляет статус и информацию о выполнении задачи генерации стикера"""
 
         sql = """
@@ -177,43 +174,16 @@ class StickerGenerationTasksRepository:
             WHERE task_uuid = $1
         """
 
-        await self.pool.execute(
-            sql,
-            task_uuid,
-            status,
-            document_path,
-            error_message
-        )
-    
-    async def get_tasks_list(self, user_id: int | None = None) -> list[StickerGenerationTaskView]:
+        await self.pool.execute(sql, task_uuid, status, document_path,
+                                error_message)
+
+    async def get_tasks_list(
+            self,
+            user_id: int | None = None) -> list[StickerGenerationTaskView]:
         """
         Получить список задач по генерации стикеров.
         """
         params = []
-
-        # TODO: до времен авторизации в сервисе
-        # user_filter_condition = ""
-
-        # if user_id:
-        #     params.append(user_id)
-        #     user_filter_condition = f" AND user_id = ${len(params)}"
-
-        # tasks_users_cte = f"""
-        #     tasks_users AS (
-        #         SELECT
-        #             task_id,
-        #             created_at,
-        #             ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY created_at DESC) AS rn
-        #         FROM sticker_generation_task_users
-        #         WHERE 1=1
-        #         {user_filter_condition}
-        #     )
-        # """
-
-        # all_cte = f"""
-        #     WITH
-        #         {tasks_users_cte}
-        # """
 
         query = f"""
             SELECT
@@ -233,11 +203,10 @@ class StickerGenerationTasksRepository:
 
         rows = await self.pool.fetch(query, *params)
 
-        return [
-            StickerGenerationTaskView(**row) for row in rows
-        ]
+        return [StickerGenerationTaskView(**row) for row in rows]
 
-    async def get_task_by_uuid(self, task_uuid: UUID) -> StickerGenerationTaskView | None:
+    async def get_task_by_uuid(
+            self, task_uuid: UUID) -> StickerGenerationTaskView | None:
         """
         Получить задачу по task_id.
         """

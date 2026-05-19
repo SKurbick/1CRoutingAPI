@@ -38,26 +38,17 @@ class QueueConfig:
 
 
 EXCHANGE_CONFIGS: dict[ExchangeName, ExchangeConfig] = {
-    ExchangeName.DOCGEN_REQUEST: ExchangeConfig(
-        name=ExchangeName.DOCGEN_REQUEST.value,
-    ),
-    ExchangeName.DOCGEN_EVENT: ExchangeConfig(
-        name=ExchangeName.DOCGEN_EVENT.value,
-    ),
+    ExchangeName.DOCGEN_REQUEST:
+    ExchangeConfig(name=ExchangeName.DOCGEN_REQUEST.value, ),
+    ExchangeName.DOCGEN_EVENT:
+    ExchangeConfig(name=ExchangeName.DOCGEN_EVENT.value, ),
 }
 
-
 QUEUE_CONFIGS: dict[QueueName, QueueConfig] = {
-    # QueueName.DOCGEN_BOX_LABEL: QueueConfig(
-    #     name=QueueName.DOCGEN_BOX_LABEL.value, routing_key=RoutingKey.DOC_BOX_LABEL.value
-    # ),
-    # QueueName.DOCGEN_UNIT_LABEL: QueueConfig(
-    #     name=QueueName.DOCGEN_UNIT_LABEL.value, routing_key=RoutingKey.DOC_UNIT_LABEL.value
-    # ),
-    QueueName.RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE: QueueConfig(
-        name=QueueName.RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE.value, routing_key=RoutingKey.DOC_GENERATED_BOX_LABEL.value
-    ),
-    QueueName.RABBIT_Q_DOCGEN_UNIT_LABEL_RESPONSE: QueueConfig(
-        name=QueueName.RABBIT_Q_DOCGEN_UNIT_LABEL_RESPONSE.value, routing_key=RoutingKey.DOC_GENERATED_UNIT_LABEL.value
-    )
+    QueueName.RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE:
+    QueueConfig(name=QueueName.RABBIT_Q_DOCGEN_BOX_LABEL_RESPONSE.value,
+                routing_key=RoutingKey.DOC_GENERATED_BOX_LABEL.value),
+    QueueName.RABBIT_Q_DOCGEN_UNIT_LABEL_RESPONSE:
+    QueueConfig(name=QueueName.RABBIT_Q_DOCGEN_UNIT_LABEL_RESPONSE.value,
+                routing_key=RoutingKey.DOC_GENERATED_UNIT_LABEL.value)
 }
