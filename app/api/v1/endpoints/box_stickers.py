@@ -3,7 +3,7 @@ from typing import Annotated, Union
 
 from fastapi import APIRouter, Body, HTTPException, status, Depends, Query, Path
 from sse_starlette import EventSourceResponse
-from app.dependencies.box_stickers import get_box_sticker_service, get_sticker_generation_service, get_sticker_template_save_service
+from app.dependencies.box_stickers import get_box_sticker_service, get_importer_service, get_sticker_generation_service, get_sticker_template_save_service
 from app.exceptions.stickers import TotalTaskLimit
 from app.models.box_stickers import (
     BoxStickerTemplateView,
@@ -144,7 +144,7 @@ async def get_list_manufacturers(
 """)
 async def get_list_importers(
     service: Annotated[ImporterService,
-                       Depends(get_box_sticker_service)],
+                       Depends(get_importer_service)],
 ) -> list[ImporterView]:
     """Получить список существующих шаблонов для стикеров."""
     return await service.get_list_importers()
