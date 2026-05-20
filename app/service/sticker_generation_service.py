@@ -1,7 +1,7 @@
 import logging
 from app.database.repositories.sticker_generation_tasks import StickerGenerationTasksRepository
 from app.exceptions.stickers import TotalTaskLimit
-from app.file_storage.base.interface import IFileStorage
+from app.file_storage.base import IFileStorage, StorageFileNotFoundError
 from app.models.box_stickers import (
     BoxStickerTemplateView,
     IndividualStickerTemplateView,
@@ -136,7 +136,6 @@ class StickerGenerationService:
                     product_id=task_info.product_id,
                     generation_status=task_info.generation_status,
                     error_message=task_info.error_message,
-                    document_url=None,
                     sticker_type=task_info.sticker_type,
                     created_at=task_info.created_at,
                     updated_at=task_info.updated_at,
@@ -261,7 +260,6 @@ class StickerGenerationService:
                     product_id=task_info.product_id,
                     generation_status=task_info.generation_status,
                     error_message=task_info.error_message,
-                    document_url=None,
                     sticker_type=task_info.sticker_type,
                     created_at=task_info.created_at,
                     updated_at=task_info.updated_at,
@@ -334,19 +332,12 @@ class StickerGenerationService:
         task_info = await self.generation_tasks_repo.get_task_by_uuid(task_uuid
                                                                       )
         if task_info:
-            url = None
-            if task_info.generation_status == GenerationStatus.COMPLETED:
-                url = await self.file_storage.get_presigned_url(
-                    file_key=task_info.document_path,
-                    expires_in=120,
-                )
             await self.send_notice_with_updated_task_status(
                 StickerGenerationTaskInfo(
                     task_id=task_info.id,
                     product_id=task_info.product_id,
                     generation_status=task_info.generation_status,
                     error_message=task_info.error_message,
-                    document_url=url,
                     sticker_type=task_info.sticker_type,
                     created_at=task_info.created_at,
                     updated_at=task_info.updated_at,
@@ -358,31 +349,19 @@ class StickerGenerationService:
         """
         Получить список задач на генерацию стикеров.
         """
-        tasks = await self.generation_tasks_repo.get_tasks_list(user_id=user_id
-                                                                )
-        result = []
-        for task in tasks:
-            url = None
-
-            if task.generation_status == GenerationStatus.COMPLETED:
-                url = await self.file_storage.get_presigned_url(
-                    file_key=task.document_path,
-                    expires_in=120,
-                )
-
-            result.append(
-                StickerGenerationTaskInfo(
-                    task_id=task.id,
-                    product_id=task.product_id,
-                    generation_status=task.generation_status,
-                    error_message=task.error_message,
-                    document_url=url,
-                    sticker_type=task.sticker_type,
-                    created_at=task.created_at,
-                    updated_at=task.updated_at,
-                ))
-
-        return result
+        tasks = await self.generation_tasks_repo.get_tasks_list(user_id=user_id)
+        return [
+            StickerGenerationTaskInfo(
+                task_id=task.id,
+                product_id=task.product_id,
+                generation_status=task.generation_status,
+                error_message=task.error_message,
+                sticker_type=task.sticker_type,
+                created_at=task.created_at,
+                updated_at=task.updated_at,
+            )
+            for task in tasks
+        ]
 
     async def send_notice_with_updated_task_status(
             self, task_info: StickerGenerationTaskInfo):
@@ -395,3 +374,14 @@ class StickerGenerationService:
         )
 
         await self.task_notification_service.publish_notice(notice)
+
+    async def get_file_url_by_task_id(self, task_id: int) -> str:
+        """
+        Получить ссылку для скачивания на файл, если задача завершена успешно.
+        """
+        task  = await self.generation_tasks_repo.get_by_id(task_id=task_id)
+
+        if task and task.generation_status == GenerationStatus.COMPLETED:
+            return await self.file_storage.get_presigned_url(file_key=task.document_path, expires_in=60)
+
+        raise StorageFileNotFoundError

@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Annotated, Union
 
 from fastapi import APIRouter, Body, HTTPException, status, Depends, Query, Path
-from fastapi.responses import StreamingResponse
 from sse_starlette import EventSourceResponse
 from app.dependencies.box_stickers import get_box_sticker_service, get_sticker_generation_service, get_sticker_template_save_service
 from app.exceptions.stickers import TotalTaskLimit
@@ -22,6 +21,7 @@ from app.service.sticker_template_save import StickerTemplateSaveService
 from app.service.translate_manager import translation_manager
 from app.service.sticker_tasks_notification import StickerTasksNotificationsService
 from app.dependencies.sticker_tasks_notification import get_sticker_tasks_notification_service
+from app.file_storage import StorageFileNotFoundError
 
 router = APIRouter(prefix="/stickers", tags=["Стикеры для коробов"])
 
@@ -166,6 +166,24 @@ async def get_generation_tasks(
     return result
 
 
+@router.get("/tasks/{task_id}/download",
+            status_code=status.HTTP_200_OK,
+            description="""
+    **Получить ссылку для скачивания файла, если задача по генерации успешно выполнена.**
+""")
+async def get_file_url_for_download(
+    task_id: Annotated[int, Path(description="ID задачи на генерацию файла.")],
+    service: Annotated[StickerGenerationService, Depends(get_sticker_generation_service)]
+) -> str:
+    """
+    Получить ссылку для скачивания файла, если задача по генерации успешно выполнена.
+    """
+    try:
+        return await service.get_file_url_by_task_id(task_id=task_id)
+    except StorageFileNotFoundError:
+        raise HTTPException(status_code=404, detail={"task_id": task_id, "message": "Файл не найден. Проверьте статус задачи или корректность task_id."})
+
+
 @router.get("/tasks/events",
             description="""
     **Устанавливает SSE-соединение с клиентом и возвращает уведомления по задачам генерации файлов.**
@@ -175,7 +193,7 @@ async def get_generation_tasks(
 async def stream_tasks_notifications(
     service: Annotated[StickerTasksNotificationsService,
                        Depends(get_sticker_tasks_notification_service)],
-) -> StreamingResponse:
+) -> EventSourceResponse:
     """
     Устанавливает SSE-соединение с клиентом и возвращает уведомления по задачам генерации файлов.
     """

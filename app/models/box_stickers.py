@@ -225,8 +225,6 @@ class StickerGenerationTaskInfo(BaseModel):
                                                 description="Статус задачи")
     error_message: str | None = Field(
         None, description="Сообщение об ошибках во время выполнения задачи.")
-    document_url: str | None = Field(
-        None, description="Ссылка на файл, если файл готов.")
     sticker_type: StickerType = Field(
         ..., description="Тип стикеров в готовом файле")
     created_at: datetime = Field(..., description="Дата создания задачи")
