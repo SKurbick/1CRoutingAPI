@@ -4,7 +4,7 @@ from app.service.sticker_user_data import StickerUserDataService
 
 
 class StickerTemplateSaveService:
-
+    """Сейчас не используется, нужен для сохранения данных по шаблону стикера без формирования самого стикера"""
     def __init__(
         self,
         user_data_service: StickerUserDataService,

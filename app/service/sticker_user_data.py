@@ -49,7 +49,7 @@ class StickerUserDataService:
             produced_in=template_data.produced_in,
             certification_type=template_data.certification_type,
             production_date=template_data.
-            production_date  #TODO: не уверен, что поле тут нужно. Оно должно быть сегодняшним для любого стикера. Но мб так можно будет не генерировать новый стикер.
+            production_date
         )
 
         await self.individual_repo.upsert(user_data)

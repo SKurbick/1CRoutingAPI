@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Union
 
-from fastapi import APIRouter, Body, HTTPException, status, Depends, Query, Path
+from fastapi import APIRouter, HTTPException, status, Depends, Path
 from fastapi.responses import StreamingResponse
 from sse_starlette import EventSourceResponse
 from app.dependencies.box_stickers import get_box_sticker_service, get_sticker_generation_service, get_sticker_template_save_service
@@ -15,11 +15,10 @@ from app.models.box_stickers import (
     StickerGenerationTaskResultResponse,
     StickerGenerationTaskInfo,
 )
-from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
+from app.service.box_stickers import StickerTemplateBuilderService
 from app.service.importers import ImporterService
 from app.service.sticker_generation_service import StickerGenerationService
-from app.service.sticker_template_save import StickerTemplateSaveService
-from app.service.translate_manager import translation_manager
+# from app.service.translate_manager import translation_manager
 from app.service.sticker_tasks_notification import StickerTasksNotificationsService
 from app.dependencies.sticker_tasks_notification import get_sticker_tasks_notification_service
 

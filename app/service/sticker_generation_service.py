@@ -295,17 +295,6 @@ class StickerGenerationService:
         #TODO: логирование
         broker_task_id = await self.publisher.publish_generation_task_for_individual(
             broker_payload)
-        # updated = await self.generation_tasks_repo.get_by_id(
-        #     generation_task.task_id)
-        # if updated:
-        #     print(f"--> updated получил таску {updated}")
-        #     return StickerGenerationTaskResultResponse(
-        #         task_id=updated.task_id,
-        #         product_id=template_data.product_id,
-        #         generation_status=updated.generation_status,
-        #         error_message=updated.error_message,
-        #         document_url=None)
-        print(f" финальный ретурн со статусом{generation_task.generation_status}")
         return StickerGenerationTaskResultResponse(
             task_id=generation_task.task_id,
             product_id=template_data.product_id,

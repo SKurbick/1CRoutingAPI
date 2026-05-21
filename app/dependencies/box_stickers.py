@@ -3,7 +3,7 @@ from concurrent.futures import ProcessPoolExecutor
 from fastapi import Depends, Request
 from asyncpg import Pool
 
-from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
+# from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
 from app.database.repositories.importers import ImporterRepository
 from app.database.repositories.localisation import LocalisationRepository
 from app.database.repositories.manufacturers import ManufacturerRepository
@@ -12,7 +12,7 @@ from app.database.repositories.sticker_individual_user_data import IndividualUse
 from app.database.repositories.sticker_user_data import StickerUserDataRepository
 from app.database.repositories.stickers_storage import StickersStorageRepository
 from app.file_storage.base.interface import IFileStorage
-from app.service.box_stickers import BoxStickerService, StickerTemplateBuilderService
+from app.service.box_stickers import  StickerTemplateBuilderService
 from app.service.importers import ImporterService
 from app.service.localisation import LocalisationService
 from app.service.sticker_generation_publisher import StickerGenerationPublisher
@@ -20,9 +20,9 @@ from app.service.sticker_generation_service import StickerGenerationService
 from app.service.sticker_template_save import StickerTemplateSaveService
 from app.service.sticker_user_data import StickerUserDataService
 from app.service.sticker_tasks_notification import StickerTasksNotificationsService
-from .goods_information import get_goods_information_service, GoodsInformationService
+# from .goods_information import get_goods_information_service, GoodsInformationService
 from .sticker_tasks_notification import get_sticker_tasks_notification_service
-from faststream import Context
+# from faststream import Context
 
 
 def get_pool(request: Request) -> Pool:
@@ -70,18 +70,18 @@ def get_individual_user_data_repo(
     return IndividualUserDataRepository(pool)
 
 
-def get_box_sticker_service(
-    process_pool: ProcessPoolExecutor = Depends(get_process_pool),
-    template_repo: BoxStickersTemplateRepository = Depends(
-        get_box_stickers_templates_repo),
-    goods_info_service: GoodsInformationService = Depends(
-        get_goods_information_service),
-) -> BoxStickerService:
-    return BoxStickerService(
-        process_pool=process_pool,
-        template_repo=template_repo,
-        goods_info_service=goods_info_service,
-    )
+# def get_box_sticker_service(
+#     process_pool: ProcessPoolExecutor = Depends(get_process_pool),
+#     template_repo: BoxStickersTemplateRepository = Depends(
+#         get_box_stickers_templates_repo),
+#     goods_info_service: GoodsInformationService = Depends(
+#         get_goods_information_service),
+# ) -> BoxStickerService:
+#     return BoxStickerService(
+#         process_pool=process_pool,
+#         template_repo=template_repo,
+#         goods_info_service=goods_info_service,
+#     )
 
 
 def get_box_sticker_service(
