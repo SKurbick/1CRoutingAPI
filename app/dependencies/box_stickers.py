@@ -171,7 +171,7 @@ def get_importer_repo(pool: Pool = Depends(get_pool), ) -> ImporterRepository:
     return ImporterRepository(pool)
 
 
-def get_box_sticker_service(
+def get_importer_service(
         importer_repo: ImporterRepository = Depends(
             get_importer_repo)) -> ImporterService:
     return ImporterService(
