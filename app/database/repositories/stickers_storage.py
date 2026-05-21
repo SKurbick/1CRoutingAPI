@@ -1,6 +1,6 @@
 from asyncpg import Pool
 
-from app.models.box_stickers import BoxSize, BoxStickerTemplateViewShort, CertificationType, StickerProductData
+from app.models.box_stickers import BoxSize, StickerTemplateViewShort, CertificationType, StickerProductData
 
 
 class StickersStorageRepository:
@@ -8,7 +8,7 @@ class StickersStorageRepository:
         self.pool = pool
 
     
-    async def get_by_product_id(self, product_id: str) -> StickerProductData| None: #TODO: net_weight для индивидуальных стикеров. produced_in нет в БД
+    async def get_by_product_id(self, product_id: str) -> StickerProductData| None:
         sql = """
             SELECT
                 product_id,
@@ -49,7 +49,7 @@ class StickersStorageRepository:
         )
     #сделал аналогично async def get(self, article: str). Возвращает результат только по product_id!
 
-    async def get_list(self) -> list[BoxStickerTemplateViewShort]:
+    async def get_list(self) -> list[StickerTemplateViewShort]:
         query = """
             SELECT
                 product_id,
@@ -60,7 +60,7 @@ class StickersStorageRepository:
 
         rows = await self.pool.fetch(query)
 
-        return [BoxStickerTemplateViewShort(**row) for row in rows]
+        return [StickerTemplateViewShort(**row) for row in rows]
     
 
 

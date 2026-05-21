@@ -1,15 +1,14 @@
-from datetime import datetime
-from typing import Annotated, Union
+# from datetime import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, Body, HTTPException, status, Depends, Query, Path
 from fastapi import APIRouter, HTTPException, status, Depends, Path
-from fastapi.responses import StreamingResponse
+# from fastapi.responses import StreamingResponse
 from sse_starlette import EventSourceResponse
 from app.dependencies.box_stickers import get_box_sticker_service, get_importer_service, get_sticker_generation_service, get_sticker_template_save_service
 from app.exceptions.stickers import TotalTaskLimit
 from app.models.box_stickers import (
     BoxStickerTemplateView,
-    BoxStickerTemplateViewShort,
+    StickerTemplateViewShort,
     ImporterView,
     IndividualStickerTemplateView,
     ManufacturerView,
@@ -121,7 +120,7 @@ async def create_or_get_generation_task(
 async def get_list_templates(
     service: Annotated[StickerTemplateBuilderService,
                        Depends(get_box_sticker_service)],
-) -> list[BoxStickerTemplateViewShort]:
+) -> list[StickerTemplateViewShort]:
     """Получить список существующих шаблонов для стикеров."""
     return await service.get_list_templates()
 

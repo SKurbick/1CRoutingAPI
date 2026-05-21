@@ -104,7 +104,7 @@ class StickerGenerationService:
 
             if existing_task.generation_status == GenerationStatus.COMPLETED:
                 document_url = await self.file_storage.get_presigned_url(
-                    file_key=existing_task.document_path, expires_in=180)
+                    file_key=existing_task.storage_key, expires_in=180)
                 response = StickerGenerationTaskResultResponse(
                     task_id=existing_task.task_id,
                     product_id=template_data.product_id,
@@ -227,7 +227,7 @@ class StickerGenerationService:
             document_url = None
             if existing_task.generation_status == GenerationStatus.COMPLETED:
                 document_url = await self.file_storage.get_presigned_url(
-                    file_key=existing_task.document_path, expires_in=180)
+                    file_key=existing_task.storage_key, expires_in=180)
 
             return StickerGenerationTaskResultResponse(
                 task_id=existing_task.task_id,
@@ -305,7 +305,7 @@ class StickerGenerationService:
 
         task_uuid = data.get("task_id")
         status = data.get("status")
-        document_path = data.get("file_storage_key")
+        storage_key = data.get("file_storage_key")
         error_message = data.get("error")
 
         if not task_uuid:
@@ -315,7 +315,7 @@ class StickerGenerationService:
         await self.generation_tasks_repo.update_task_result(
             task_uuid=task_uuid,
             status=status,
-            document_path=document_path,
+            storage_key=storage_key,
             error_message=error_message)
 
         task_info = await self.generation_tasks_repo.get_task_by_uuid(task_uuid

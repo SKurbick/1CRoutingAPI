@@ -40,7 +40,7 @@ class StickerGenerationTasksRepository:
         return StickerGenerationTaskResult(
             task_id=data["task_id"],
             generation_status=GenerationStatus(data["generation_status"]),
-            document_path=data["document_path"],
+            storage_key=data["document_path"],
             task_uuid=data.get("task_uuid"),
             error_message=data.get("error_message"),
         )
@@ -77,7 +77,7 @@ class StickerGenerationTasksRepository:
         return StickerGenerationTaskResult(
             task_id=data["task_id"],
             generation_status=GenerationStatus(data["generation_status"]),
-            document_path=data["document_path"],
+            storage_key=data["document_path"],
             task_uuid=data.get("task_uuid"),
             error_message=data.get("error_message"),
         )
@@ -103,7 +103,7 @@ class StickerGenerationTasksRepository:
         return StickerGenerationTaskResult(
             task_id=data["task_id"],
             generation_status=GenerationStatus(data["generation_status"]),
-            document_path=data["document_path"],
+            storage_key=data["document_path"],
             task_uuid=data.get("task_uuid"),
             error_message=data.get("error_message"),
         )
@@ -160,7 +160,7 @@ class StickerGenerationTasksRepository:
     async def update_task_result(self,
                                  task_uuid: str,
                                  status: GenerationStatus,
-                                 document_path: str | None = None,
+                                 storage_key: str | None = None,
                                  error_message: str | None = None) -> None:
         """Обновляет статус и информацию о выполнении задачи генерации стикера"""
 
@@ -174,7 +174,7 @@ class StickerGenerationTasksRepository:
             WHERE task_uuid = $1
         """
 
-        await self.pool.execute(sql, task_uuid, status, document_path,
+        await self.pool.execute(sql, task_uuid, status, storage_key,
                                 error_message)
 
     async def get_tasks_list(

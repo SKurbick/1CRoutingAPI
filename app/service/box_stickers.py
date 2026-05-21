@@ -13,7 +13,7 @@ from app.database.repositories.manufacturers import ManufacturerRepository
 from app.database.repositories.sticker_individual_user_data import IndividualUserDataRepository
 from app.database.repositories.sticker_user_data import StickerUserDataRepository
 from app.database.repositories.stickers_storage import StickersStorageRepository
-from app.models.box_stickers import BoxSize, BoxStickerTemplateView, BoxStickerTemplateViewShort, IndividualStickerTemplateView, ManufacturerView
+from app.models.box_stickers import BoxSize, BoxStickerTemplateView, StickerTemplateViewShort, IndividualStickerTemplateView, ManufacturerView
 # from app.database.repositories.box_stickers_templates import BoxStickersTemplateRepository
 # from app.service.goods_information import GoodsInformationService
 # from app.service.translate_manager import translation_manager
@@ -665,7 +665,7 @@ class StickerTemplateBuilderService:
             offset=1,
         )
 
-    async def get_list_templates(self) -> list[BoxStickerTemplateViewShort]:
+    async def get_list_templates(self) -> list[StickerTemplateViewShort]:
         """Получить список шаблонов для стикеров."""
         return await self.products_repo.get_list()
 

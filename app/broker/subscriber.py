@@ -1,16 +1,16 @@
-from pydantic import BaseModel, Field
+# from pydantic import BaseModel, Field
 from app.cache.client import RedisClient
-from app.dependencies.sticker_tasks_notification import get_sticker_tasks_notification_service
+# from app.dependencies.sticker_tasks_notification import get_sticker_tasks_notification_service
 from app.service.sticker_tasks_notification import StickerTasksNotificationsService
 from faststream import Context
 from app.broker.broker import broker_manager
-from app.broker.topology import ExchangeName, QueueName, RoutingKey
+from app.broker.topology import ExchangeName, QueueName
 from app.database.repositories.sticker_generation_tasks import StickerGenerationTasksRepository
-from app.dependencies.box_stickers import get_pool, get_sticker_generation_service
+# from app.dependencies.box_stickers import get_pool, get_sticker_generation_service
 from app.dependencies.config import SETTINGS
 
 from app.file_storage import IFileStorage
-from app.models.box_stickers import GenerationStatus
+# from app.models.box_stickers import GenerationStatus
 from app.service.sticker_generation_service import StickerGenerationService
 from asyncpg import Pool
 
