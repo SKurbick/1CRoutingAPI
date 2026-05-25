@@ -10,6 +10,7 @@ from app.dependencies.config import SETTINGS
 
 class BrokerManager:
     __instance: Self | None = None
+
     def __init__(self):
         self._broker: RabbitBroker | None = None
 
@@ -41,8 +42,7 @@ class BrokerManager:
                     f"{SETTINGS.RABBIT_PORT}/{SETTINGS.RABBIT_VHOST}"
                 )
             )
-
-            
+    
         return self._broker
     
     def __new__(cls, *args, **kwargs):
@@ -84,7 +84,7 @@ class BrokerManager:
         print("RabbitMQ closed")
 
 
-# @lru_cache(maxsize=1)
+@lru_cache(maxsize=1)
 def get_broker_manager() -> BrokerManager:
     return BrokerManager()
 

@@ -2,17 +2,25 @@ from uuid import UUID
 
 from asyncpg import Pool
 
-from app.models.box_stickers import GenerationStatus, StickerGenerationTaskResult, StickerType, StickerGenerationTaskView
+from app.models.box_stickers import (GenerationStatus,
+                                     StickerGenerationTaskResult, StickerType,
+                                     StickerGenerationTaskView)
 
 
 class StickerGenerationTasksRepository:
+    """Взаимодействует с таблицей sticker_generation_tasks"""
 
     def __init__(self, pool: Pool):
         self.pool = pool
 
     async def get_by_unique_key(
-            self, product_id: str, sticker_type: StickerType,
-            template_hash: str) -> StickerGenerationTaskResult | None:
+            self,
+            product_id: str,
+            sticker_type: StickerType,
+            template_hash: str
+            ) -> StickerGenerationTaskResult | None:
+        """Получить записть по составному ключу product_id, sticker_type, template_hash"""
+
         sql = """
             SELECT
                 id AS task_id,
@@ -29,7 +37,7 @@ class StickerGenerationTasksRepository:
         row = await self.pool.fetchrow(
             sql,
             product_id,
-            sticker_type.value,
+            sticker_type,
             template_hash,
         )
 
@@ -149,7 +157,7 @@ class StickerGenerationTasksRepository:
     #             generation_status = $2,
     #             updated_at = now()
     #         WHERE task_uuid = $1
-    #         """Опубликовано сообщение в 
+    #         """Опубликовано сообщение в
 
     #     await self.pool.execute(
     #         sql,

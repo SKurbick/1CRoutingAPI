@@ -688,7 +688,7 @@ class StickerTemplateBuilderService:
 
         manufacturer_name = DEFAULT_MANUFACTURER
         if user_data and user_data.manufacturer_id:
-            manufacturer_name = await self.manufacturer_repo.get_name_by_id(
+            manufacturer_name = await self.manufacturer_repo.get_by_id(
                 user_data.manufacturer_id)
 
         return IndividualStickerTemplateView(
