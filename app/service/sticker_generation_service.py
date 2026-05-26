@@ -302,11 +302,17 @@ class StickerGenerationService:
 
     async def handle_broker_response(self, data: dict) -> None:
         """Бизнес логика обработки сообщения от брокера"""
+        print("текст ответа брокера:", data)
 
         task_uuid = data.get("task_id")
         status = data.get("status")
         storage_key = data.get("file_storage_key")
-        error_message = data.get("error")
+        errors = data.get("errors")
+        
+        error_message = None
+        if errors:
+            error_message = ", ".join(errors)
+
 
         if not task_uuid:
             print("пошло не так в handle_broker_response")
