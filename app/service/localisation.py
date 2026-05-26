@@ -9,7 +9,9 @@ class LocalisationService:
 
     async def save_localisations(
         self, template_data
-    ) -> None:  #template_data: BoxStickerTemplateView #TODO: сделать универсальный метод для всех видо стикеров(сохранять локлизацию для товара, а не для стикера) #TODO: добавить сохранение русских записей
+    ) -> (
+        None
+    ):  # template_data: BoxStickerTemplateView #TODO: сделать универсальный метод для всех видо стикеров(сохранять локлизацию для товара, а не для стикера) #TODO: добавить сохранение русских записей
         """Сохраняет пользовательский ввод в поля с переводом"""
         items: list[StickerLocalisationData] = []
         items.append(
@@ -18,42 +20,48 @@ class LocalisationService:
                 field_name="name",
                 lang="en",
                 translation=template_data.name_en,
-            ))
+            )
+        )
         items.append(
             StickerLocalisationData(
                 product_id=template_data.product_id,
                 field_name="color",
                 lang="en",
                 translation=template_data.color_en,
-            ))
+            )
+        )
         items.append(
             StickerLocalisationData(
                 product_id=template_data.product_id,
                 field_name="produced_in",
                 lang="en",
                 translation=template_data.produced_in_en,
-            ))
+            )
+        )
         items.append(
             StickerLocalisationData(
                 product_id=template_data.product_id,
                 field_name="name",
                 lang="ru",
                 translation=template_data.name,
-            ))
+            )
+        )
         items.append(
             StickerLocalisationData(
                 product_id=template_data.product_id,
                 field_name="color",
                 lang="ru",
                 translation=template_data.color,
-            ))
+            )
+        )
         items.append(
             StickerLocalisationData(
                 product_id=template_data.product_id,
                 field_name="produced_in",
                 lang="ru",
                 translation=template_data.produced_in,
-            ))
+            )
+        )
 
         await self.repo.upsert_many(items)
 

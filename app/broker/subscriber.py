@@ -22,7 +22,8 @@ async def handle_responses_box(
     """Обрабатывает данные из брокера по транспортным стикерам, переданные сервисом генерации стикеров"""
     tasks_repo = StickerGenerationTasksRepository(pool)
     task_notification_service = StickerTasksNotificationsService(
-        redis_client=redis_client)
+        redis_client=redis_client
+        )
     service = StickerGenerationService(
         generation_tasks_repo=tasks_repo,
         user_data_service=None,
@@ -41,7 +42,7 @@ async def handle_responses_unit(
         file_storage: IFileStorage = Context(),
         pool: Pool = Context(),
         redis_client: RedisClient = Context(),
-) -> None:
+        ) -> None:
     """Обрабатывает данные из брокера по индивидуальным стикерам, переданные сервисом генерации стикеров"""
     tasks_repo = StickerGenerationTasksRepository(pool)
     task_notification_service = StickerTasksNotificationsService(

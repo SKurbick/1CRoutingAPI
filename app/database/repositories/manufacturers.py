@@ -9,8 +9,8 @@ class ManufacturerRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
-    async def get_all(self) -> list[dict]:
-        """Получить список всех изготовителей для выпадающего списка"""
+    async def get_all(self) -> list[ManufacturerView]:
+        """Получить список всех изготовителей"""
         
         query = """
             SELECT id, name 
