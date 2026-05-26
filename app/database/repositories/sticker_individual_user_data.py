@@ -48,7 +48,6 @@ class IndividualUserDataRepository:
 
     async def upsert(self, data: StickerIndividualUserData) -> None:
         """Сохраняет или обновляет данные индивидуального стикера"""
-        
         sql = """
             INSERT INTO sticker_user_data_individual (
                 product_id, manufacturer_id, name, color, 

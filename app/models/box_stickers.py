@@ -58,7 +58,7 @@ class StickerUserTemplateData(BaseModel):
     """Пользовательские данные шаблона"""
     product_id: str
     sticker_type: StickerType
-    proforma_number: str | None = None
+    # proforma_number: str | None = None
     items_per_box: int | None = None
     total_boxes: int | None = None
     produced_in: str | None = None

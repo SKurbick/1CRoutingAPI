@@ -651,7 +651,8 @@ class StickerTemplateBuilderService:
             if user_data and user_data.items_per_box else 1,
             total_boxes=user_data.total_boxes
             if user_data and user_data.total_boxes else 1,
-            proforma_number=user_data.proforma_number if user_data else None,
+            # proforma_number=user_data.proforma_number if user_data else None,
+            proforma_number=None,
             produced_in=(translations.get(("produced_in", "ru")) or
                          (user_data.produced_in if user_data
                           and user_data.produced_in else product.produced_in)

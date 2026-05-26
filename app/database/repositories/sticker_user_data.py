@@ -13,7 +13,7 @@ class StickerUserDataRepository:
             SELECT
                 product_id,
                 sticker_type,
-                proforma_number,
+                --proforma_number,
                 items_per_box,
                 total_boxes,
                 produced_in,
@@ -35,7 +35,7 @@ class StickerUserDataRepository:
         return StickerUserTemplateData(
             product_id=data["product_id"],
             sticker_type=StickerType(data["sticker_type"]),
-            proforma_number=data.get("proforma_number"),
+            # proforma_number=data.get("proforma_number"),
             items_per_box=data.get("items_per_box"),
             total_boxes=data.get("total_boxes"),
             produced_in=data.get("produced_in"),
@@ -51,16 +51,17 @@ class StickerUserDataRepository:
         )
     
     async def upsert(self, data: StickerUserTemplateData) -> None:
+        # proforma_number, 
         sql = """
             INSERT INTO sticker_user_data (
-                product_id, sticker_type, proforma_number, items_per_box,
+                product_id, sticker_type, items_per_box,
                 total_boxes, gross_weight, net_weight, 
                 box_length, box_width, box_height, certification_type
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             ON CONFLICT (product_id, sticker_type) DO UPDATE
             SET
-                proforma_number = EXCLUDED.proforma_number,
+                --proforma_number = EXCLUDED.proforma_number,
                 items_per_box = EXCLUDED.items_per_box,
                 total_boxes = EXCLUDED.total_boxes,
                 gross_weight = EXCLUDED.gross_weight,
@@ -76,7 +77,7 @@ class StickerUserDataRepository:
             sql,
             data.product_id,
             data.sticker_type.value,
-            data.proforma_number,
+            # data.proforma_number,
             data.items_per_box,
             data.total_boxes,
             data.gross_weight,

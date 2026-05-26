@@ -34,9 +34,9 @@ def get_pool(request: Request) -> Pool:
 #     return pool
 
 
-def get_process_pool(request: Request):
-    """Получения пула процессов из состояния приложения."""
-    return request.app.state.process_pool
+# def get_process_pool(request: Request):
+#     """Получения пула процессов из состояния приложения."""
+#     return request.app.state.process_pool
 
 
 # def get_box_stickers_templates_repo(
