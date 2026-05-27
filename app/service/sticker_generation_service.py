@@ -367,7 +367,7 @@ class StickerGenerationService:
 
         if task and task.generation_status == GenerationStatus.COMPLETED:
             return await self.file_storage.get_presigned_url(
-                file_key=task.document_path, expires_in=60
+                file_key=task.storage_key, expires_in=60
             )
 
         raise StorageFileNotFoundError
