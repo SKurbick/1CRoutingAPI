@@ -91,6 +91,28 @@ class BoxStickerTemplateView(
     certification_type: CertificationType = CertificationType.NONE
     limit: int | None = 0
     offset: int | None = 0
+    
+    
+class BoxStickerTemplateViewRequest(
+        BaseModel
+):
+    """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
+    product_id: str
+    name: str
+    name_en: str
+    color: str | None = None
+    color_en: str | None = None
+    gross_weight: float
+    net_weight: float | None = None  # TODO: в таблице в БД нет net_weight
+    box_size: BoxSize
+    items_per_box: int | None = None
+    # total_boxes: int | None = None
+    produced_in: str | None = None
+    produced_in_en: str | None = None
+    proforma_number: str | None = None
+    certification_type: CertificationType = CertificationType.NONE
+    limit: int | None = 0
+    # offset: int | None = 0
 
 
 class GenerationStatus(str, Enum):

@@ -6,6 +6,7 @@ from app.exceptions.stickers import TotalTaskLimit
 from app.file_storage.base import IFileStorage, StorageFileNotFoundError
 from app.models.box_stickers import (
     BoxStickerTemplateView,
+    BoxStickerTemplateViewRequest,
     IndividualStickerTemplateView,
     StickerGenerationTaskResultResponse,
     StickerType,
@@ -44,10 +45,30 @@ class StickerGenerationService:
     async def create_or_get_box_generation_task(
         self,
         # user_id: int, #TODO: пока нет авторизации польщователей
-        template_data: BoxStickerTemplateView,
+        # template_data: BoxStickerTemplateView,
+        template_data: BoxStickerTemplateViewRequest,
     ) -> StickerGenerationTaskResultResponse:
-        await self.user_data_service.save_box_sticker_user_data(template_data)
-        await self.localisation_service.save_localisations(template_data)
+        
+        temp_teamplate_data = BoxStickerTemplateView(
+            product_id=template_data.product_id,
+            name=template_data.name,
+            name_en=template_data.name_en,
+            color=template_data.color,
+            color_en=template_data.color_en,
+            gross_weight=template_data.gross_weight,
+            net_weight=template_data.gross_weight,
+            box_size=template_data.box_size,
+            items_per_box=template_data.items_per_box,
+            total_boxes=None,
+            produced_in=template_data.produced_in,
+            produced_in_en=template_data.produced_in_en,
+            proforma_number=template_data.proforma_number,
+            certification_type=template_data.certification_type,
+            limit=template_data.limit,
+            offset=None
+        )
+        await self.user_data_service.save_box_sticker_user_data(temp_teamplate_data)
+        await self.localisation_service.save_localisations(temp_teamplate_data)
         hash_payload = {
             "sticker_type": StickerType.TRANSPORT.value,
             "product_id": template_data.product_id,
@@ -61,13 +82,13 @@ class StickerGenerationService:
                 template_data.box_size.model_dump() if template_data.box_size else None
             ),
             "items_per_box": template_data.items_per_box,
-            "total_boxes": template_data.total_boxes,
+            # "total_boxes": template_data.total_boxes,
             "produced_in": template_data.produced_in,
             "produced_in_en": template_data.produced_in_en,
             "proforma_number": template_data.proforma_number,
             "certification_type": template_data.certification_type.value,
             "limit": template_data.limit,
-            "offset": template_data.offset,
+            # "offset": template_data.offset,
         }
         template_hash = StickerTemplateHashService.calculate(hash_payload)
         # проверяем существования таски по составному ключу (product_id, sticker_type, template_hash)
@@ -133,7 +154,7 @@ class StickerGenerationService:
         broker_payload = {
             "task_id": generation_task.task_uuid,
             "limit": template_data.limit,
-            "offset": template_data.offset,
+            # "offset": template_data.offset,
             "data": {
                 "product_id": template_data.product_id,
                 "gross_weight": template_data.gross_weight,
@@ -149,7 +170,7 @@ class StickerGenerationService:
                 ),
                 "proforma_number": template_data.proforma_number,
                 "items_per_box": template_data.items_per_box,
-                "total_boxes": template_data.total_boxes,
+                # "total_boxes": template_data.total_boxes,
                 "certification_type": template_data.certification_type.value,
                 "local_data": [
                     {

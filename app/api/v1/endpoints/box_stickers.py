@@ -9,6 +9,7 @@ from app.dependencies.box_stickers import (get_box_sticker_service,
 from app.exceptions.stickers import TotalTaskLimit
 from app.models.box_stickers import (
     BoxStickerTemplateView,
+    BoxStickerTemplateViewRequest,
     StickerTemplateViewShort,
     ImporterView,
     IndividualStickerTemplateView,
@@ -76,7 +77,7 @@ async def get_individual_sticker_template_(
     status_code=status.HTTP_200_OK,
     description="**Инициировать создание стикера**")
 async def create_or_get_transport_generation_task(
-    template_data: BoxStickerTemplateView,
+    template_data: BoxStickerTemplateViewRequest,
     service: Annotated[
         StickerGenerationService,
         Depends(get_sticker_generation_service)
