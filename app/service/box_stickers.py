@@ -648,7 +648,7 @@ class StickerTemplateBuilderService:
             net_weight=round(current_net, 2) if current_net is not None else 0,
             box_size=final_box_size or product.box_size,
             items_per_box=user_data.items_per_box
-            if user_data and user_data.items_per_box else 1,
+            if user_data and user_data.items_per_box else product.items_per_box,
             total_boxes=1,
             # proforma_number=user_data.proforma_number if user_data else None,
             proforma_number=None,

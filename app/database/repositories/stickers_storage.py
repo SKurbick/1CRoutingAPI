@@ -17,6 +17,7 @@ class StickersStorageRepository:
                 material,
                 gross_weight,
                 --net_weight,
+                items_per_box,
                 box_length,
                 box_width,
                 box_height,
@@ -46,6 +47,7 @@ class StickersStorageRepository:
             ),
             # produced_in=data.get("produced_in"),
             certification_type=CertificationType(product_data.get("certification_type", "NONE")),
+            items_per_box=product_data.get("items_per_box")
         )
     #сделал аналогично async def get(self, article: str). Возвращает результат только по product_id!
 

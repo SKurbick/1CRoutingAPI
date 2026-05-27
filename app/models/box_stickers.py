@@ -41,6 +41,7 @@ class StickerProductData(BaseModel):
     net_weight: float | None = Field(None, description="Вес нетто, кг")
     box_size: BoxSize | None = None
     produced_in: str | None = Field(None, description="Произведено в")
+    items_per_box: int | None = None
     certification_type: CertificationType = Field(
         default=CertificationType.NONE,
         description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)")
