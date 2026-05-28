@@ -13,6 +13,7 @@ class StickerType(str, Enum):
 
 class CertificationType(str, Enum):
     """Тип сертификата или знака соответствия."""
+
     EAC = "ЕАС"  # Евразийское соответствие
     STR = "СТР"  # Свидетельство о госрегистрации
     NONE = "NONE"  # Отсутствует / Не требуется
@@ -20,6 +21,7 @@ class CertificationType(str, Enum):
 
 class BoxSize(BaseModel):
     "Размер короба."
+
     box_length: float = Field(..., description="Длина, см")
     box_width: float = Field(..., description="Ширина, см")
     box_height: float = Field(..., description="Высота, см")
@@ -33,6 +35,7 @@ class BoxSize(BaseModel):
 
 class StickerProductData(BaseModel):
     """Данные товара (временно тянутся из гугл дока)"""
+
     product_id: str = Field(..., description="Артикул")
     name: str = Field(..., description="Название")
     color: str | None = Field(None, description="Цвет")
@@ -44,11 +47,13 @@ class StickerProductData(BaseModel):
     items_per_box: int | None = None
     certification_type: CertificationType = Field(
         default=CertificationType.NONE,
-        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)")
+        description="Тип сертификата соответствия (ЕАС, СТР или отсутствует)",
+    )
 
 
 class StickerLocalisationData(BaseModel):
     """Договорились не хранить русскую версию поля. Локализация!=перевод"""
+
     product_id: str
     field_name: str
     lang: str
@@ -57,6 +62,7 @@ class StickerLocalisationData(BaseModel):
 
 class StickerUserTemplateData(BaseModel):
     """Пользовательские данные шаблона"""
+
     product_id: str
     sticker_type: StickerType
     # proforma_number: str | None = None
@@ -71,10 +77,9 @@ class StickerUserTemplateData(BaseModel):
     certification_type: CertificationType | None = None
 
 
-class BoxStickerTemplateView(
-        BaseModel
-):
+class BoxStickerTemplateView(BaseModel):
     """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
+
     product_id: str
     name: str
     name_en: str
@@ -91,12 +96,11 @@ class BoxStickerTemplateView(
     certification_type: CertificationType = CertificationType.NONE
     limit: int | None = 0
     offset: int | None = 0
-    
-    
-class BoxStickerTemplateViewRequest(
-        BaseModel
-):
+
+
+class BoxStickerTemplateViewRequest(BaseModel):
     """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
+
     product_id: str
     name: str
     name_en: str
@@ -119,7 +123,8 @@ class GenerationStatus(str, Enum):
     """
     Статус задачи.
     """
-    INITIATED = "initiated" # Запрос создан и направлен на обработку
+
+    INITIATED = "initiated"  # Запрос создан и направлен на обработку
     PENDING = "pending"  # Запрос принят, задача ждёт в очереди
     PROCESSING = "processing"  # Воркер взял задачу, идёт генерация
     COMPLETED = "completed"  # Документ сохранён, ссылка готова
@@ -129,6 +134,7 @@ class GenerationStatus(str, Enum):
 
 class StickerGenerationTaskView(BaseModel):
     """Схема для работы с таблицей sticker_generation_tasks"""
+
     id: int
     product_id: str
     sticker_type: StickerType
@@ -151,6 +157,7 @@ class StickerGenerationTaskResult(BaseModel):
 
 class StickerGenerationTaskResultResponse(BaseModel):
     """Схема ответа сервиса в эндпоинтах"""
+
     task_id: int
     product_id: str
     generation_status: GenerationStatus
@@ -165,15 +172,13 @@ class StickerGenerationTaskInfo(BaseModel):
 
     task_id: int = Field(..., description="ID задачи на генерацию.")
     product_id: str = Field(..., description="Артикул товара")
-    generation_status: GenerationStatus = Field(...,
-                                                description="Статус задачи")
+    generation_status: GenerationStatus = Field(..., description="Статус задачи")
     error_message: str | None = Field(
-        None, description="Сообщение об ошибках во время выполнения задачи.")
-    sticker_type: StickerType = Field(
-        ..., description="Тип стикеров в готовом файле")
+        None, description="Сообщение об ошибках во время выполнения задачи."
+    )
+    sticker_type: StickerType = Field(..., description="Тип стикеров в готовом файле")
     created_at: datetime = Field(..., description="Дата создания задачи")
-    updated_at: datetime = Field(
-        ..., description="Дата обновления информации о задаче")
+    updated_at: datetime = Field(..., description="Дата обновления информации о задаче")
 
 
 class StickerGenerationTaskEvent(str, Enum):
@@ -190,25 +195,28 @@ class StickerGenerationTaskNotice(BaseModel):
     """
 
     event: StickerGenerationTaskEvent = Field(
-        ..., description="Тип события в уведомлении.")
-    task_data: StickerGenerationTaskInfo = Field(
-        ..., description="Информация о задаче")
+        ..., description="Тип события в уведомлении."
+    )
+    task_data: StickerGenerationTaskInfo = Field(..., description="Информация о задаче")
 
 
 class StickerTemplateViewShort(BaseModel):
     """Шаблон стикера с минимальной информацией."""
+
     product_id: str | None = Field(None, description="Артикул")
     name: str | None = Field(None, description="Название")
 
 
 class ManufacturerView(BaseModel):
     """Схема данных по производителям"""
+
     id: int
     name: str
 
 
 class ImporterView(BaseModel):
     """Схема данных по импортерам"""
+
     id: int
     name: str
 
@@ -224,8 +232,9 @@ class IndividualStickerTemplateView(BaseModel):
     manufacturer: str = "NINGBO GENERAL UNION CO., LTD"
     importer_details: str = "ООО СТАРТ"
     produced_in: str = "Китай"
-    production_date: str = Field(default_factory=lambda: datetime.now(
-    ).strftime("%Y-%m-%d"))  #TODO: оставить как поле только в бд?
+    production_date: str = Field(
+        default_factory=lambda: datetime.now().strftime("%Y-%m-%d")
+    )  # TODO: оставить как поле только в бд?
     certification_type: CertificationType = CertificationType.NONE
     quantity: int
 
@@ -239,13 +248,11 @@ class StickerIndividualUserData(BaseModel):
     color: str | None = Field(None, description="Цвет")
     material: str | None = Field(None, description="Материал")
     importer_details: str = Field(..., description="Импортер")
-    produced_in: str = Field(default="Китай",
-                             description="Страна производства")
+    produced_in: str = Field(default="Китай", description="Страна производства")
     certification_type: CertificationType = Field(
         default=CertificationType.NONE,
-        description="Тип сертификации (ЕАС, СТР или отсутствует)")
-    production_date: datetime = Field(default_factory=datetime.now,
-                                      description="Дата производства")
-    
-
-
+        description="Тип сертификации (ЕАС, СТР или отсутствует)",
+    )
+    production_date: datetime = Field(
+        default_factory=datetime.now, description="Дата производства"
+    )
