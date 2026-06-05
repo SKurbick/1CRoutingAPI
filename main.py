@@ -27,8 +27,6 @@ from app.cache.client import redis_client
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Старт приложения.")
-    # print("Инициализация пула процессов...")
-    # process_pool = ProcessPoolExecutor(max_workers=4)
 
     async with AsyncExitStack() as stack:    
         # db
@@ -71,7 +69,6 @@ async def lifespan(app: FastAPI):
             stack.push_async_callback(broker_manager.close)
 
         app.state.broker = broker
-        # app.state.process_pool = process_pool
         app.state.pool = pool
         app.state.file_storage = file_storage
         app.state.redis_client = redis_client
@@ -79,9 +76,6 @@ async def lifespan(app: FastAPI):
         print("Приложение настроено.")
         yield
 
-    # if process_pool:
-    #     print("Закрываем процессы.")
-    #     process_pool.shutdown(wait=True)
     print("Приложение завершено.")
 
 app = FastAPI(lifespan=lifespan, title="1CRoutingAPI")

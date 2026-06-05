@@ -2,9 +2,12 @@ from uuid import UUID
 
 from asyncpg import Pool
 
-from app.models.box_stickers import (GenerationStatus,
-                                     StickerGenerationTaskResult, StickerType,
-                                     StickerGenerationTaskView)
+from app.models.box_stickers import (
+    GenerationStatus,
+    StickerGenerationTaskResult,
+    StickerType,
+    StickerGenerationTaskView,
+)
 
 
 class StickerGenerationTasksRepository:
@@ -14,11 +17,8 @@ class StickerGenerationTasksRepository:
         self.pool = pool
 
     async def get_by_unique_key(
-            self,
-            product_id: str,
-            sticker_type: StickerType,
-            template_hash: str
-            ) -> StickerGenerationTaskResult | None:
+        self, product_id: str, sticker_type: StickerType, template_hash: str
+    ) -> StickerGenerationTaskResult | None:
         """Получить записть по составному ключу product_id, sticker_type, template_hash"""
 
         sql = """
@@ -49,14 +49,16 @@ class StickerGenerationTasksRepository:
             task_id=data["task_id"],
             generation_status=GenerationStatus(data["generation_status"]),
             storage_key=data["document_path"],
-            task_uuid=data.get("task_uuid"),
-            error_message=data.get("error_message"),
+            task_uuid=data["task_uuid"],
+            error_message=data["error_message"],
         )
+        # return StickerGenerationTaskResult(**row) # TODO: отработает после переименования колоники document_path
 
-    async def create_task(self, product_id: str, sticker_type: StickerType,
-                          hash: str, path: str) -> StickerGenerationTaskResult:
-        #TODO: убарть путь к файлу из запроса. Путь будет генерировать сервис генерации
-        #TODO: переименовать document_path в document_key или storage key
+    async def create_task(
+        self, product_id: str, sticker_type: StickerType, hash: str, path: str
+    ) -> StickerGenerationTaskResult:
+        # TODO: убарть путь к файлу из запроса. Путь будет генерировать сервис генерации
+        # TODO: переименовать document_path в document_key или storage key
         sql = """
             INSERT INTO sticker_generation_tasks (
                 product_id,
@@ -86,12 +88,11 @@ class StickerGenerationTasksRepository:
             task_id=data["task_id"],
             generation_status=GenerationStatus(data["generation_status"]),
             storage_key=data["document_path"],
-            task_uuid=data.get("task_uuid"),
-            error_message=data.get("error_message"),
+            task_uuid=data["task_uuid"],
+            error_message=data["error_message"],
         )
 
-    async def get_by_id(self,
-                        task_id: int) -> StickerGenerationTaskResult | None:
+    async def get_by_id(self, task_id: int) -> StickerGenerationTaskResult | None:
 
         sql = """
             SELECT
@@ -112,8 +113,8 @@ class StickerGenerationTasksRepository:
             task_id=data["task_id"],
             generation_status=GenerationStatus(data["generation_status"]),
             storage_key=data["document_path"],
-            task_uuid=data.get("task_uuid"),
-            error_message=data.get("error_message"),
+            task_uuid=data["task_uuid"],
+            error_message=data["error_message"],
         )
 
     async def add_user_to_task(self, task_id: int, user_id: int) -> None:
@@ -128,7 +129,7 @@ class StickerGenerationTasksRepository:
         await self.pool.execute(sql, task_id, user_id)
 
     async def count_active_tasks_by_user(self, user_id: int) -> int:
-        """Считает такси в статусе INITIATED, PENDING и PROCESSING на пользователе. Считает активные задачи"""
+        """Считает такси в статусе выполнения на пользователе. Считает активные задачи"""
         sql = """
             SELECT COUNT(*)
             FROM sticker_generation_task_users tu
@@ -139,7 +140,7 @@ class StickerGenerationTasksRepository:
         return await self.pool.fetchval(sql, user_id)
 
     async def count_total_active_tasks(self) -> int:
-        """Считает все такси в статусе INITIATED, PENDING и PROCESSING. Считает активные задачи"""
+        """Считает все такси в статусе выполнения. Считает активные задачи"""
         sql = """
             SELECT COUNT(*)
             FROM sticker_generation_task_users tu
@@ -165,11 +166,13 @@ class StickerGenerationTasksRepository:
     #         GenerationStatus.PROCESSING.value,
     #     )
 
-    async def update_task_result(self,
-                                 task_uuid: str,
-                                 status: GenerationStatus,
-                                 storage_key: str | None = None,
-                                 error_message: str | None = None) -> None:
+    async def update_task_result(
+        self,
+        task_uuid: str,
+        status: GenerationStatus,
+        storage_key: str | None = None,
+        error_message: str | None = None,
+    ) -> None:
         """Обновляет статус и информацию о выполнении задачи генерации стикера"""
 
         sql = """
@@ -182,12 +185,11 @@ class StickerGenerationTasksRepository:
             WHERE task_uuid = $1
         """
 
-        await self.pool.execute(sql, task_uuid, status, storage_key,
-                                error_message)
+        await self.pool.execute(sql, task_uuid, status, storage_key, error_message)
 
     async def get_tasks_list(
-            self,
-            user_id: int | None = None) -> list[StickerGenerationTaskView]:
+        self, user_id: int | None = None
+    ) -> list[StickerGenerationTaskView]:
         """
         Получить список задач по генерации стикеров.
         """
@@ -214,7 +216,8 @@ class StickerGenerationTasksRepository:
         return [StickerGenerationTaskView(**row) for row in rows]
 
     async def get_task_by_uuid(
-            self, task_uuid: UUID) -> StickerGenerationTaskView | None:
+        self, task_uuid: UUID
+    ) -> StickerGenerationTaskView | None:
         """
         Получить задачу по task_id.
         """

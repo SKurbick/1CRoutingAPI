@@ -11,7 +11,7 @@ class ManufacturerRepository:
 
     async def get_all(self) -> list[ManufacturerView]:
         """Получить список всех изготовителей"""
-        
+
         query = """
             SELECT id, name 
             FROM manufacturers

@@ -10,7 +10,7 @@ class LocalisationRepository:
         self.pool = pool
 
     async def get_by_product_id(self, product_id: str) -> list[StickerLocalisationData]:
-        """Возвращает переводы(локализации) полей, которые были внесены до этого по id товара"""
+        """Возвращает переводы(локализации) полей, которые были внесены пользователем прежде по id товара"""
         sql = """
             SELECT
                 product_id,
@@ -23,9 +23,10 @@ class LocalisationRepository:
 
         rows = await self.pool.fetch(sql, product_id)
         return [StickerLocalisationData(**row) for row in rows]
-    
 
     async def upsert_many(self, items: list[StickerLocalisationData]) -> None:
+        """Обновляет данные по переводу в БД"""
+        
         if not items:
             return
 
