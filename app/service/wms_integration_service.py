@@ -137,10 +137,10 @@ class WMSIntegrationService:
         logger.info(f"  Items count: {len(receipt.supply_data)}")
 
         # Фильтрация по статусу (оба варианта написания: Ё и Е)
-        VALID_STATUSES = ["Проведен", "Проведён"]
-        if receipt.event_status not in VALID_STATUSES:
-            logger.warning(f"  ❌ SKIPPED: event_status not in {VALID_STATUSES} (actual: '{receipt.event_status}')")
-            return
+        # VALID_STATUSES = ["Проведен", "Проведён"] # сейчас намеренно отключена что бы получать все документы для WMS
+        # if receipt.event_status not in VALID_STATUSES:
+        #     logger.warning(f"  ❌ SKIPPED: event_status not in {VALID_STATUSES} (actual: '{receipt.event_status}')")
+        #     return
 
         # Фильтрация по поставщику (исключаем ВБ)
         if receipt.supplier_code == self.EXCLUDED_SUPPLIER_CODE:
