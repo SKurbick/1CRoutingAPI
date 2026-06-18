@@ -41,7 +41,7 @@ class ONECRouting:
 
     async def goods_returns(self, data: List[ReturnsOneCModelAdd]):
         url = self.base_url + "goods_return/"
-        model_dump_json_data = [value.model_dump() for value in data]
+        model_dump_json_data = [value.model_dump(exclude_none=True) for value in data]
 
         print(model_dump_json_data)
         async with aiohttp.ClientSession() as session:

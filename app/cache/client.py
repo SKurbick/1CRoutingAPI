@@ -97,4 +97,28 @@ class RedisClient:
             print(await pubsub.ping())
 
 
+class DisabledRedisClient:
+    def __init__(self):
+        self.enabled = False
+
+    async def connect(self):
+        print("Redis disabled by REDIS_ENABLED=False.")
+        return None
+
+    async def disconnect(self):
+        return None
+
+    async def publish(self, channel: str, message, **kwargs):
+        print(f"Redis disabled, message to {channel} was not published.")
+
+    def get_client(self):
+        raise RuntimeError("Redis disabled by REDIS_ENABLED=False.")
+
+    def get_pubsub(self):
+        raise RuntimeError("Redis disabled by REDIS_ENABLED=False.")
+
+    async def close_pubsub(self, pubsub):
+        return None
+
+
 redis_client = RedisClient()

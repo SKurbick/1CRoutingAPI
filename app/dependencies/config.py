@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     DOCGEN_BUCKET_NAME: str
 
     # redis
+    REDIS_ENABLED: bool = True
     REDIS_HOST: str
     REDIS_PORT: int
     REDIS_DB: int

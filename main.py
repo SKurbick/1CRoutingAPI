@@ -21,7 +21,7 @@ from app.dependencies.config import settings
 from app.monitoring import MetricsMiddleware, monitoring_router
 from app.limiter import limiter
 from app.file_storage import S3StorageManager
-from app.cache.client import redis_client
+from app.cache.client import DisabledRedisClient, redis_client
 
 
 @asynccontextmanager
@@ -33,9 +33,14 @@ async def lifespan(app: FastAPI):
         print("Инициализация подключения к БД...")
         pool = await init_db()
         stack.push_async_callback(close_db, pool)
-        print("Инициализация подключения к Redis...")
-        await redis_client.connect()
-        stack.push_async_callback(redis_client.disconnect)
+        active_redis_client = redis_client
+        if settings.REDIS_ENABLED:
+            print("Инициализация подключения к Redis...")
+            await active_redis_client.connect()
+            stack.push_async_callback(active_redis_client.disconnect)
+        else:
+            active_redis_client = DisabledRedisClient()
+            await active_redis_client.connect()
 
         # s3
         print("Инициализация подключения к S3...")
@@ -61,7 +66,7 @@ async def lifespan(app: FastAPI):
             broker_app = FastStream(broker)
             broker_app.context.set_global("pool", pool)
             broker_app.context.set_global("file_storage", file_storage)
-            broker_app.context.set_global("redis_client", redis_client)
+            broker_app.context.set_global("redis_client", active_redis_client)
             await broker_app.start()
             stack.push_async_callback(broker_app.stop)
         else:
@@ -71,7 +76,7 @@ async def lifespan(app: FastAPI):
         app.state.broker = broker
         app.state.pool = pool
         app.state.file_storage = file_storage
-        app.state.redis_client = redis_client
+        app.state.redis_client = active_redis_client
 
         print("Приложение настроено.")
         yield
