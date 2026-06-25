@@ -39,6 +39,15 @@ class StickerUserDataService:
         manufacturer_id = await self.manufacturer_repo.get_or_create(
             template_data.manufacturer)
 
+        if len(template_data.name) > 128:
+            raise ValueError(f"Длина текста в поле \"Название\" больше 128 символов")
+        
+        if len(template_data.color) > 64:
+            raise ValueError(f"Длина текста в поле \"Цвет\" больше 64 символов")
+        
+        if len(template_data.material) > 128:
+            raise ValueError(f"Длина текста в поле \"Материал\" больше 128 символов")
+
         user_data = StickerIndividualUserData(
             product_id=template_data.product_id,
             name=template_data.name,
