@@ -4,13 +4,25 @@ from typing import List, Tuple
 import asyncpg
 from asyncpg import Pool
 from app.models import ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate
-from app.models.receipt_of_goods import ReceiptOfGoodsResponse, OneCModelUpdate, SupplyData
+from app.models.receipt_of_goods import ReceiptOfGoodsData, ReceiptOfGoodsItem, ReceiptOfGoodsResponse, OneCModelUpdate, SupplyData
 
 
 class ReceiptOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
+
+    async def get_valid_data_by_guid(self, guid: str) -> ReceiptOfGoodsData | None:
+        query = """SELECT * FROM supply_to_sellers_warehouse
+        WHERE guid = $1 AND is_valid = TRUE ORDER BY id"""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query, guid)
+        if not rows:
+            return None
+        item_keys = ReceiptOfGoodsItem.model_fields
+        doc_keys = ReceiptOfGoodsData.model_fields.keys() - {"supply_data"}
+        items = [ReceiptOfGoodsItem(**{k: row[k] for k in item_keys}) for row in rows]
+        return ReceiptOfGoodsData(**{k: rows[0][k] for k in doc_keys}, supply_data=items)
 
     async def get_one_c_model_data(self, guid_data) -> List[OneCModelUpdate]:
         query = """

@@ -5,7 +5,7 @@ from app.dependencies.config import settings
 from app.infrastructure.ONE_C import ONECRouting
 from app.models import ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate
 from app.database.repositories import ReceiptOfGoodsRepository
-from app.models.receipt_of_goods import ReceiptOfGoodsResponse
+from app.models.receipt_of_goods import ReceiptOfGoodsData, ReceiptOfGoodsResponse
 
 
 class ReceiptOfGoodsService:
@@ -16,6 +16,9 @@ class ReceiptOfGoodsService:
     ):
         self.receipt_of_goods_repository = receipt_of_goods_repository
         self.wms_integration_service = wms_integration_service
+
+    async def get_valid_data_by_guid(self, guid: str) -> ReceiptOfGoodsData | None:
+        return await self.receipt_of_goods_repository.get_valid_data_by_guid(guid)
 
     async def create_data(self, data: List[ReceiptOfGoodsUpdate]) -> ReceiptOfGoodsResponse:
         # Существующая логика сохранения в БД (НЕ МЕНЯТЬ!)

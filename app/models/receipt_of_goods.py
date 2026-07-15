@@ -136,6 +136,34 @@ class ReceiptOfGoodsResponse(BaseModel):
     details: Optional[str] = None
 
 
+class ReceiptOfGoodsItem(BaseModel):
+    local_vendor_code: Optional[str] = None
+    product_name: Optional[str] = None
+    quantity: Optional[float] = None
+    amount_with_vat: Optional[float] = None
+    amount_without_vat: Optional[float] = None
+    planned_cost: Optional[float] = None
+    invoice_number: Optional[str] = None
+    transport_number: Optional[str] = None
+    pack_count: Optional[float] = None
+    pack_multiplicity: Optional[float] = None
+
+
+class ReceiptOfGoodsData(BaseModel):
+    guid: str
+    document_number: Optional[str] = None
+    document_created_at: Optional[datetime] = None
+    supply_date: Optional[datetime] = None
+    event_status: Optional[str] = None
+    supplier_name: Optional[str] = None
+    supplier_code: Optional[str] = None
+    update_document_datetime: Optional[datetime] = None
+    author_of_the_change: Optional[str] = None
+    our_organizations_name: Optional[str] = None
+    currency: Optional[str] = None
+    order_guid: Optional[str] = None
+    supply_data: List[ReceiptOfGoodsItem]
+
 class AddIncomingReceiptUpdate(BaseModel):
     ordered_goods_from_buyers_id: int
     supplier_code: Optional[str] = None
