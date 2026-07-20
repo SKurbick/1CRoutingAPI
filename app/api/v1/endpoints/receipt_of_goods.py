@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, status, Body, HTTPException, Query
 from app.dependencies import  get_receipt_of_goods_service
 from app.models.receipt_of_goods import ReceiptOfGoodsData, ReceiptOfGoodsResponse, example_receipt_of_goods_data, ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate, example_add_incoming_receipt_data
 from app.service.receipt_of_goods import ReceiptOfGoodsService
@@ -48,11 +48,12 @@ async def create_data(
 
 @router.post("/add_incoming_receipt", response_model=ReceiptOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_incoming_receipt(
+        background_tasks: BackgroundTasks,
         data: List[AddIncomingReceiptUpdate] = Body(examples=[example_add_incoming_receipt_data]),
         service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service)
 ):
     """Оприходование товаров (от акта приемки) на основной склад продавца. Временное решение пока нет актуализации поступлений в 1С"""
-    # result = await service.add_incoming_receipt(data)
+    # result = await service.add_incoming_receipt(data, background_tasks)
     result = ReceiptOfGoodsResponse(status=201,message="стоит заглушка на оприходование")
     if result.status >= 400:
         raise HTTPException(

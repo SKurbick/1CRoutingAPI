@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status, Body, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, status, Body, HTTPException, Query, Request
 from app.models.warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, Warehouse, CurrentBalances, \
     ValidStockData, example_assembly_metawild_data, AssemblyOrDisassemblyMetawildData, AssemblyMetawildResponse, assembly_or_disassembly_metawild_description, \
     add_defective_goods_description, ReSortingOperationResponse, ReSortingOperation, re_sorting_operations_description, example_re_sorting_operations, \
@@ -71,10 +71,11 @@ async def get_all_product_current_balances(
 @router.post("/assembly_or_disassembly_metawild", response_model=AssemblyMetawildResponse, status_code=status.HTTP_201_CREATED,
              description=assembly_or_disassembly_metawild_description)
 async def assembly_or_disassembly_metawild(
+        background_tasks: BackgroundTasks,
         data: AssemblyOrDisassemblyMetawildData = Body(examples=[example_assembly_metawild_data]),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
-    result = await service.assembly_or_disassembly_metawild(data)
+    result = await service.assembly_or_disassembly_metawild(data, background_tasks)
 
     if result.code_status >= 400:
         raise HTTPException(
@@ -91,10 +92,11 @@ async def assembly_or_disassembly_metawild(
 @router.post("/re_sorting_operations", response_model=ReSortingOperationResponse, status_code=status.HTTP_201_CREATED,
              description=re_sorting_operations_description)
 async def re_sorting_operations(
+        background_tasks: BackgroundTasks,
         data: ReSortingOperation = Body(examples=[example_re_sorting_operations]),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
-    result = await service.re_sorting_operations(data)
+    result = await service.re_sorting_operations(data, background_tasks)
 
     if result.code_status >= 400:
         raise HTTPException(

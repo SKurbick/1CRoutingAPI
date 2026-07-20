@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status, Body
+from fastapi import APIRouter, BackgroundTasks, Depends, status, Body
 from app.models.return_of_goods import ReturnOfGoodsData, ReturnOfGoodsResponse, IncomingReturns
 
 example_incoming_returns_data = [
@@ -41,7 +41,8 @@ async def get_return_of_goods(
 #= Body(example=example_incoming_returns_data)
 @router.post("/incoming_returns", response_model=ReturnOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def get_return_of_goods(
+        background_tasks: BackgroundTasks,
         data: List[IncomingReturns] = Body(examples=[example_incoming_returns_data]),
         service: ReturnOfGoodsService = Depends(get_return_of_goods_service)
 ):
-    return await service.incoming_returns(data)
+    return await service.incoming_returns(data, background_tasks)

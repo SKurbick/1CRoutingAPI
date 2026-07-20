@@ -1,7 +1,6 @@
-from pprint import pprint
+from dataclasses import dataclass
 
 import aiohttp
-import asyncio
 from aiohttp import BasicAuth
 
 from typing import List, Dict
@@ -10,6 +9,12 @@ from collections import defaultdict
 from app.models import ShipmentOfGoodsUpdate, OneCModelUpdate, ReturnsOneCModelAdd, ReSortingOperation
 from app.models.one_c import AccountData, Wild, Order, SupplyData
 
+@dataclass(frozen=True)
+class OneCResponse:
+    status: int
+    body: str
+
+
 
 class ONECRouting:
     def __init__(self, login, password, base_url):
@@ -17,59 +22,57 @@ class ONECRouting:
         self.login = login
         self.password = password
 
-    async def assembly_or_disassembly_metawild(self, data):
+    async def assembly_or_disassembly_metawild(self, data) -> OneCResponse:
         url = self.base_url + "ass_disass/"
 
-        async with aiohttp.ClientSession() as session:
-            async with session.request(method="POST", url=url, json=data, auth=BasicAuth(self.login, self.password)) as response:
-                print(response.status)
-                json_response = await response.text()
-                print(json_response)
-                return json_response
+        timeout = aiohttp.ClientTimeout(total=30)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(
+                    url, json=data, auth=BasicAuth(self.login, self.password)
+            ) as response:
+                body = await response.text()
+                return OneCResponse(status=response.status, body=body)
 
-    async def re_sorting_operations(self, data: ReSortingOperation):
+    async def re_sorting_operations(self, data: ReSortingOperation) -> OneCResponse:
         url = self.base_url + "goods_resorting/"
         model_dump_json_data = data.model_dump(exclude={"warehouse_id"})
 
-        print(model_dump_json_data)
-        async with aiohttp.ClientSession() as session:
-            async with session.request(method="POST", url=url, json=model_dump_json_data, auth=BasicAuth(self.login, self.password)) as response:
-                print(response.status)
-                json_response = await response.text()
-                print(json_response)
-                return json_response
+        timeout = aiohttp.ClientTimeout(total=30)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(
+                    url, json=model_dump_json_data, auth=BasicAuth(self.login, self.password)
+            ) as response:
+                body = await response.text()
+                return OneCResponse(status=response.status, body=body)
 
-    async def goods_returns(self, data: List[ReturnsOneCModelAdd]):
+    async def goods_returns(
+            self, data: List[ReturnsOneCModelAdd]
+    ) -> OneCResponse:
         url = self.base_url + "goods_return/"
-        model_dump_json_data = [value.model_dump(exclude_none=True) for value in data]
+        payload = [value.model_dump(exclude_none=True) for value in data]
+        return await self._post(url, payload, timeout_seconds=300)
 
-        print(model_dump_json_data)
-        async with aiohttp.ClientSession() as session:
-            async with session.request(method="POST", url=url, json=model_dump_json_data, auth=BasicAuth(self.login, self.password)) as response:
-                print(response.status)
-                json_response = await response.text()
-                print(json_response)
-                return json_response
-
-    async def receipt_of_goods_update(self, data: List[OneCModelUpdate]):
+    async def receipt_of_goods_update(
+            self, data: List[OneCModelUpdate]
+    ) -> OneCResponse:
         url = self.base_url + "inc_invoice/"
-        model_dump_json_data = [value.model_dump() for value in data]
-        print(model_dump_json_data)
-        async with aiohttp.ClientSession() as session:
-            async with session.request(method="POST", url=url, json=model_dump_json_data, auth=BasicAuth(self.login, self.password)) as response:
-                print(response.status)
-                json_response = await response.text()
-                print(json_response)
-                return json_response
+        payload = [value.model_dump() for value in data]
+        return await self._post(url, payload, timeout_seconds=300)
 
-    async def commission_sales_fbo_add(self, data):
+    async def commission_sales_fbo_add(self, data) -> OneCResponse:
         url = self.base_url + "commission_sales_fbo/"
-        async with aiohttp.ClientSession() as session:
-            async with session.request(method="POST", url=url, json=data, auth=BasicAuth(self.login, self.password), timeout=60) as response:
-                print(response.status)
-                json_response = await response.text()
-                print(json_response)
-                return json_response
+        return await self._post(url, data, timeout_seconds=60)
+
+    async def _post(
+            self, url: str, payload, timeout_seconds: int
+    ) -> OneCResponse:
+        timeout = aiohttp.ClientTimeout(total=timeout_seconds)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(
+                    url, json=payload, auth=BasicAuth(self.login, self.password)
+            ) as response:
+                body = await response.text()
+                return OneCResponse(status=response.status, body=body)
 
     @staticmethod
     def refactoring_to_account_data(

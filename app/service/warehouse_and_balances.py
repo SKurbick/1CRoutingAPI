@@ -1,5 +1,7 @@
-from pprint import pprint
+import logging
 from typing import List
+from fastapi import BackgroundTasks
+
 
 from app.dependencies.config import settings
 from app.infrastructure.ONE_C import ONECRouting
@@ -9,6 +11,8 @@ from app.models.warehouse_and_balances import DefectiveGoodsResponse, Warehouse,
     AssemblyMetawildResponse, ReSortingOperation, ReSortingOperationResponse, AddStockByClient, HistoricalStockBody, HistoricalStockData, ProductStats, \
     WarehouseAndBalanceResponse, ProductQuantityCheckResult, ProductQuantityCheck, PhysicalQuantityCheck, AvailableQuantityCheck, \
     ProductCheckResult
+logger = logging.getLogger(__name__)
+
 
 
 class WarehouseAndBalancesService:
@@ -42,20 +46,71 @@ class WarehouseAndBalancesService:
         result = await self.warehouse_and_balances_repository.get_valid_stock_data()
         return result
 
-    async def assembly_or_disassembly_metawild(self, data: AssemblyOrDisassemblyMetawildData) -> AssemblyMetawildResponse:
+    async def assembly_or_disassembly_metawild(
+            self,
+            data: AssemblyOrDisassemblyMetawildData,
+            background_tasks: BackgroundTasks,
+    ) -> AssemblyMetawildResponse:
         result = await self.warehouse_and_balances_repository.assembly_or_disassembly_metawild(data)
 
-        if result.code_status == 201:
-            kit_components = await self.warehouse_and_balances_repository.kit_components_by_product_id(data.metawild)
-
+        if result.code_status == 201 and result.operation_status == "completed":
+            kit_components = await self.warehouse_and_balances_repository.kit_components_by_product_id(
+                data.metawild
+            )
             data.kit_komponents = kit_components
-
-            refactor_kit_components = self.refactor_kit_components(data.model_dump(exclude={"warehouse_id"}))
-            pprint(refactor_kit_components)
-            one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
-            await one_c_connect.assembly_or_disassembly_metawild(data=refactor_kit_components)
+            payload = self.refactor_kit_components(
+                data.model_dump(exclude={"warehouse_id"})
+            )
+            log_context = {
+                "product_id": data.metawild,
+                "warehouse_id": data.warehouse_id,
+                "quantity": data.count,
+                "operation_type": data.operation_type,
+            }
+            background_tasks.add_task(
+                self.notify_one_c_about_assembly_or_disassembly,
+                payload,
+                log_context,
+            )
 
         return result
+
+    async def notify_one_c_about_assembly_or_disassembly(
+            self,
+            payload: dict,
+            log_context: dict,
+    ) -> None:
+        try:
+            one_c_connect = ONECRouting(
+                base_url=settings.ONE_C_BASE_URL,
+                password=settings.ONE_C_PASSWORD,
+                login=settings.ONE_C_LOGIN,
+            )
+            response = await one_c_connect.assembly_or_disassembly_metawild(
+                data=payload
+            )
+
+            if not 200 <= response.status < 300:
+                logger.error(
+                    "event=one_c_kit_notification_http_error http_status=%s response_body=%s",
+                    response.status,
+                    response.body[:4096],
+                    extra=log_context,
+                )
+                return
+
+            logger.info(
+                "event=one_c_kit_notification_succeeded http_status=%s",
+                response.status,
+                extra=log_context,
+            )
+        except Exception as exc:
+            logger.exception(
+                "event=one_c_kit_notification_transport_error exception_type=%s exception_message=%s",
+                type(exc).__name__,
+                str(exc),
+                extra=log_context,
+            )
 
     @staticmethod
     def refactor_kit_components(data):
@@ -78,12 +133,51 @@ class WarehouseAndBalancesService:
 
         return result
 
-    async def re_sorting_operations(self, data: ReSortingOperation) -> ReSortingOperationResponse:
+    async def re_sorting_operations(
+            self,
+            data: ReSortingOperation,
+            background_tasks: BackgroundTasks,
+    ) -> ReSortingOperationResponse:
         result = await self.warehouse_and_balances_repository.re_sorting_operations(data)
-        if result.code_status == 201:
-            one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
-            await one_c_connect.re_sorting_operations(data=data)
+
+        if result.code_status == 201 and result.operation_status == "completed":
+            background_tasks.add_task(self.notify_one_c_about_re_sorting, data)
+
         return result
+
+    async def notify_one_c_about_re_sorting(self, data: ReSortingOperation) -> None:
+        log_context = {
+            "from_product_id": data.from_product_id,
+            "to_product_id": data.to_product_id,
+            "warehouse_id": data.warehouse_id,
+            "quantity": data.quantity,
+        }
+
+        try:
+            one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
+            response = await one_c_connect.re_sorting_operations(data=data)
+
+            if not 200 <= response.status < 300:
+                logger.error(
+                    "event=one_c_re_sorting_notification_http_error http_status=%s response_body=%s",
+                    response.status,
+                    response.body[:4096],
+                    extra=log_context,
+                )
+                return
+
+            logger.info(
+                "event=one_c_re_sorting_notification_succeeded http_status=%s",
+                response.status,
+                extra=log_context,
+            )
+        except Exception as exc:
+            logger.exception(
+                "event=one_c_re_sorting_notification_transport_error exception_type=%s exception_message=%s",
+                type(exc).__name__,
+                str(exc),
+                extra=log_context,
+            )
 
     async def add_stock_by_client(self, data: List[AddStockByClient]) -> AddStockByClientResponse:
         result = await self.warehouse_and_balances_repository.add_stock_by_client(data)
