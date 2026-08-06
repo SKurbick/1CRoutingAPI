@@ -175,7 +175,7 @@ class DocumentData1C(BaseModel):
     payment_indicator: Optional[str] = None
     receipt_transaction_number: Optional[str] = None
     comment: Optional[str] = None
-    vehicle_number: Optional[str] = None
+    transport_number: Optional[str] = None
     truck_number: Optional[str] = None
 
     @field_validator("currency")

@@ -110,7 +110,7 @@ class ReceiptOfGoodsUpdate(BaseModel):
     author_of_the_change: str
     our_organizations_name: str
     currency: Optional[str] = None
-    vehicle_number: Optional[str] = None
+    transport_number: Optional[str] = None
     truck_number: Optional[str] = None
     supply_data: List[SupplyData]
 
@@ -129,7 +129,6 @@ class ReceiptOfGoodsItem(BaseModel):
     amount_without_vat: Optional[float] = None
     planned_cost: Optional[float] = None
     invoice_number: Optional[str] = None
-    transport_number: Optional[str] = None
     pack_count: Optional[float] = None
     pack_multiplicity: Optional[float] = None
 
@@ -147,7 +146,7 @@ class ReceiptOfGoodsData(BaseModel):
     our_organizations_name: Optional[str] = None
     currency: Optional[str] = None
     order_guid: Optional[str] = None
-    vehicle_number: Optional[str] = None
+    transport_number: Optional[str] = None
     truck_number: Optional[str] = None
     supply_data: List[ReceiptOfGoodsItem]
 
