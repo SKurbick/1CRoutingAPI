@@ -63,6 +63,11 @@ class ONECRouting:
         url = self.base_url + "commission_sales_fbo/"
         return await self._post(url, data, timeout_seconds=60)
 
+    async def product_writeoff(self, data) -> OneCResponse:
+        url = self.base_url.rstrip("/") + "/spisanie/ut/hs/vktr_docs/docs/spisanie/"
+        payload = [item.model_dump() for item in data]
+        return await self._post(url, payload, timeout_seconds=60)
+
     async def _post(
             self, url: str, payload, timeout_seconds: int
     ) -> OneCResponse:
