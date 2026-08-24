@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime, date
 
 
@@ -56,6 +56,15 @@ class IsReceived(BaseModel):
     is_received: bool
 
 
+class MarkCode(BaseModel):
+    mark_code: str = "broken"
+
+    @field_validator("mark_code", mode="before")
+    @classmethod
+    def default_broken_for_null(cls, value):
+        return "broken" if value is None else value
+
+
 class IncomingReturns(BaseModel):
     product_id: str
     sum_quantity: int
@@ -63,6 +72,7 @@ class IncomingReturns(BaseModel):
     warehouse_id: int
     return_date: date
     is_received_data: List[IsReceived]
+    mark_list: Optional[List[MarkCode]] = None
 
 
 # class OneCReturnData(BaseModel):
@@ -71,6 +81,7 @@ class OneCReturnDataByProduct(BaseModel):
     product_id: str
     product_name: str
     quantity: int
+    mark_list: Optional[List[MarkCode]] = None
     # return_data: List[OneCReturnData]
 
 class ReturnsOneCModelAdd(BaseModel):

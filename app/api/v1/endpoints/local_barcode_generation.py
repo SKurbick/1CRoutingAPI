@@ -16,7 +16,7 @@ router = APIRouter(prefix="/local_barcode_generation", tags=["Приемка т�
 @router.post("/update", status_code=status.HTTP_201_CREATED)
 async def create_data(
         background_tasks: BackgroundTasks,
-    data: GoodsAcceptanceCertificateCreate = Body(example=example_goods_acceptance_certificate),
+    data: GoodsAcceptanceCertificateCreate = Body(examples=[example_goods_acceptance_certificate]),
     service: LocalBarcodeGenerationService = Depends(local_barcode_generation_service)
 ):
     img_buffer = await service.create_data(data)

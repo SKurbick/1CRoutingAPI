@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status, Body, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, status, Body, HTTPException, Query, Request
 from app.models.warehouse_and_balances import DefectiveGoodsUpdate, DefectiveGoodsResponse, example_defective_goods_data, Warehouse, CurrentBalances, \
     ValidStockData, example_assembly_metawild_data, AssemblyOrDisassemblyMetawildData, AssemblyMetawildResponse, assembly_or_disassembly_metawild_description, \
     add_defective_goods_description, ReSortingOperationResponse, ReSortingOperation, re_sorting_operations_description, example_re_sorting_operations, \
@@ -25,7 +25,7 @@ async def get_statuses_for_products_in_reserve(
 
 @router.post("/add_defective_goods", response_model=DefectiveGoodsResponse, status_code=status.HTTP_201_CREATED, description=add_defective_goods_description)
 async def add_defective_goods(
-        data: List[DefectiveGoodsUpdate] = Body(example=example_defective_goods_data),
+        data: List[DefectiveGoodsUpdate] = Body(examples=[example_defective_goods_data]),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
     result = await service.add_defective_goods(data)
@@ -71,10 +71,11 @@ async def get_all_product_current_balances(
 @router.post("/assembly_or_disassembly_metawild", response_model=AssemblyMetawildResponse, status_code=status.HTTP_201_CREATED,
              description=assembly_or_disassembly_metawild_description)
 async def assembly_or_disassembly_metawild(
-        data: AssemblyOrDisassemblyMetawildData = Body(example=example_assembly_metawild_data),
+        background_tasks: BackgroundTasks,
+        data: AssemblyOrDisassemblyMetawildData = Body(examples=[example_assembly_metawild_data]),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
-    result = await service.assembly_or_disassembly_metawild(data)
+    result = await service.assembly_or_disassembly_metawild(data, background_tasks)
 
     if result.code_status >= 400:
         raise HTTPException(
@@ -91,10 +92,11 @@ async def assembly_or_disassembly_metawild(
 @router.post("/re_sorting_operations", response_model=ReSortingOperationResponse, status_code=status.HTTP_201_CREATED,
              description=re_sorting_operations_description)
 async def re_sorting_operations(
-        data: ReSortingOperation = Body(example=example_re_sorting_operations),
+        background_tasks: BackgroundTasks,
+        data: ReSortingOperation = Body(examples=[example_re_sorting_operations]),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
-    result = await service.re_sorting_operations(data)
+    result = await service.re_sorting_operations(data, background_tasks)
 
     if result.code_status >= 400:
         raise HTTPException(
@@ -133,7 +135,7 @@ async def get_historical_stocks(
              description=product_quantity_check_description, response_description=product_quantity_check_response_description)
 async def product_quantity_check(
         data: List[ProductQuantityCheck],
-        warehouse_id: int = Query(example=1, default=1, description="id Склада. По умолчанию 1"),
+        warehouse_id: int = Query(examples=[1], default=1, description="id Склада. По умолчанию 1"),
         service: WarehouseAndBalancesService = Depends(get_warehouse_and_balances_service)
 ):
     result = await service.product_quantity_check(warehouse_id=warehouse_id,data= data)

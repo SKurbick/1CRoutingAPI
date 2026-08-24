@@ -18,9 +18,12 @@ class ReturnOfGoodsRepository:
         srids: List[str] = []
         return_date = None
         author = None
+        mark_list_by_product = defaultdict(list)
         for values in data:
             return_date = str(values.return_date)
             author = values.author
+            if values.mark_list:
+                mark_list_by_product[values.product_id].extend(values.mark_list)
             for is_received_data in values.is_received_data:
                 srids.append(is_received_data.srid)
 
@@ -62,7 +65,8 @@ class ReturnOfGoodsRepository:
                 OneCReturnDataByProduct(
                     product_id=row['product_id'],
                     product_name=row['name'],  # заглушка, т.к. нет в SQL
-                    quantity=row['total_quantity']
+                    quantity=row['total_quantity'],
+                    mark_list=mark_list_by_product.get(row['product_id']) or None
                 )
             )
 
@@ -197,7 +201,7 @@ class ReturnOfGoodsRepository:
 
     async def incoming_returns(self, data: List[IncomingReturns]) -> ReturnOfGoodsResponse:
         data_to_add_incoming_returns: List[Tuple] = []
-        goods_returns_update_data: List[Tuple] = []
+        data_to_insert_goods_returns_mark_list: List[Tuple] = []
 
         # Подготовка данных для вставки в incoming_returns
         for return_data in data:
@@ -212,6 +216,14 @@ class ReturnOfGoodsRepository:
             )
             data_to_add_incoming_returns.append(tuple_data)
 
+            if return_data.mark_list:
+                for mark_data in return_data.mark_list:
+                    data_to_insert_goods_returns_mark_list.append((
+                        mark_data.mark_code,
+                        return_data.author,
+                        return_data.product_id
+                    ))
+
         query_to_insert_incoming_returns = """
         INSERT INTO incoming_returns (author, product_id, warehouse_id, quantity, return_date, share_of_kit, metawild)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -222,6 +234,11 @@ class ReturnOfGoodsRepository:
         UPDATE goods_returns_dev 
         SET is_received = $2, incoming_return_id = $3
         WHERE srid = $1;
+        """
+
+        query_to_insert_goods_returns_mark_list = """
+        INSERT INTO goods_returns_mark_list (mark_code, author, product_id)
+        VALUES ($1, $2, $3);
         """
 
         try:
@@ -246,6 +263,12 @@ class ReturnOfGoodsRepository:
 
                     # Обновляем goods_returns_dev
                     await conn.executemany(query_update_goods_returns, update_data)
+
+                    if data_to_insert_goods_returns_mark_list:
+                        await conn.executemany(
+                            query_to_insert_goods_returns_mark_list,
+                            data_to_insert_goods_returns_mark_list
+                        )
 
             result = ReturnOfGoodsResponse(
                 status=201,

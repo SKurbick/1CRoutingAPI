@@ -55,7 +55,9 @@ class OrderedGoodsFromBuyersRepository:
                                 supply_data.last_purchase_supplier,
                                 supply_data.last_purchase_price,
                                 supply_data.cancelled_due_to,
-                                supply_data.planned_cost
+                                supply_data.planned_cost,
+                                doc_data.transport_number,
+                                doc_data.truck_number
                             )
 
                             record_id = await conn.fetchval("""
@@ -63,9 +65,9 @@ class OrderedGoodsFromBuyersRepository:
                             author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
                             quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, warehouse_id, is_valid,
                             expected_receipt_date, currency, shipment_date, payment_document_number, payment_indicator,
-                            receipt_transaction_number, comment, actual_quantity, unit_price, last_purchase_supplier, last_purchase_price, cancelled_due_to,planned_cost)
+                            receipt_transaction_number, comment, actual_quantity, unit_price, last_purchase_supplier, last_purchase_price, cancelled_due_to,planned_cost, transport_number, truck_number)
                                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, 1, True,
-                                    $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
+                                    $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
                             RETURNING id; """, *record_data)
 
                             for receipt in supply_data.reciepts:

@@ -23,3 +23,4 @@ bureaucracy_last_v.py
 .venv
 .zed
 app/logs/*.log
+docs/local_docs/
