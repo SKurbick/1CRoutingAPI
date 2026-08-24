@@ -65,7 +65,8 @@ class StickerGenerationService:
             proforma_number=template_data.proforma_number,
             certification_type=template_data.certification_type,
             limit=template_data.limit,
-            offset=None
+            offset=None,
+            font_size=template_data.font_size,
         )
         await self.user_data_service.save_box_sticker_user_data(temp_teamplate_data)
         await self.localisation_service.save_localisations(temp_teamplate_data)
@@ -88,6 +89,7 @@ class StickerGenerationService:
             "proforma_number": template_data.proforma_number,
             "certification_type": template_data.certification_type.value,
             "limit": template_data.limit,
+            "font_size": template_data.font_size,
             # "offset": template_data.offset,
         }
         template_hash = StickerTemplateHashService.calculate(hash_payload)
@@ -155,6 +157,7 @@ class StickerGenerationService:
             "task_id": generation_task.task_uuid,
             "limit": template_data.limit,
             # "offset": template_data.offset,
+            "font_size_pt": template_data.font_size,
             "data": {
                 "product_id": template_data.product_id,
                 "gross_weight": template_data.gross_weight,

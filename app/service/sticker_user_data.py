@@ -29,7 +29,9 @@ class StickerUserDataService:
             box_width=template_data.box_size.box_width,
             box_height=template_data.box_size.box_height,
             produced_in=template_data.produced_in,
-            certification_type=template_data.certification_type)
+            certification_type=template_data.certification_type,
+            font_size=template_data.font_size
+        )
         await self.box_repo.upsert(user_data)
 
     async def save_unit_sticker_user_data(

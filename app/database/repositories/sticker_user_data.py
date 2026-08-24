@@ -22,7 +22,8 @@ class StickerUserDataRepository:
                 box_length,
                 box_width,
                 box_height,
-                certification_type
+                certification_type,
+                font_size
             FROM sticker_user_data
             WHERE product_id = $1
         """
@@ -48,6 +49,7 @@ class StickerUserDataRepository:
                 CertificationType(data["certification_type"]) 
                 if data.get("certification_type") else None
             ),
+            font_size=data.get("font_size"),
         )
     
     async def upsert(self, data: StickerUserTemplateData) -> None:
@@ -56,9 +58,10 @@ class StickerUserDataRepository:
             INSERT INTO sticker_user_data (
                 product_id, sticker_type, items_per_box,
                 total_boxes, gross_weight, net_weight, 
-                box_length, box_width, box_height, certification_type
+                box_length, box_width, box_height, certification_type,
+                font_size
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             ON CONFLICT (product_id, sticker_type) DO UPDATE
             SET
                 --proforma_number = EXCLUDED.proforma_number,
@@ -70,6 +73,7 @@ class StickerUserDataRepository:
                 box_width = EXCLUDED.box_width,
                 box_height = EXCLUDED.box_height,
                 certification_type = EXCLUDED.certification_type,
+                font_size = EXCLUDED.font_size,
                 updated_at = now();
             """
 
@@ -85,5 +89,6 @@ class StickerUserDataRepository:
             data.box_length,
             data.box_width,
             data.box_height,
-            data.certification_type.value if data.certification_type else None
+            data.certification_type.value if data.certification_type else None,
+            data.font_size,
         )

@@ -60,6 +60,7 @@ class StickerLocalisationData(BaseModel):
     translation: str | None = None
 
 
+# TODO: добавить размер шрифта
 class StickerUserTemplateData(BaseModel):
     """Пользовательские данные шаблона"""
 
@@ -75,8 +76,10 @@ class StickerUserTemplateData(BaseModel):
     box_width: float | None = None
     box_height: float | None = None
     certification_type: CertificationType | None = None
+    font_size: float | None = 10.0
 
 
+# TODO: вернуть шрифт в ответе шаблона
 class BoxStickerTemplateView(BaseModel):
     """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
 
@@ -96,8 +99,10 @@ class BoxStickerTemplateView(BaseModel):
     certification_type: CertificationType = CertificationType.NONE
     limit: int | None = 0
     offset: int | None = 0
+    font_size: float | None = 10.0
 
 
+# TODO: добавить получение размера шрифта
 class BoxStickerTemplateViewRequest(BaseModel):
     """Форма для агрегации данных о товаре, сохраненных данных, дефолтных данных и ввода пользователя"""
 
@@ -116,6 +121,7 @@ class BoxStickerTemplateViewRequest(BaseModel):
     proforma_number: str | None = None
     certification_type: CertificationType = CertificationType.NONE
     limit: int | None = 0
+    font_size: float | None = Field(default=10.0, ge=7.0, le=11.0)
     # offset: int | None = 0
 
 
