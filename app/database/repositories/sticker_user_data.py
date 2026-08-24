@@ -32,7 +32,6 @@ class StickerUserDataRepository:
             return None
 
         data = dict(row)
-
         return StickerUserTemplateData(
             product_id=data["product_id"],
             sticker_type=StickerType(data["sticker_type"]),
@@ -49,7 +48,7 @@ class StickerUserDataRepository:
                 CertificationType(data["certification_type"]) 
                 if data.get("certification_type") else None
             ),
-            font_size=data.get("font_size"),
+            font_size=data.get("font_size") or 10.0,
         )
     
     async def upsert(self, data: StickerUserTemplateData) -> None:

@@ -663,7 +663,7 @@ class StickerTemplateBuilderService:
                                 else product.certification_type),
             limit=1,
             offset=1,
-            font_size=user_data.font_size,
+            font_size=user_data.font_size if user_data else 10.0,
         )
 
     async def get_list_templates(self) -> list[StickerTemplateViewShort]:

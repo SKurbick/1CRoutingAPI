@@ -75,7 +75,7 @@ class StickerUserTemplateData(BaseModel):
     box_width: float | None = None
     box_height: float | None = None
     certification_type: CertificationType | None = None
-    font_size: float = 10.0
+    font_size: float = Field(default=10.0)
 
 
 class BoxStickerTemplateView(BaseModel):
@@ -97,7 +97,7 @@ class BoxStickerTemplateView(BaseModel):
     certification_type: CertificationType = CertificationType.NONE
     limit: int | None = 0
     offset: int | None = 0
-    font_size: float = 10.0
+    font_size: float = Field(default=10.0)
 
 
 class BoxStickerTemplateViewRequest(BaseModel):
