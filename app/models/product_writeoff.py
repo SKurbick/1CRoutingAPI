@@ -9,7 +9,7 @@ ProductWriteoffStatus = Literal["pending", "sent", "failed"]
 
 class ProductWriteoffItem(BaseModel):
     product_id: str = Field(..., min_length=1, description="Идентификатор товара из products.id")
-    quantity: float = Field(..., gt=0, description="Количество товара для списания")
+    quantity: int = Field(..., gt=0, description="Количество товара для списания")
     comment: str = Field(..., min_length=1, description="Комментарий к списанию")
 
 
@@ -26,7 +26,7 @@ class ProductWriteoffOperation(BaseModel):
     id: int
     request_id: UUID
     product_id: str
-    quantity: float
+    quantity: int
     comment: str
     delivery_status: ProductWriteoffStatus
     one_c_http_status: Optional[int] = None
