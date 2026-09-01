@@ -1,12 +1,12 @@
 import json
+import datetime
 from collections import defaultdict
-from pprint import pprint
 from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool
 from app.models.return_of_goods import ReturnOfGoodsResponse, ReturnOfGoodsData, GoodsReturn, IncomingReturns, GroupDataGoodsReturns, ReturnsOneCModelAdd, \
-    OneCReturnDataByProduct
+    ManualUnidentifiedReturn, OneCReturnDataByProduct, UnidentifiedGoodsReturn
 
 
 class ReturnOfGoodsRepository:
@@ -85,8 +85,29 @@ class ReturnOfGoodsRepository:
 
         return result
 
-    async def get_return_of_goods(self) -> List[ReturnOfGoodsData] | ReturnOfGoodsResponse:
+    async def get_return_of_goods(
+            self,
+            date_from: datetime.date | None = None,
+    ) -> List[ReturnOfGoodsData] | ReturnOfGoodsResponse:
         select_query = """
+                WITH filtered_returns AS MATERIALIZED (
+                    SELECT *
+                    FROM public.goods_returns_dev
+                    WHERE is_received = FALSE
+                        AND ($1::date IS NULL OR created_at >= $1::date)
+                ),
+                latest_status AS MATERIALIZED (
+                    SELECT DISTINCT ON (srid)
+                        srid,
+                        status,
+                        status_dt,
+                        completed_dt,
+                        expired_dt,
+                        ready_to_return_dt,
+                        created_at
+                    FROM public.goods_returns_status_history
+                    ORDER BY srid, created_at DESC
+                )
                 SELECT 
                     -- Артикул продавца (или заглушка, если не найден)
                     COALESCE(a.local_vendor_code, 'не найден артикул продавца по артикулу wb') AS product_id,
@@ -117,25 +138,16 @@ class ReturnOfGoodsRepository:
                     grsh.ready_to_return_dt,
                     grsh.created_at AS status_created_at
                 FROM 
-                    public.goods_returns_dev grd
+                    filtered_returns grd
                     LEFT JOIN public.article a ON grd.nm_id = a.nm_id
-                    JOIN (
-                        -- Подзапрос: берём только последнюю запись статуса по времени для каждого srid
-                        SELECT 
-                            *,
-                            ROW_NUMBER() OVER (PARTITION BY srid ORDER BY created_at DESC) AS rn
-                        FROM 
-                            public.goods_returns_status_history
-                    ) grsh ON grd.srid = grsh.srid AND grsh.rn = 1
-                WHERE 
-                    grd.is_received = FALSE
+                    JOIN latest_status grsh ON grd.srid = grsh.srid
                 ORDER BY 
                     a.local_vendor_code;
         """
         #                    grsh.status IN ('Выдано', 'Готов к выдаче') AND
         try:
             async with self.pool.acquire() as conn:
-                query_result = await conn.fetch(select_query)
+                query_result = await conn.fetch(select_query, date_from)
 
                 grouped_data = defaultdict(list)
                 for row in query_result:
@@ -148,7 +160,6 @@ class ReturnOfGoodsRepository:
                     ReturnOfGoodsData(product_id=product_id, group_data=items)
                     for product_id, items in grouped_data.items()
                 ]
-                pprint(result)
                 return result
 
         except asyncpg.PostgresError as e:
@@ -156,6 +167,72 @@ class ReturnOfGoodsRepository:
                 status=422,
                 message="PostgresError",
                 details=str(e)
+            )
+
+    async def get_unidentified_goods(
+            self,
+            date_from: datetime.date | None = None,
+    ) -> List[UnidentifiedGoodsReturn] | ReturnOfGoodsResponse:
+        select_query = """
+                WITH latest_status AS MATERIALIZED (
+                    SELECT DISTINCT ON (srid)
+                        srid,
+                        status,
+                        status_dt,
+                        completed_dt,
+                        expired_dt,
+                        ready_to_return_dt,
+                        created_at
+                    FROM public.goods_returns_status_history
+                    ORDER BY srid, created_at DESC
+                )
+                SELECT
+                    'не найден артикул продавца по артикулу wb' AS product_id,
+                    CASE
+                        WHEN a.nm_id IS NULL THEN 'nm_id отсутствует в таблице article'
+                        ELSE 'для nm_id не заполнен local_vendor_code в таблице article'
+                    END AS identification_error,
+                    (grsh.srid IS NOT NULL) AS status_history_found,
+                    grd.srid,
+                    grd.account,
+                    grd.barcode,
+                    grd.brand,
+                    grd.dst_office_address,
+                    grd.dst_office_id,
+                    grd.nm_id,
+                    grd.order_dt,
+                    grd.order_id,
+                    grd.return_type,
+                    grd.shk_id,
+                    grd.sticker_id,
+                    grd.subject_name,
+                    grd.tech_size,
+                    grd.reason,
+                    grd.is_status_active,
+                    grd.created_at AS goods_created_at,
+                    grd.is_received,
+                    grsh.status,
+                    grsh.status_dt,
+                    grsh.completed_dt,
+                    grsh.expired_dt,
+                    grsh.ready_to_return_dt,
+                    grsh.created_at AS status_created_at
+                FROM public.goods_returns_dev grd
+                LEFT JOIN public.article a ON grd.nm_id = a.nm_id
+                LEFT JOIN latest_status grsh ON grd.srid = grsh.srid
+                WHERE a.local_vendor_code IS NULL
+                    AND ($1::date IS NULL OR grd.created_at >= $1::date)
+                ORDER BY grd.created_at DESC;
+        """
+        try:
+            async with self.pool.acquire() as conn:
+                query_result = await conn.fetch(select_query, date_from)
+            return [UnidentifiedGoodsReturn(**dict(row)) for row in query_result]
+        except asyncpg.PostgresError as e:
+            return ReturnOfGoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e),
             )
 
     # async def incoming_returns(self, data: List[IncomingReturns]) -> ReturnOfGoodsResponse:
@@ -198,6 +275,203 @@ class ReturnOfGoodsRepository:
     #             details=str(e)
     #         )
     #     return result
+
+    async def receive_unidentified(
+            self,
+            data: ManualUnidentifiedReturn,
+    ) -> ReturnOfGoodsResponse:
+        lock_query = """
+            SELECT
+                grd.srid,
+                grd.nm_id,
+                grd.account,
+                grd.is_received,
+                grd.incoming_return_id,
+                a.local_vendor_code
+            FROM public.goods_returns_dev grd
+            LEFT JOIN public.article a ON a.nm_id = grd.nm_id
+            WHERE grd.srid = ANY($1::text[])
+            FOR UPDATE OF grd;
+        """
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    product_exists = await conn.fetchval(
+                        "SELECT EXISTS(SELECT 1 FROM public.products WHERE id = $1)",
+                        data.product_id,
+                    )
+                    if not product_exists:
+                        return ReturnOfGoodsResponse(
+                            status=422,
+                            message="Товар не найден",
+                            details=f"product_id={data.product_id} отсутствует в products",
+                        )
+
+                    warehouse_exists = await conn.fetchval(
+                        "SELECT EXISTS(SELECT 1 FROM public.warehouses WHERE id = $1)",
+                        data.warehouse_id,
+                    )
+                    if not warehouse_exists:
+                        return ReturnOfGoodsResponse(
+                            status=422,
+                            message="Склад не найден",
+                            details=f"warehouse_id={data.warehouse_id} отсутствует в warehouses",
+                        )
+
+                    records = await conn.fetch(lock_query, data.srids)
+                    records_by_srid = {row["srid"]: row for row in records}
+                    missing_srids = [srid for srid in data.srids if srid not in records_by_srid]
+                    if missing_srids:
+                        return ReturnOfGoodsResponse(
+                            status=422,
+                            message="Возвраты не найдены",
+                            details=", ".join(missing_srids),
+                        )
+
+                    already_received = [
+                        row["srid"] for row in records
+                        if row["is_received"] is True or row["incoming_return_id"] is not None
+                    ]
+                    if already_received:
+                        return ReturnOfGoodsResponse(
+                            status=409,
+                            message="Часть возвратов уже оприходована",
+                            details=", ".join(already_received),
+                        )
+
+                    identified_srids = [
+                        row["srid"] for row in records
+                        if row["local_vendor_code"] is not None
+                    ]
+                    if identified_srids:
+                        return ReturnOfGoodsResponse(
+                            status=422,
+                            message="Метод предназначен только для неопознанных товаров",
+                            details=", ".join(identified_srids),
+                        )
+
+                    accounts = {row["account"] for row in records}
+                    if len(accounts) != 1 or None in accounts:
+                        return ReturnOfGoodsResponse(
+                            status=422,
+                            message="Возвраты должны относиться к одному аккаунту",
+                            details="Передайте отдельный запрос для каждого account",
+                        )
+                    account = next(iter(accounts))
+                    seller_account_exists = await conn.fetchval(
+                        "SELECT EXISTS(SELECT 1 FROM public.seller_account WHERE UPPER(account_name) = UPPER($1))",
+                        account,
+                    )
+                    if not seller_account_exists:
+                        return ReturnOfGoodsResponse(
+                            status=422,
+                            message="Аккаунт продавца не найден",
+                            details=f"account={account} отсутствует в seller_account",
+                        )
+
+                    incoming_return_id = await conn.fetchval(
+                        """
+                        INSERT INTO public.incoming_returns
+                            (author, product_id, warehouse_id, quantity, return_date, share_of_kit, metawild)
+                        VALUES ($1, $2, $3, $4, $5, FALSE, NULL)
+                        RETURNING id;
+                        """,
+                        data.author,
+                        data.product_id,
+                        data.warehouse_id,
+                        len(data.srids),
+                        data.return_date,
+                    )
+
+                    await conn.execute(
+                        """
+                        UPDATE public.goods_returns_dev
+                        SET is_received = TRUE, incoming_return_id = $2
+                        WHERE srid = ANY($1::text[]);
+                        """,
+                        data.srids,
+                        incoming_return_id,
+                    )
+
+                    audit_data = []
+                    for row in records:
+                        comment = data.comment or (
+                            f"Ручная идентификация: nm_id={row['nm_id']}; "
+                            f"назначен product_id={data.product_id}."
+                        )
+                        audit_data.append((
+                            row["srid"],
+                            data.product_id,
+                            row["nm_id"],
+                            data.author,
+                            comment,
+                            incoming_return_id,
+                        ))
+                    await conn.executemany(
+                        """
+                        INSERT INTO public.goods_return_manual_identifications
+                            (srid, product_id, original_nm_id, resolved_by, comment, incoming_return_id)
+                        VALUES ($1, $2, $3, $4, $5, $6);
+                        """,
+                        audit_data,
+                    )
+
+                    if data.mark_list:
+                        await conn.executemany(
+                            """
+                            INSERT INTO public.goods_returns_mark_list (mark_code, author, product_id)
+                            VALUES ($1, $2, $3);
+                            """,
+                            [
+                                (mark.mark_code, data.author, data.product_id)
+                                for mark in data.mark_list
+                            ],
+                        )
+
+            return ReturnOfGoodsResponse(status=201, message="Успешно")
+        except asyncpg.PostgresError as e:
+            return ReturnOfGoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e),
+            )
+
+    async def get_manual_incoming_data_for_one_c(
+            self,
+            data: ManualUnidentifiedReturn,
+    ) -> List[ReturnsOneCModelAdd]:
+        query = """
+            SELECT
+                grd.account,
+                sa.inn,
+                p.name AS product_name,
+                COUNT(*) AS quantity
+            FROM public.goods_returns_dev grd
+            JOIN public.seller_account sa
+                ON UPPER(grd.account) = UPPER(sa.account_name)
+            JOIN public.products p ON p.id = $2
+            WHERE grd.srid = ANY($1::text[])
+            GROUP BY grd.account, sa.inn, p.name;
+        """
+        async with self.pool.acquire() as conn:
+            records = await conn.fetch(query, data.srids, data.product_id)
+        return [
+            ReturnsOneCModelAdd(
+                account=row["account"],
+                author=data.author,
+                inn=str(row["inn"]),
+                return_date=str(data.return_date),
+                return_data_by_product=[
+                    OneCReturnDataByProduct(
+                        product_id=data.product_id,
+                        product_name=row["product_name"],
+                        quantity=row["quantity"],
+                        mark_list=data.mark_list,
+                    )
+                ],
+            )
+            for row in records
+        ]
 
     async def incoming_returns(self, data: List[IncomingReturns]) -> ReturnOfGoodsResponse:
         data_to_add_incoming_returns: List[Tuple] = []

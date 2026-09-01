@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, date
 
 
@@ -45,6 +45,12 @@ class ReturnOfGoodsData(BaseModel):
     group_data: List[GroupDataGoodsReturns]
 
 
+class UnidentifiedGoodsReturn(GroupDataGoodsReturns):
+    product_id: str = "не найден артикул продавца по артикулу wb"
+    identification_error: str
+    status_history_found: bool
+
+
 class ReturnOfGoodsResponse(BaseModel):
     status: int
     message: str
@@ -73,6 +79,26 @@ class IncomingReturns(BaseModel):
     return_date: date
     is_received_data: List[IsReceived]
     mark_list: Optional[List[MarkCode]] = None
+
+
+class ManualUnidentifiedReturn(BaseModel):
+    product_id: str = Field(min_length=1, max_length=50)
+    warehouse_id: int = Field(gt=0)
+    return_date: date
+    author: str = Field(min_length=1, max_length=50)
+    comment: Optional[str] = Field(default=None, max_length=2000)
+    srids: List[str] = Field(min_length=1)
+    mark_list: Optional[List[MarkCode]] = None
+
+    @field_validator("srids")
+    @classmethod
+    def srids_must_be_unique(cls, value: List[str]) -> List[str]:
+        value = [srid.strip() for srid in value]
+        if any(not srid for srid in value):
+            raise ValueError("srids must not be blank")
+        if len(value) != len(set(value)):
+            raise ValueError("srids must be unique")
+        return value
 
 
 # class OneCReturnData(BaseModel):
