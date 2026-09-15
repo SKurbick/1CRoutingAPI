@@ -224,6 +224,7 @@ class StickerGenerationService:
             "material": template_data.material,
             "produced_in": template_data.produced_in,
             "quantity": template_data.quantity,
+            "brand": template_data.brand,
         }
 
         template_hash = StickerTemplateHashService.calculate(hash_payload)
@@ -288,6 +289,7 @@ class StickerGenerationService:
                 "importer_details": template_data.importer_details,
                 "production_date": template_data.production_date,
                 "certification_type": template_data.certification_type.value,
+                "brand": template_data.brand,
                 "local_data": [
                     {
                         "local": "ru",

@@ -702,7 +702,9 @@ class StickerTemplateBuilderService:
             if user_data else DEFAULT_IMPORTER_DETAILS,
             certification_type=product.certification_type,
             production_date=datetime.datetime.now().strftime("%Y-%m-%d"),
-            quantity=1)
+            quantity=1,
+            brand=user_data.brand,
+            )
 
     async def get_list_manufacturers(self) -> list[ManufacturerView]:
         """Получить список произоводителей"""

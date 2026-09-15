@@ -240,6 +240,7 @@ class IndividualStickerTemplateView(BaseModel):
     )  # TODO: оставить как поле только в бд?
     certification_type: CertificationType = CertificationType.NONE
     quantity: int
+    brand: Literal["TANFORT"] | None = Field(description="Бренд товара.")
 
 
 class StickerIndividualUserData(BaseModel):
@@ -259,3 +260,4 @@ class StickerIndividualUserData(BaseModel):
     production_date: datetime = Field(
         default_factory=datetime.now, description="Дата производства"
     )
+    brand: Literal["TANFORT"] | None = Field(..., description="Бренд товара")

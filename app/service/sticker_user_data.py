@@ -59,8 +59,8 @@ class StickerUserDataService:
             importer_details=template_data.importer_details,
             produced_in=template_data.produced_in,
             certification_type=template_data.certification_type,
-            production_date=template_data.
-            production_date
+            production_date=template_data.production_date,
+            brand=template_data.brand,
         )
 
         await self.individual_repo.upsert(user_data)

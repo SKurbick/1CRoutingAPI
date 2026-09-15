@@ -20,7 +20,8 @@ class IndividualUserDataRepository:
                 importer_details,
                 produced_in,
                 certification_type,
-                production_date
+                production_date,
+                brand
             FROM sticker_user_data_individual
             WHERE product_id = $1;
         """
@@ -42,18 +43,19 @@ class IndividualUserDataRepository:
                 CertificationType(data["certification_type"]) 
                 if data.get("certification_type") else None
             ),
-            production_date=data["production_date"]
+            production_date=data["production_date"],
+            brand=data["brand"]
         )
-    
 
     async def upsert(self, data: StickerIndividualUserData) -> None:
         """Сохраняет или обновляет данные индивидуального стикера"""
         sql = """
             INSERT INTO sticker_user_data_individual (
                 product_id, manufacturer_id, name, color, 
-                material, importer_details, produced_in, certification_type, production_date
+                material, importer_details, produced_in, certification_type, production_date,
+                brand
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             ON CONFLICT (product_id) DO UPDATE
             SET
                 manufacturer_id = EXCLUDED.manufacturer_id,
@@ -63,7 +65,8 @@ class IndividualUserDataRepository:
                 importer_details = EXCLUDED.importer_details,
                 produced_in = EXCLUDED.produced_in,
                 certification_type = EXCLUDED.certification_type,
-                production_date = EXCLUDED.production_date;
+                production_date = EXCLUDED.production_date
+                brand = EXCLUDED.brand;
             """
 
         await self.pool.execute(
@@ -76,5 +79,6 @@ class IndividualUserDataRepository:
             data.importer_details,
             data.produced_in,
             data.certification_type.value if data.certification_type else None,
-            data.production_date
+            data.production_date,
+            data.brand,
         )
