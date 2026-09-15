@@ -12,7 +12,7 @@ router = APIRouter(prefix="/inventory_check", tags=["Инвентаризаци�
 
 @router.post("/add_inventory_result", response_model=InventoryCheckResponse, status_code=status.HTTP_201_CREATED)
 async def create_data(
-        data: InventoryCheckUpdate = Body(example=example_inventory_check_data),
+        data: InventoryCheckUpdate = Body(examples=[example_inventory_check_data]),
         service: InventoryCheckService = Depends(get_inventory_check_service)
 ):
     result = await service.create_data(data)

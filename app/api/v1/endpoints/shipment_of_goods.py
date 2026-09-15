@@ -1,7 +1,7 @@
 import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, status, Body, HTTPException, Query
 
 from app.models import ShippedGoodsByID
 from app.models.shipment_of_goods import ShipmentOfGoodsUpdate, ShipmentOfGoodsResponse, example_shipment_of_goods_data, ShipmentParamsData, \
@@ -15,11 +15,12 @@ router = APIRouter(prefix="/shipment_of_goods", tags=["Отгрузка со с�
 
 @router.post("/shipment_with_reserve_updating", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def shipment_with_reserve_updating(
+        background_tasks: BackgroundTasks,
         data: List[ShipmentWithReserveUpdating],
         delivery_type: DeliveryType = Query(..., description="принимает ФБС или ФБО"),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
-    result = await service.shipment_with_reserve_updating(data, delivery_type)
+    result = await service.shipment_with_reserve_updating(data, delivery_type, background_tasks)
     return result
 
 
@@ -64,13 +65,12 @@ async def write_off_according_to_fbs(
 
 @router.post("/update", response_model=ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED, deprecated=True)
 async def create_data(
+        background_tasks: BackgroundTasks,
         delivery_type: DeliveryType = Query(..., description="принимает ФБС или ФБО"),
-        data: List[ShipmentOfGoodsUpdate] = Body(example=example_shipment_of_goods_data),
+        data: List[ShipmentOfGoodsUpdate] = Body(examples=[example_shipment_of_goods_data]),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
-    print("delivery_type",delivery_type)
-    print(data)
-    result = await service.create_data(data, delivery_type)
+    result = await service.create_data(data, delivery_type, background_tasks)
 
     if result.status >= 400:
         raise HTTPException(
@@ -131,7 +131,7 @@ async def add_shipped_goods_by_id(
 
 @router.post("/add_shipped_goods", response_model=List[ReserveOfGoodsResponse]|ShipmentOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_shipped_goods(
-        data: List[ShippedGoods] = Body(example=example_shipped_goods_data),
+        data: List[ShippedGoods] = Body(examples=[example_shipped_goods_data]),
         service: ShipmentOfGoodsService = Depends(get_shipment_of_goods_service)
 ):
     result = await service.add_shipped_goods(data)

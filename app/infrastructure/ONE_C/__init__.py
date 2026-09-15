@@ -1,5 +1,6 @@
-from .routing import ONECRouting
+from .routing import ONECRouting, OneCResponse
 
 __all__ = [
-    'ONECRouting'
+    'ONECRouting',
+    'OneCResponse',
 ]

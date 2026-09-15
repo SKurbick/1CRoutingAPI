@@ -4,13 +4,25 @@ from typing import List, Tuple
 import asyncpg
 from asyncpg import Pool
 from app.models import ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate
-from app.models.receipt_of_goods import ReceiptOfGoodsResponse, OneCModelUpdate, SupplyData
+from app.models.receipt_of_goods import ReceiptOfGoodsData, ReceiptOfGoodsItem, ReceiptOfGoodsResponse, OneCModelUpdate, SupplyData
 
 
 class ReceiptOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
 
+
+    async def get_valid_data_by_guid(self, guid: str) -> ReceiptOfGoodsData | None:
+        query = """SELECT * FROM supply_to_sellers_warehouse
+        WHERE guid = $1 AND is_valid = TRUE ORDER BY id"""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query, guid)
+        if not rows:
+            return None
+        item_keys = ReceiptOfGoodsItem.model_fields
+        doc_keys = ReceiptOfGoodsData.model_fields.keys() - {"supply_data"}
+        items = [ReceiptOfGoodsItem(**{k: row[k] for k in item_keys}) for row in rows]
+        return ReceiptOfGoodsData(**{k: rows[0][k] for k in doc_keys}, supply_data=items)
 
     async def get_one_c_model_data(self, guid_data) -> List[OneCModelUpdate]:
         query = """
@@ -81,6 +93,8 @@ class ReceiptOfGoodsRepository:
             supplier_code = document_data.supplier_code
             order_guid = document_data.order_guid
             currency = document_data.currency
+            transport_number = document_data.transport_number
+            truck_number = document_data.truck_number
             guid_data.append(guid)
             for supply_data in document_data.supply_data:
                 local_vendor_code = supply_data.local_vendor_code
@@ -94,7 +108,8 @@ class ReceiptOfGoodsRepository:
                 data_to_update_supply_to_sellers_warehouse.append((guid, document_number, document_created_at, update_document_datetime, event_status,
                                                                    author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
                                                                    quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name,
-                                                                   planned_cost, currency, pack_count, pack_multiplicity, order_guid))
+                                                                   planned_cost, currency, pack_count, pack_multiplicity, order_guid,
+                                                                   transport_number, truck_number))
 
                 if local_vendor_code in ids and supplier_code != '9714053621':  # собираем данные для актуализации остатков на складе # исключаем операции от ВБ -> 9714053621
                     data_to_update_incoming_items.append(
@@ -113,8 +128,8 @@ class ReceiptOfGoodsRepository:
         query_to_insert_supply_to_sellers_warehouse = """
         INSERT INTO supply_to_sellers_warehouse (guid, document_number, document_created_at, update_document_datetime, event_status,
                                author_of_the_change, our_organizations_name, supply_date, local_vendor_code,
-                               quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, is_valid,planned_cost,currency, pack_count, pack_multiplicity, order_guid)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, True, $16, $17, $18, $19, $20); """
+                               quantity, amount_with_vat, amount_without_vat, supplier_name, supplier_code, product_name, is_valid,planned_cost,currency, pack_count, pack_multiplicity, order_guid, transport_number, truck_number)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,  $12, $13, $14, $15, True, $16, $17, $18, $19, $20, $21, $22); """
 
         update_is_valid_in_incoming_items = """
         UPDATE incoming_items

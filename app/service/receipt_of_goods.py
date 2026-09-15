@@ -1,11 +1,15 @@
-from pprint import pprint
+import logging
 from typing import List
+from fastapi import BackgroundTasks
+
 
 from app.dependencies.config import settings
 from app.infrastructure.ONE_C import ONECRouting
 from app.models import ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate
 from app.database.repositories import ReceiptOfGoodsRepository
-from app.models.receipt_of_goods import ReceiptOfGoodsResponse
+from app.models.receipt_of_goods import ReceiptOfGoodsData, ReceiptOfGoodsResponse
+
+logger = logging.getLogger(__name__)
 
 
 class ReceiptOfGoodsService:
@@ -16,6 +20,9 @@ class ReceiptOfGoodsService:
     ):
         self.receipt_of_goods_repository = receipt_of_goods_repository
         self.wms_integration_service = wms_integration_service
+
+    async def get_valid_data_by_guid(self, guid: str) -> ReceiptOfGoodsData | None:
+        return await self.receipt_of_goods_repository.get_valid_data_by_guid(guid)
 
     async def create_data(self, data: List[ReceiptOfGoodsUpdate]) -> ReceiptOfGoodsResponse:
         # Существующая логика сохранения в БД (НЕ МЕНЯТЬ!)
@@ -47,21 +54,66 @@ class ReceiptOfGoodsService:
 
         return result
 
-    async def add_incoming_receipt(self, data: List[AddIncomingReceiptUpdate]) -> ReceiptOfGoodsResponse:
+    async def add_incoming_receipt(
+            self,
+            data: List[AddIncomingReceiptUpdate],
+            background_tasks: BackgroundTasks,
+    ) -> ReceiptOfGoodsResponse:
         result = await self.receipt_of_goods_repository.add_incoming_receipt(data)
-        #  при успешном выполнении вставки отправлять запрос в 1с
+
         if result.status == 201:
-            guid_data = []
-            for values in data:
-                guid_data.append(values.guid)
+            guid_data = [item.guid for item in data]
+            one_c_model_data = await self.receipt_of_goods_repository.get_one_c_model_data(
+                guid_data=guid_data
+            )
+            log_context = {
+                "item_count": len(data),
+                "guid_count": len(guid_data),
+            }
+            background_tasks.add_task(
+                self.notify_one_c_about_incoming_receipt,
+                one_c_model_data,
+                log_context,
+            )
 
-            one_c_model_data = await self.receipt_of_goods_repository.get_one_c_model_data(guid_data= guid_data)
-            pprint(one_c_model_data)
-            pprint(guid_data)
-
-            one_c_connect = ONECRouting(base_url=settings.ONE_C_BASE_URL, password=settings.ONE_C_PASSWORD, login=settings.ONE_C_LOGIN)
-            await one_c_connect.receipt_of_goods_update(data= one_c_model_data)
         return result
+
+    async def notify_one_c_about_incoming_receipt(
+            self,
+            one_c_model_data: list,
+            log_context: dict,
+    ) -> None:
+        try:
+            one_c_connect = ONECRouting(
+                base_url=settings.ONE_C_BASE_URL,
+                password=settings.ONE_C_PASSWORD,
+                login=settings.ONE_C_LOGIN,
+            )
+            response = await one_c_connect.receipt_of_goods_update(
+                data=one_c_model_data
+            )
+
+            if not 200 <= response.status < 300:
+                logger.error(
+                    "event=one_c_receipt_notification_http_error http_status=%s response_body=%s",
+                    response.status,
+                    response.body[:4096],
+                    extra=log_context,
+                )
+                return
+
+            logger.info(
+                "event=one_c_receipt_notification_succeeded http_status=%s",
+                response.status,
+                extra=log_context,
+            )
+        except Exception as exc:
+            logger.exception(
+                "event=one_c_receipt_notification_transport_error exception_type=%s exception_message=%s",
+                type(exc).__name__,
+                str(exc),
+                extra=log_context,
+            )
 
     async def add_or_update_one_c_document(self,  data: List[AddIncomingReceiptUpdate]):
         """

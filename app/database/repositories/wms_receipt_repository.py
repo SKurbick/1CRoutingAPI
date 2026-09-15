@@ -36,6 +36,14 @@ class WMSReceiptRepository:
                     document_number,
                     supplier_name,
                     supplier_code,
+                    document_created_at,
+                    supply_date,
+                    update_document_datetime,
+                    event_status,
+                    author_of_the_change,
+                    our_organizations_name,
+                    order_guid,
+                    currency,
                     created_at,
                     updated_at
                 FROM wms.receipt_items
@@ -53,7 +61,15 @@ class WMSReceiptRepository:
         quantity: float,
         document_number: str,
         supplier_name: str,
-        supplier_code: Optional[str] = None
+        supplier_code: Optional[str],
+        document_created_at: Any,
+        supply_date: Any,
+        update_document_datetime: Any,
+        event_status: str,
+        author_of_the_change: str,
+        our_organizations_name: str,
+        order_guid: Optional[str],
+        currency: Optional[str]
     ) -> int:
         """
         Создать запись о новом товаре в поставке
@@ -70,9 +86,17 @@ class WMSReceiptRepository:
                     quantity,
                     document_number,
                     supplier_name,
-                    supplier_code
+                    supplier_code,
+                    document_created_at,
+                    supply_date,
+                    update_document_datetime,
+                    event_status,
+                    author_of_the_change,
+                    our_organizations_name,
+                    order_guid,
+                    currency
                 )
-                VALUES ($1, $2, $3, $4, $5, $6)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                 RETURNING receipt_item_id
                 """,
                 guid,
@@ -80,7 +104,15 @@ class WMSReceiptRepository:
                 quantity,
                 document_number,
                 supplier_name,
-                supplier_code
+                supplier_code,
+                document_created_at,
+                supply_date,
+                update_document_datetime,
+                event_status,
+                author_of_the_change,
+                our_organizations_name,
+                order_guid,
+                currency
             )
             return result['receipt_item_id']
 
@@ -88,7 +120,18 @@ class WMSReceiptRepository:
         self,
         guid: str,
         product_id: str,
-        new_quantity: float
+        new_quantity: float,
+        document_number: str,
+        supplier_name: str,
+        supplier_code: Optional[str],
+        document_created_at: Any,
+        supply_date: Any,
+        update_document_datetime: Any,
+        event_status: str,
+        author_of_the_change: str,
+        our_organizations_name: str,
+        order_guid: Optional[str],
+        currency: Optional[str]
     ) -> None:
         """
         Обновить количество товара в поставке
@@ -102,12 +145,34 @@ class WMSReceiptRepository:
             await conn.execute(
                 """
                 UPDATE wms.receipt_items
-                SET quantity = $3, updated_at = NOW()
+                SET quantity = $3,
+                    document_number = $4,
+                    supplier_name = $5,
+                    supplier_code = $6,
+                    document_created_at = $7,
+                    supply_date = $8,
+                    update_document_datetime = $9,
+                    event_status = $10,
+                    author_of_the_change = $11,
+                    our_organizations_name = $12,
+                    order_guid = $13,
+                    currency = $14
                 WHERE guid = $1 AND product_id = $2
                 """,
                 guid,
                 product_id,
-                new_quantity
+                new_quantity,
+                document_number,
+                supplier_name,
+                supplier_code,
+                document_created_at,
+                supply_date,
+                update_document_datetime,
+                event_status,
+                author_of_the_change,
+                our_organizations_name,
+                order_guid,
+                currency
             )
 
     async def get_available_quantity_in_location(
