@@ -703,7 +703,7 @@ class StickerTemplateBuilderService:
             certification_type=product.certification_type,
             production_date=datetime.datetime.now().strftime("%Y-%m-%d"),
             quantity=1,
-            brand=user_data.brand,
+            brand=user_data.brand if user_data else None,
             )
 
     async def get_list_manufacturers(self) -> list[ManufacturerView]:
