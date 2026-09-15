@@ -65,7 +65,7 @@ class IndividualUserDataRepository:
                 importer_details = EXCLUDED.importer_details,
                 produced_in = EXCLUDED.produced_in,
                 certification_type = EXCLUDED.certification_type,
-                production_date = EXCLUDED.production_date
+                production_date = EXCLUDED.production_date,
                 brand = EXCLUDED.brand;
             """
 
