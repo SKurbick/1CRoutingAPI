@@ -13,6 +13,7 @@ from app.models.box_stickers import (
     StickerTemplateViewShort,
     ImporterView,
     IndividualStickerTemplateView,
+    IndividualStickerTemplateViewRequest,
     ManufacturerView,
     StickerGenerationTaskResultResponse,
     StickerGenerationTaskInfo,
@@ -102,7 +103,7 @@ async def create_or_get_transport_generation_task(
     status_code=status.HTTP_200_OK,
     description="**Инициировать создание стикера**")
 async def create_or_get_individual_generation_task(
-    template_data: IndividualStickerTemplateView,
+    template_data: IndividualStickerTemplateViewRequest,
     service: Annotated[
         StickerGenerationService,
         Depends(get_sticker_generation_service)

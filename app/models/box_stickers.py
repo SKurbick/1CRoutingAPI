@@ -229,6 +229,7 @@ class ImporterView(BaseModel):
 
 class IndividualStickerTemplateView(BaseModel):
     product_id: str = Field(..., description="Артикул")
+    order_number: str | None = Field(None, description="Номер заказа")
     name: str = Field(..., description="Название")
     color: str | None = Field(None, description="Цвет")
     material: str | None = Field(None, description="Материал")
@@ -241,6 +242,10 @@ class IndividualStickerTemplateView(BaseModel):
     certification_type: CertificationType = CertificationType.NONE
     quantity: int
     brand: Literal["TANFORT"] | None = Field(description="Бренд товара.")
+
+
+class IndividualStickerTemplateViewRequest(IndividualStickerTemplateView):
+    order_number: str = Field(description="Номер заказа")
 
 
 class StickerIndividualUserData(BaseModel):

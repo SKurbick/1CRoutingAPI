@@ -215,6 +215,7 @@ class StickerGenerationService:
         hash_payload = {
             "sticker_type": StickerType.INDIVIDUAL.value,
             "product_id": template_data.product_id,
+            "order_number": template_data.order_number,
             "manufacturer": template_data.manufacturer,
             "importer_details": template_data.importer_details,
             "production_date": template_data.production_date,
@@ -286,6 +287,7 @@ class StickerGenerationService:
             "data": {
                 "product_id": template_data.product_id,
                 "manufacturer": template_data.manufacturer,
+                "order_number": template_data.order_number,
                 "importer_details": template_data.importer_details,
                 "production_date": template_data.production_date,
                 "certification_type": template_data.certification_type.value,
