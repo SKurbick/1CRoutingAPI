@@ -20,7 +20,8 @@ class StickerUserDataService:
         user_data = StickerUserTemplateData(
             product_id=template_data.product_id,
             sticker_type=StickerType.TRANSPORT,
-            proforma_number=template_data.proforma_number,
+            # proforma_number=template_data.proforma_number,
+            proforma_number=None,
             items_per_box=template_data.items_per_box,
             total_boxes=template_data.total_boxes,
             gross_weight=template_data.gross_weight,

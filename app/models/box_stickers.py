@@ -93,7 +93,7 @@ class BoxStickerTemplateView(BaseModel):
     total_boxes: int | None = None
     produced_in: str | None = None
     produced_in_en: str | None = None
-    proforma_number: str | None = None
+    # proforma_number: str | None = None
     certification_type: CertificationType = CertificationType.NONE
     limit: int | None = 0
     offset: int | None = 0
@@ -115,7 +115,7 @@ class BoxStickerTemplateViewRequest(BaseModel):
     # total_boxes: int | None = None
     produced_in: str | None = None
     produced_in_en: str | None = None
-    proforma_number: str | None = None
+    # proforma_number: str | None = None
     certification_type: CertificationType = CertificationType.NONE
     limit: int | None = 0
     font_size: float = Field(default=10.0, ge=7.0, le=11.0)

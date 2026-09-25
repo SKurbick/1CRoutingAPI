@@ -62,7 +62,7 @@ class StickerGenerationService:
             total_boxes=None,
             produced_in=template_data.produced_in,
             produced_in_en=template_data.produced_in_en,
-            proforma_number=template_data.proforma_number,
+            # proforma_number=template_data.proforma_number,
             certification_type=template_data.certification_type,
             limit=template_data.limit,
             offset=None,
@@ -86,7 +86,7 @@ class StickerGenerationService:
             # "total_boxes": template_data.total_boxes,
             "produced_in": template_data.produced_in,
             "produced_in_en": template_data.produced_in_en,
-            "proforma_number": template_data.proforma_number,
+            # "proforma_number": template_data.proforma_number,
             "certification_type": template_data.certification_type.value,
             "limit": template_data.limit,
             "font_size": template_data.font_size,
@@ -171,7 +171,7 @@ class StickerGenerationService:
                     if template_data.box_size
                     else None
                 ),
-                "proforma_number": template_data.proforma_number,
+                # "proforma_number": template_data.proforma_number,
                 "items_per_box": template_data.items_per_box,
                 # "total_boxes": template_data.total_boxes,
                 "certification_type": template_data.certification_type.value,
