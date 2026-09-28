@@ -5,6 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Response, status, Body
 from app.models.return_of_goods import (
     IncomingReturns,
     ManualUnidentifiedReturn,
+    MissingStickerReturn,
     ReturnOfGoodsData,
     ReturnOfGoodsResponse,
     UnidentifiedGoodsReturn,
@@ -73,6 +74,32 @@ async def receive_unidentified(
     result = await service.receive_unidentified(data, background_tasks)
     response.status_code = result.status
     return result
+
+
+@router.post(
+    "/receive_missing_sticker",
+    response_model=ReturnOfGoodsResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "model": ReturnOfGoodsResponse,
+            "description": "Стикер уже оприходован или доступен для стандартной приёмки",
+        },
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+            "model": ReturnOfGoodsResponse,
+            "description": "Товар, склад или данные запроса не прошли проверку",
+        },
+    },
+)
+async def receive_missing_sticker(
+        response: Response,
+        data: MissingStickerReturn,
+        service: ReturnOfGoodsService = Depends(get_return_of_goods_service),
+):
+    result = await service.receive_missing_sticker(data)
+    response.status_code = result.status
+    return result
+
 
 #= Body(example=example_incoming_returns_data)
 @router.post("/incoming_returns", response_model=ReturnOfGoodsResponse, status_code=status.HTTP_201_CREATED)

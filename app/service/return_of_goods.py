@@ -10,6 +10,7 @@ from app.infrastructure.ONE_C import ONECRouting
 from app.models.return_of_goods import (
     IncomingReturns,
     ManualUnidentifiedReturn,
+    MissingStickerReturn,
     ReturnOfGoodsData,
     ReturnOfGoodsResponse,
     UnidentifiedGoodsReturn,
@@ -96,6 +97,12 @@ class ReturnOfGoodsService:
             )
 
         return result
+
+    async def receive_missing_sticker(
+            self,
+            data: MissingStickerReturn,
+    ) -> ReturnOfGoodsResponse:
+        return await self.return_of_goods_repository.receive_missing_sticker(data)
 
     async def notify_one_c_about_returns(
             self,

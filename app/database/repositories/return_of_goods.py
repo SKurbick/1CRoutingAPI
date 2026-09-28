@@ -5,8 +5,18 @@ from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool
-from app.models.return_of_goods import ReturnOfGoodsResponse, ReturnOfGoodsData, GoodsReturn, IncomingReturns, GroupDataGoodsReturns, ReturnsOneCModelAdd, \
-    ManualUnidentifiedReturn, OneCReturnDataByProduct, UnidentifiedGoodsReturn
+from app.models.return_of_goods import (
+    GoodsReturn,
+    GroupDataGoodsReturns,
+    IncomingReturns,
+    ManualUnidentifiedReturn,
+    MissingStickerReturn,
+    OneCReturnDataByProduct,
+    ReturnOfGoodsData,
+    ReturnOfGoodsResponse,
+    ReturnsOneCModelAdd,
+    UnidentifiedGoodsReturn,
+)
 
 
 class ReturnOfGoodsRepository:
@@ -555,3 +565,126 @@ class ReturnOfGoodsRepository:
                 details=str(e)
             )
         return result
+
+    async def receive_missing_sticker(
+            self,
+            data: MissingStickerReturn,
+    ) -> ReturnOfGoodsResponse:
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    source_returns = await conn.fetch(
+                        """
+                        SELECT is_received
+                        FROM public.goods_returns_dev
+                        WHERE sticker_id = $1;
+                        """,
+                        data.sticker_id,
+                    )
+                    if source_returns:
+                        if any(row["is_received"] is True for row in source_returns):
+                            return ReturnOfGoodsResponse(
+                                status=409,
+                                message="Товар уже оприходован",
+                            )
+                        return ReturnOfGoodsResponse(
+                            status=409,
+                            message=(
+                                "Возврат найден в системе. "
+                                "Оприходуйте товар стандартным способом"
+                            ),
+                        )
+
+                    already_received = await conn.fetchval(
+                        """
+                        SELECT EXISTS(
+                            SELECT 1
+                            FROM public.manual_sticker_returns
+                            WHERE sticker_id = $1
+                        );
+                        """,
+                        data.sticker_id,
+                    )
+                    if already_received:
+                        return ReturnOfGoodsResponse(
+                            status=409,
+                            message="Товар уже оприходован",
+                        )
+
+                    product_exists = await conn.fetchval(
+                        "SELECT EXISTS(SELECT 1 FROM public.products WHERE id = $1)",
+                        data.product_id,
+                    )
+                    if not product_exists:
+                        return ReturnOfGoodsResponse(
+                            status=422,
+                            message="Товар не найден",
+                            details=f"product_id={data.product_id} отсутствует в products",
+                        )
+
+                    warehouse_exists = await conn.fetchval(
+                        "SELECT EXISTS(SELECT 1 FROM public.warehouses WHERE id = $1)",
+                        data.warehouse_id,
+                    )
+                    if not warehouse_exists:
+                        return ReturnOfGoodsResponse(
+                            status=422,
+                            message="Склад не найден",
+                            details=f"warehouse_id={data.warehouse_id} отсутствует в warehouses",
+                        )
+
+                    incoming_return_id = await conn.fetchval(
+                        """
+                        INSERT INTO public.incoming_returns
+                            (author, product_id, warehouse_id, quantity, return_date, share_of_kit, metawild)
+                        VALUES ($1, $2, $3, 1, $4, FALSE, NULL)
+                        RETURNING id;
+                        """,
+                        data.author,
+                        data.product_id,
+                        data.warehouse_id,
+                        data.return_date,
+                    )
+
+                    await conn.execute(
+                        """
+                        INSERT INTO public.manual_sticker_returns
+                            (incoming_return_id, sticker_id, product_id)
+                        VALUES ($1, $2, $3);
+                        """,
+                        incoming_return_id,
+                        data.sticker_id,
+                        data.product_id,
+                    )
+
+                    if data.mark_list:
+                        await conn.executemany(
+                            """
+                            INSERT INTO public.goods_returns_mark_list
+                                (mark_code, author, product_id)
+                            VALUES ($1, $2, $3);
+                            """,
+                            [
+                                (mark.mark_code, data.author, data.product_id)
+                                for mark in data.mark_list
+                            ],
+                        )
+
+            return ReturnOfGoodsResponse(status=201, message="Успешно")
+        except asyncpg.UniqueViolationError as e:
+            if e.constraint_name == "uq_manual_sticker_returns_sticker":
+                return ReturnOfGoodsResponse(
+                    status=409,
+                    message="Товар уже оприходован",
+                )
+            return ReturnOfGoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e),
+            )
+        except asyncpg.PostgresError as e:
+            return ReturnOfGoodsResponse(
+                status=422,
+                message="PostgresError",
+                details=str(e),
+            )

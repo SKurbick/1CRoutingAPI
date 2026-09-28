@@ -101,6 +101,23 @@ class ManualUnidentifiedReturn(BaseModel):
         return value
 
 
+class MissingStickerReturn(BaseModel):
+    sticker_id: str = Field(min_length=1, max_length=255)
+    product_id: str = Field(min_length=1, max_length=50)
+    warehouse_id: int = Field(gt=0)
+    return_date: date
+    author: str = Field(min_length=1, max_length=50)
+    mark_list: Optional[List[MarkCode]] = None
+
+    @field_validator("sticker_id", "product_id", "author")
+    @classmethod
+    def strip_required_strings(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("value must not be blank")
+        return value
+
+
 # class OneCReturnData(BaseModel):
 
 class OneCReturnDataByProduct(BaseModel):
