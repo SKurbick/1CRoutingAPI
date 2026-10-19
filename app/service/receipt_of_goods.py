@@ -42,6 +42,14 @@ class ReceiptOfGoodsService:
                     details_parts.append(f"пропущено товаров {len(wms_stats['skipped_products'])}")
                 if wms_stats["adjustment_warnings"]:
                     details_parts.append(f"предупреждений {len(wms_stats['adjustment_warnings'])}")
+                if wms_stats.get("errors"):
+                    error_details = "; ".join(
+                        f"{item['guid']}: {item['error']}"
+                        for item in wms_stats["errors"]
+                    )
+                    details_parts.append(
+                        f"ошибок WMS {len(wms_stats['errors'])}: {error_details}"
+                    )
 
                 if details_parts:
                     result.details = ". ".join(details_parts)

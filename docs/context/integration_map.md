@@ -4,7 +4,7 @@
 |---|---|---|---|
 | 1CRoutingAPI -> 1С | POST relative `ass_disass/`, `goods_resorting/`, `goods_return/`, `inc_invoice/`, `commission_sales_fbo/` | HTTP Basic; timeout only FBO=60s | no retry/idempotency; text response; print |
 | 1С -> API | financial, receipt, buyer order, return-to-supplier `*/update` | API auth absent | guid versioning only |
-| API -> WMS | `WMS_API_URL_MOVEMENTS`, single/bulk movements | auth absent in code; 30s | no retry; raises HTTP errors; rotating log |
+| API -> WMS | `WMS_API_URL_MOVEMENTS`, batch JSON array for single-item corrections and bulk receipts | auth absent in code; 30s | no retry; per-document errors logged and returned in receipt `details` |
 | API -> WMS DB | `wms.receipt_items/inventory/locations` | shared DB credentials | local SQL only |
 | Frontend -> API | operator/CRUD/shipment/return/sticker endpoints | auth absent, CORS * | caller identity mostly `author` body |
 | RabbitMQ | direct durable DOCGEN_REQUEST/EVENT exchanges; box/unit routing keys and response queues | broker credentials/settings | no explicit retry/DLQ; task DB dedup |

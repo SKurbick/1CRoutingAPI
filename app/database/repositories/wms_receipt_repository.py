@@ -3,7 +3,7 @@ WMS Receipt Items Repository
 Методы для работы с поступлениями в WMS (таблица wms.receipt_items)
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import asyncpg
 from asyncpg import Pool
 
@@ -53,6 +53,20 @@ class WMSReceiptRepository:
                 product_id
             )
             return dict(result) if result else None
+
+    async def get_receipt_items_by_guid(self, guid: str) -> List[Dict[str, Any]]:
+        """Получить все текущие WMS snapshot-строки документа."""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT product_id, quantity
+                FROM wms.receipt_items
+                WHERE guid = $1
+                ORDER BY receipt_item_id
+                """,
+                guid,
+            )
+            return [dict(row) for row in rows]
 
     async def create_receipt_item(
         self,

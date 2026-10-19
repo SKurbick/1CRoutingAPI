@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from types import ModuleType, SimpleNamespace
 import sys
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 from app.database.repositories.wms_receipt_repository import WMSReceiptRepository
 
@@ -43,9 +43,14 @@ def make_receipt(quantity=5, **overrides):
     return receipt
 
 
-def make_service(existing=None):
+def make_service(existing=None, existing_items=None):
+    if existing_items is None:
+        existing_items = (
+            [{"product_id": "SKU-1", **existing}] if existing else []
+        )
     repo = SimpleNamespace(
         get_receipt_item=AsyncMock(return_value=existing),
+        get_receipt_items_by_guid=AsyncMock(return_value=existing_items),
         create_receipt_item=AsyncMock(return_value=1),
         update_receipt_item_quantity=AsyncMock(),
         get_available_quantity_in_location=AsyncMock(return_value=100),
@@ -58,6 +63,39 @@ def make_service(existing=None):
 
 
 class WMSReceiptMetadataTests(IsolatedAsyncioTestCase):
+    @patch("app.service.wms_integration_service.httpx.AsyncClient")
+    async def test_single_adjustment_uses_wms_batch_payload(self, async_client):
+        service = WMSIntegrationService(receipt_repository=SimpleNamespace(), pool=None)
+        client = AsyncMock()
+        client.post.return_value = SimpleNamespace(raise_for_status=Mock())
+        async_client.return_value.__aenter__.return_value = client
+
+        await service._create_wms_movement(
+            api_url="http://wms/api/movements",
+            movement_type="adjust",
+            product_id="SKU-1",
+            quantity=5,
+            user_name="Иванов",
+            reason="Отмена поставки",
+            from_location_code="PUSHKINO-ПРИЁМКА",
+        )
+
+        client.post.assert_awaited_once_with(
+            "http://wms/api/movements",
+            json=[
+                {
+                    "movement_type": "adjust",
+                    "product_id": "SKU-1",
+                    "quantity": 5,
+                    "user_name": "Иванов",
+                    "reason": "Отмена поставки",
+                    "batch_number": None,
+                    "container_code": None,
+                    "from_location_code": "PUSHKINO-ПРИЁМКА",
+                }
+            ],
+        )
+
     async def test_new_receipt_creates_snapshot_with_document_metadata(self):
         service, repo = make_service()
         receipt = make_receipt()
@@ -135,6 +173,41 @@ class WMSReceiptMetadataTests(IsolatedAsyncioTestCase):
 
         repo.update_receipt_item_quantity.assert_not_awaited()
         assert stats["errors"][0]["error"] == "movement failed"
+
+    async def test_missing_product_is_adjusted_to_zero(self):
+        service, repo = make_service(
+            existing_items=[{"product_id": "SKU-REMOVED", "quantity": 7}]
+        )
+
+        stats = await service.process_receipts([make_receipt()])
+
+        movement = service._create_wms_movement.await_args.kwargs
+        assert movement["movement_type"] == "adjust"
+        assert movement["product_id"] == "SKU-REMOVED"
+        assert movement["quantity"] == 7.0
+        assert movement["from_location_code"] == "PUSHKINO-ПРИЁМКА"
+        snapshot = repo.update_receipt_item_quantity.await_args.kwargs
+        assert snapshot["product_id"] == "SKU-REMOVED"
+        assert snapshot["new_quantity"] == 0.0
+        assert stats["adjusted_movements"] == 1
+
+    async def test_empty_supply_data_adjusts_all_existing_products_to_zero(self):
+        service, repo = make_service(
+            existing_items=[{"product_id": "SKU-REMOVED", "quantity": 7}]
+        )
+
+        stats = await service.process_receipts(
+            [make_receipt(supply_data=[], event_status="Не проведён")]
+        )
+
+        service._create_wms_movements_bulk.assert_not_awaited()
+        movement = service._create_wms_movement.await_args.kwargs
+        assert movement["product_id"] == "SKU-REMOVED"
+        assert movement["quantity"] == 7.0
+        snapshot = repo.update_receipt_item_quantity.await_args.kwargs
+        assert snapshot["new_quantity"] == 0.0
+        assert snapshot["event_status"] == "Не проведён"
+        assert stats["adjusted_movements"] == 1
 
     async def test_naive_document_dates_are_assigned_moscow_timezone(self):
         naive = datetime(2026, 7, 22, 12, 30)
@@ -225,6 +298,7 @@ class WMSReceiptMetadataTests(IsolatedAsyncioTestCase):
 class FakeConnection:
     def __init__(self):
         self.fetchrow = AsyncMock(return_value={"receipt_item_id": 9})
+        self.fetch = AsyncMock(return_value=[])
         self.execute = AsyncMock()
 
 
@@ -248,6 +322,24 @@ class FakePool:
 
 
 class WMSReceiptRepositoryTests(IsolatedAsyncioTestCase):
+    async def test_repository_lists_snapshot_items_by_guid(self):
+        connection = FakeConnection()
+        connection.fetch.return_value = [
+            {"product_id": "SKU-1", "quantity": 5},
+            {"product_id": "SKU-2", "quantity": 7},
+        ]
+        repository = WMSReceiptRepository(FakePool(connection))
+
+        rows = await repository.get_receipt_items_by_guid("receipt-guid")
+
+        sql, guid = connection.fetch.await_args.args
+        assert "WHERE guid = $1" in sql
+        assert guid == "receipt-guid"
+        assert rows == [
+            {"product_id": "SKU-1", "quantity": 5},
+            {"product_id": "SKU-2", "quantity": 7},
+        ]
+
     async def test_repository_insert_is_parameterized_and_preserves_nulls(self):
         connection = FakeConnection()
         repository = WMSReceiptRepository(FakePool(connection))
@@ -300,6 +392,7 @@ class ReceiptResponseCompatibilityTests(IsolatedAsyncioTestCase):
             "adjusted_movements": 0,
             "skipped_products": [],
             "adjustment_warnings": [],
+            "errors": [],
         }))
         service = ReceiptOfGoodsService(receipt_repository, wms_service)
 
@@ -309,3 +402,21 @@ class ReceiptResponseCompatibilityTests(IsolatedAsyncioTestCase):
         assert result.status == 201
         assert result.message == "created"
         assert result.details is None
+
+    async def test_receipt_service_exposes_wms_errors_in_details(self):
+        response = SimpleNamespace(status=201, message="created", details=None)
+        receipt_repository = SimpleNamespace(update_data=AsyncMock(return_value=response))
+        wms_service = SimpleNamespace(process_receipts=AsyncMock(return_value={
+            "created_movements": 0,
+            "adjusted_movements": 0,
+            "skipped_products": [],
+            "adjustment_warnings": [],
+            "errors": [{"guid": "receipt-guid", "error": "movement failed"}],
+        }))
+        service = ReceiptOfGoodsService(receipt_repository, wms_service)
+
+        result = await service.create_data([make_receipt()])
+
+        assert result.status == 201
+        assert "ошибок WMS 1" in result.details
+        assert "receipt-guid: movement failed" in result.details

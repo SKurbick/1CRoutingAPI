@@ -172,6 +172,14 @@ class WMSIntegrationService:
             receipt.update_document_datetime
         )
 
+        # Входящий документ является полным snapshot. Позиция, которая была в
+        # предыдущем WMS snapshot, но исчезла из supply_data, эквивалентна
+        # корректировке её количества до нуля.
+        existing_items = await self.receipt_repo.get_receipt_items_by_guid(guid)
+        incoming_product_ids = {
+            item.local_vendor_code for item in receipt.supply_data
+        }
+
         # Обработать каждый товар в поставке
         # Разделяем на новые (bulk receive) и корректировки (per-item)
         new_items = []  # [(product_id, quantity)]
@@ -223,6 +231,38 @@ class WMSIntegrationService:
             else:
                 logger.info(f"    ➕ NEW RECEIPT: {product_id} | Qty: {quantity}")
                 new_items.append((product_id, quantity))
+
+        for existing_item in existing_items:
+            product_id = existing_item["product_id"]
+            if product_id in incoming_product_ids:
+                continue
+
+            old_quantity = float(existing_item["quantity"])
+            logger.info(
+                "    🔄 REMOVED ITEM ADJUSTMENT: %s | Old qty: %s | New qty: 0",
+                product_id,
+                old_quantity,
+            )
+            await self._adjust_receipt_item(
+                guid=guid,
+                product_id=product_id,
+                old_quantity=old_quantity,
+                new_quantity=0.0,
+                document_number=document_number,
+                supplier_name=supplier_name,
+                supplier_code=supplier_code,
+                document_created_at=document_created_at,
+                supply_date=supply_date,
+                update_document_datetime=update_document_datetime,
+                event_status=receipt.event_status,
+                author_of_the_change=receipt.author_of_the_change,
+                our_organizations_name=receipt.our_organizations_name,
+                order_guid=receipt.order_guid,
+                currency=receipt.currency,
+                author=author,
+                stats=stats,
+            )
+            stats["adjusted_movements"] += 1
 
         # Bulk-создание всех новых receive movements с разбивкой на батчи
         if new_items:
@@ -464,7 +504,9 @@ class WMSIntegrationService:
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(api_url, json=payload)
+                # WMS /api/movements has a batch-only contract, including when
+                # a receipt correction creates exactly one movement.
+                response = await client.post(api_url, json=[payload])
                 response.raise_for_status()
                 logger.info(f"      ✅ WMS movement created | {movement_type} {product_id} qty={quantity}")
 
