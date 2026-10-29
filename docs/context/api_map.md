@@ -38,6 +38,8 @@
 | POST `/shipment_of_goods/update` | `create_data` (deprecated) | shipment list/type -> response | DB; FBO -> 1С |
 | GET `/shipment_of_goods/get_shipment_params` | `shipment_params_data` | none -> params | reads seller accounts |
 | POST `/shipment_of_goods/create_reserve` | same | reserve list -> response | inserts reserves |
+| PATCH `/shipment_of_goods/fbo_reserves/{reserve_id}` | `patch_fbo_reserve` | `FBOReservePatch` -> response with updated row | ФБО only, shipped=0; synchronizes reservation movement and balances |
+| DELETE `/shipment_of_goods/fbo_reserves/{reserve_id}` | `delete_fbo_reserve` | id -> 204 | ФБО only, shipped=0; releases reserve without returning quantity to source |
 | GET `/shipment_of_goods/get_reserved_data` | same | filters -> list | reads reserves |
 | POST `/shipment_of_goods/add_shipped_goods_by_id` | same | list -> response | fulfills by ids |
 | POST `/shipment_of_goods/add_shipped_goods` | same | list -> response | fulfills reserves |

@@ -9,7 +9,7 @@ from app.infrastructure.ONE_C import ONECRouting
 from app.models import ShipmentOfGoodsUpdate, ShippedGoodsByID, WriteOffAccordingToFBS
 from app.database.repositories import ShipmentOfGoodsRepository
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsResponse, ReserveOfGoodsCreate, ShippedGoods, DeliveryType, \
-    ReservedData, CreationWithMovement, ShipmentWithReserveUpdating
+    ReservedData, CreationWithMovement, ShipmentWithReserveUpdating, FBOReservePatch
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,12 @@ class ShipmentOfGoodsService:
         result = await self.shipment_of_goods_repository.write_off_according_to_fbs(data)
 
         return result
+
+    async def patch_fbo_reserve(self, reserve_id: int, data: FBOReservePatch) -> ShipmentOfGoodsResponse:
+        return await self.shipment_of_goods_repository.patch_fbo_reserve(reserve_id, data)
+
+    async def delete_fbo_reserve(self, reserve_id: int) -> None:
+        await self.shipment_of_goods_repository.delete_fbo_reserve(reserve_id)
 
     async def shipment_with_reserve_updating(
             self,

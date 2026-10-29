@@ -5,15 +5,108 @@ from pprint import pprint
 from typing import List, Tuple
 
 import asyncpg
+from fastapi import HTTPException
 from asyncpg import Pool
 from app.models import ShipmentOfGoodsUpdate, WriteOffAccordingToFBS
 from app.models.shipment_of_goods import ShipmentOfGoodsResponse, ShipmentParamsData, ReserveOfGoodsCreate, ReserveOfGoodsResponse, ShippedGoods, ReservedData, \
-    DeliveryType, ShippedGoodsByID, SummReserveData, DeliveryTypeData, CreationWithMovement, ShipmentWithReserveUpdating
+    DeliveryType, ShippedGoodsByID, SummReserveData, DeliveryTypeData, CreationWithMovement, ShipmentWithReserveUpdating, FBOReservePatch
 
 
 class ShipmentOfGoodsRepository:
     def __init__(self, pool: Pool):
         self.pool = pool
+
+    async def _lock_editable_fbo_reserve(self, conn, reserve_id):
+        reserve = await conn.fetchrow(
+            "SELECT * FROM public.product_reserves WHERE id=$1 FOR UPDATE", reserve_id
+        )
+        if reserve is None:
+            raise HTTPException(404, "Резерв не найден")
+        if reserve["delivery_type"] != DeliveryType.FBO or reserve["shipped"] != 0:
+            raise HTTPException(409, "Операция доступна только для резерва ФБО с shipped = 0")
+        if await conn.fetchval(
+            "SELECT EXISTS(SELECT 1 FROM public.shipment_of_goods WHERE product_reserves_id=$1)",
+            reserve_id,
+        ):
+            raise HTTPException(409, "У резерва есть связанные отгрузки")
+        # Блокируем движения до проверки, чтобы не удалить изменённую параллельно запись.
+        movements = await conn.fetch(
+            "SELECT id, transaction_type FROM public.inventory_transactions "
+            "WHERE product_reserves_id=$1 ORDER BY id FOR UPDATE", reserve_id
+        )
+        if any(row["transaction_type"] != "reservation" for row in movements):
+            raise HTTPException(409, "У резерва есть движения, отличные от reservation")
+        if len(movements) != 1:
+            raise HTTPException(409, "Нарушена связь резерва со складским движением")
+        return reserve, movements[0]["id"]
+
+    async def patch_fbo_reserve(self, reserve_id: int, data: FBOReservePatch):
+        changes = data.model_dump(exclude_unset=True)
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    reserve, movement_id = await self._lock_editable_fbo_reserve(conn, reserve_id)
+                    identity_changed = any(
+                        key in changes and changes[key] != reserve[key]
+                        for key in ("product_id", "warehouse_id")
+                    )
+                    if identity_changed and (
+                        reserve["source_reserve_id"] is not None
+                        or await conn.fetchval(
+                            "SELECT EXISTS(SELECT 1 FROM public.product_reserves WHERE source_reserve_id=$1)",
+                            reserve_id,
+                        )
+                    ):
+                        raise HTTPException(409, "Нельзя менять товар или склад резерва, связанного с перемещением")
+                    # Имена столбцов берутся исключительно из валидированной модели.
+                    assignments = ", ".join(
+                        f"{key}=${index}" for index, key in enumerate(changes, 2)
+                    )
+                    updated = await conn.fetchrow(
+                        f"UPDATE public.product_reserves SET {assignments} WHERE id=$1 RETURNING *",
+                        reserve_id, *changes.values(),
+                    )
+                    # Текущий триггер резерва синхронизирует только количество и исполнение.
+                    await conn.execute(
+                        """UPDATE public.inventory_transactions
+                           SET product_id=$2, warehouse_id=$3, account=$4,
+                               delivery_type=$5, quantity=$6, reserve_is_fulfilled=$7
+                           WHERE id=$1""",
+                        movement_id, updated["product_id"], updated["warehouse_id"],
+                        updated["account"], updated["delivery_type"],
+                        updated["ordered"] - updated["shipped"], updated["is_fulfilled"],
+                    )
+                    if identity_changed:
+                        # Триггер движения пересчитывает новую пару, старую — явно здесь.
+                        await conn.execute(
+                            """UPDATE public.current_balances cb SET reserved_quantity=(
+                                SELECT COALESCE(SUM(it.quantity),0)
+                                FROM public.inventory_transactions it
+                                WHERE it.product_id=cb.product_id AND it.warehouse_id=cb.warehouse_id
+                                  AND it.transaction_type='reservation' AND it.reserve_is_fulfilled=false
+                            ) WHERE cb.product_id=$1 AND cb.warehouse_id=$2""",
+                            reserve["product_id"], reserve["warehouse_id"],
+                        )
+                    return ShipmentOfGoodsResponse(
+                        status=200, message="Резерв ФБО обновлён", data=[dict(updated)]
+                    )
+        except asyncpg.ForeignKeyViolationError as exc:
+            raise HTTPException(422, "Указан несуществующий товар или склад") from exc
+        except asyncpg.CheckViolationError as exc:
+            raise HTTPException(422, "Изменения нарушают ограничения резерва") from exc
+
+    async def delete_fbo_reserve(self, reserve_id: int):
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                await self._lock_editable_fbo_reserve(conn, reserve_id)
+                if await conn.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM public.product_reserves WHERE source_reserve_id=$1)",
+                    reserve_id,
+                ):
+                    raise HTTPException(409, "У резерва есть дочерние резервы")
+                # Триггеры удаляют reservation и освобождают складской резерв.
+                # Количество в source_reserve_id не возвращается.
+                await conn.execute("DELETE FROM public.product_reserves WHERE id=$1", reserve_id)
 
     async def write_off_according_to_fbs(self, data: List[WriteOffAccordingToFBS]) -> ShipmentOfGoodsResponse:
         """
