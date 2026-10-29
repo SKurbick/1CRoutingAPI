@@ -1,8 +1,55 @@
 import datetime
+from decimal import Decimal
 from typing import Optional, List
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class FBOReservePatch(BaseModel):
+    """Только бизнес-поля резерва ФБО; системные поля запрещены."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: Optional[str] = Field(
+        default=None, min_length=1, examples=["testwild"],
+        description="ID существующего товара. null запрещён. Нельзя менять у резерва, связанного с перемещением.",
+    )
+    warehouse_id: Optional[int] = Field(
+        default=None, gt=0, examples=[1],
+        description="ID существующего склада. null запрещён. Нельзя менять у резерва, связанного с перемещением.",
+    )
+    ordered: Optional[Decimal] = Field(
+        default=None, ge=0, allow_inf_nan=False, examples=[12],
+        description="Новое полное количество резерва, не прибавка. Неотрицательное; допустимы дроби. null запрещён.",
+    )
+    account: Optional[str] = Field(
+        default=None, examples=["Вектор"], description="Аккаунт продавца. null очищает значение.",
+    )
+    supply_id: Optional[str] = Field(
+        default=None, examples=["WB-GI-166715280"], description="Номер поставки. null очищает значение.",
+    )
+    wb_warehouse: Optional[str] = Field(
+        default=None, examples=["Коледино"], description="Название склада маркетплейса. null очищает значение.",
+    )
+    reserve_date: Optional[datetime.date] = Field(
+        default=None, examples=["2026-10-26"], description="Дата резерва в формате YYYY-MM-DD. null очищает значение.",
+    )
+    expires_at: Optional[datetime.datetime] = Field(
+        default=None, examples=["2026-11-01T12:00:00+03:00"],
+        description="Срок действия: ISO 8601 с часовым поясом (Z или ±HH:MM). null очищает значение.",
+    )
+
+    @model_validator(mode="after")
+    def validate_patch(self):
+        if not self.model_fields_set:
+            raise ValueError("Укажите хотя бы одно поле для изменения")
+        for name in ("product_id", "warehouse_id", "ordered"):
+            if name in self.model_fields_set and getattr(self, name) is None:
+                raise ValueError(f"Поле {name} не может быть null")
+        if self.expires_at is not None and self.expires_at.utcoffset() is None:
+            raise ValueError("expires_at должен содержать часовой пояс")
+        return self
 
 example_shipment_of_goods_data = [
     {

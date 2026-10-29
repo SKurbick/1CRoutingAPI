@@ -7,7 +7,9 @@ import logging
 import json
 import os
 from logging.handlers import RotatingFileHandler
+from datetime import datetime
 from typing import List, Dict, Any, Set
+from zoneinfo import ZoneInfo
 import httpx
 from app.dependencies.config import settings
 
@@ -44,6 +46,7 @@ class WMSIntegrationService:
     # Константы (можно вынести в .env если нужно)
     RECEIPT_LOCATION = "PUSHKINO-ПРИЁМКА"
     EXCLUDED_SUPPLIER_CODE = "9714053621"  # ВБ (исключаем)
+    DOCUMENT_TIMEZONE = ZoneInfo("Europe/Moscow")
 
     def __init__(self, receipt_repository, pool):
         """
@@ -94,6 +97,11 @@ class WMSIntegrationService:
                 )
                 stats["processed_receipts"] += 1
             except Exception as e:
+                logger.error(
+                    "WMS metadata snapshot | guid=%s | status=failed | error=%s",
+                    receipt.guid,
+                    e,
+                )
                 logger.error(f"Error processing receipt {receipt.guid}: {e}")
                 stats["errors"].append({
                     "guid": receipt.guid,
@@ -137,14 +145,18 @@ class WMSIntegrationService:
         logger.info(f"  Items count: {len(receipt.supply_data)}")
 
         # Фильтрация по статусу (оба варианта написания: Ё и Е)
-        VALID_STATUSES = ["Проведен", "Проведён"]
-        if receipt.event_status not in VALID_STATUSES:
-            logger.warning(f"  ❌ SKIPPED: event_status not in {VALID_STATUSES} (actual: '{receipt.event_status}')")
-            return
+        # VALID_STATUSES = ["Проведен", "Проведён"] # сейчас намеренно отключена что бы получать все документы для WMS
+        # if receipt.event_status not in VALID_STATUSES:
+        #     logger.warning(f"  ❌ SKIPPED: event_status not in {VALID_STATUSES} (actual: '{receipt.event_status}')")
+        #     return
 
         # Фильтрация по поставщику (исключаем ВБ)
         if receipt.supplier_code == self.EXCLUDED_SUPPLIER_CODE:
             logger.warning(f"  ❌ SKIPPED: supplier is WB (code: {receipt.supplier_code})")
+            logger.info(
+                "WMS metadata snapshot | guid=%s | status=unchanged",
+                receipt.guid,
+            )
             return
 
         logger.info(f"  ✅ Receipt passed filters")
@@ -154,6 +166,19 @@ class WMSIntegrationService:
         supplier_name = receipt.supplier_name
         supplier_code = receipt.supplier_code
         author = receipt.author_of_the_change
+        document_created_at = self._normalize_document_datetime(receipt.document_created_at)
+        supply_date = self._normalize_document_datetime(receipt.supply_date)
+        update_document_datetime = self._normalize_document_datetime(
+            receipt.update_document_datetime
+        )
+
+        # Входящий документ является полным snapshot. Позиция, которая была в
+        # предыдущем WMS snapshot, но исчезла из supply_data, эквивалентна
+        # корректировке её количества до нуля.
+        existing_items = await self.receipt_repo.get_receipt_items_by_guid(guid)
+        incoming_product_ids = {
+            item.local_vendor_code for item in receipt.supply_data
+        }
 
         # Обработать каждый товар в поставке
         # Разделяем на новые (bulk receive) и корректировки (per-item)
@@ -170,6 +195,11 @@ class WMSIntegrationService:
                 logger.warning(f"    ❌ SKIPPED: product '{product_id}' not found in products table")
                 if product_id not in stats["skipped_products"]:
                     stats["skipped_products"].append(product_id)
+                logger.info(
+                    "WMS metadata snapshot | guid=%s | product_id=%s | status=unchanged",
+                    guid,
+                    product_id,
+                )
                 continue
 
             # Проверить: есть ли уже этот товар в этой поставке?
@@ -184,6 +214,16 @@ class WMSIntegrationService:
                     old_quantity=float(existing["quantity"]),
                     new_quantity=quantity,
                     document_number=document_number,
+                    supplier_name=supplier_name,
+                    supplier_code=supplier_code,
+                    document_created_at=document_created_at,
+                    supply_date=supply_date,
+                    update_document_datetime=update_document_datetime,
+                    event_status=receipt.event_status,
+                    author_of_the_change=receipt.author_of_the_change,
+                    our_organizations_name=receipt.our_organizations_name,
+                    order_guid=receipt.order_guid,
+                    currency=receipt.currency,
                     author=author,
                     stats=stats
                 )
@@ -191,6 +231,38 @@ class WMSIntegrationService:
             else:
                 logger.info(f"    ➕ NEW RECEIPT: {product_id} | Qty: {quantity}")
                 new_items.append((product_id, quantity))
+
+        for existing_item in existing_items:
+            product_id = existing_item["product_id"]
+            if product_id in incoming_product_ids:
+                continue
+
+            old_quantity = float(existing_item["quantity"])
+            logger.info(
+                "    🔄 REMOVED ITEM ADJUSTMENT: %s | Old qty: %s | New qty: 0",
+                product_id,
+                old_quantity,
+            )
+            await self._adjust_receipt_item(
+                guid=guid,
+                product_id=product_id,
+                old_quantity=old_quantity,
+                new_quantity=0.0,
+                document_number=document_number,
+                supplier_name=supplier_name,
+                supplier_code=supplier_code,
+                document_created_at=document_created_at,
+                supply_date=supply_date,
+                update_document_datetime=update_document_datetime,
+                event_status=receipt.event_status,
+                author_of_the_change=receipt.author_of_the_change,
+                our_organizations_name=receipt.our_organizations_name,
+                order_guid=receipt.order_guid,
+                currency=receipt.currency,
+                author=author,
+                stats=stats,
+            )
+            stats["adjusted_movements"] += 1
 
         # Bulk-создание всех новых receive movements с разбивкой на батчи
         if new_items:
@@ -241,7 +313,20 @@ class WMSIntegrationService:
                         quantity=quantity,
                         document_number=document_number,
                         supplier_name=supplier_name,
-                        supplier_code=supplier_code
+                        supplier_code=supplier_code,
+                        document_created_at=document_created_at,
+                        supply_date=supply_date,
+                        update_document_datetime=update_document_datetime,
+                        event_status=receipt.event_status,
+                        author_of_the_change=receipt.author_of_the_change,
+                        our_organizations_name=receipt.our_organizations_name,
+                        order_guid=receipt.order_guid,
+                        currency=receipt.currency
+                    )
+                    logger.info(
+                        "WMS metadata snapshot | guid=%s | product_id=%s | status=created",
+                        guid,
+                        product_id,
                     )
                     logger.info(
                         f"Received: {product_id} qty={quantity} "
@@ -258,6 +343,13 @@ class WMSIntegrationService:
                     f"batches={total_batches} | total_movements={total_created}"
                 )
 
+    @classmethod
+    def _normalize_document_datetime(cls, value: datetime) -> datetime:
+        """Attach the documented 1C timezone when its datetime has no offset."""
+        if value.tzinfo is None or value.utcoffset() is None:
+            return value.replace(tzinfo=cls.DOCUMENT_TIMEZONE)
+        return value
+
     async def _adjust_receipt_item(
         self,
         guid: str,
@@ -265,85 +357,114 @@ class WMSIntegrationService:
         old_quantity: float,
         new_quantity: float,
         document_number: str,
+        supplier_name: str,
+        supplier_code: str | None,
+        document_created_at: Any,
+        supply_date: Any,
+        update_document_datetime: Any,
+        event_status: str,
+        author_of_the_change: str,
+        our_organizations_name: str,
+        order_guid: str | None,
+        currency: str | None,
         author: str,
         stats: Dict[str, Any]
     ) -> None:
-        """Скорректировать товар в поставке"""
+        """Скорректировать товар в поставке и обновить его metadata snapshot."""
 
         diff = new_quantity - old_quantity
 
         if diff == 0:
-            logger.debug(f"No change for {product_id} in receipt {guid}")
-            return
-
-        # Получить доступное количество в зоне приёмки
-        available = await self.receipt_repo.get_available_quantity_in_location(
-            product_id=product_id,
-            location_code=self.RECEIPT_LOCATION
-        )
-
-        wms_api_url = getattr(settings, 'WMS_API_URL_MOVEMENTS', 'http://localhost:8000/api/movements')
-
-        if diff > 0:
-            # Увеличение количества
-            await self._create_wms_movement(
-                api_url=wms_api_url,
-                movement_type="adjust",
-                product_id=product_id,
-                to_location_code=self.RECEIPT_LOCATION,
-                quantity=abs(diff),
-                user_name=author,
-                reason=f"Корректировка поставки {document_number}: {old_quantity} → {new_quantity}"
-            )
-            logger.info(f"Adjusted UP: {product_id} +{diff} (receipt {document_number})")
-
+            logger.debug(f"No quantity change for {product_id} in receipt {guid}")
         else:
-            # Уменьшение количества
-            required_decrease = abs(diff)
+            # Получить доступное количество в зоне приёмки
+            available = await self.receipt_repo.get_available_quantity_in_location(
+                product_id=product_id,
+                location_code=self.RECEIPT_LOCATION
+            )
 
-            if available >= required_decrease:
-                # Достаточно товара
+            wms_api_url = getattr(
+                settings,
+                'WMS_API_URL_MOVEMENTS',
+                'http://localhost:8000/api/movements',
+            )
+
+            if diff > 0:
+                # Увеличение количества
                 await self._create_wms_movement(
                     api_url=wms_api_url,
                     movement_type="adjust",
                     product_id=product_id,
-                    from_location_code=self.RECEIPT_LOCATION,
-                    quantity=required_decrease,
+                    to_location_code=self.RECEIPT_LOCATION,
+                    quantity=abs(diff),
                     user_name=author,
                     reason=f"Корректировка поставки {document_number}: {old_quantity} → {new_quantity}"
                 )
-                logger.info(f"Adjusted DOWN: {product_id} -{required_decrease}")
+                logger.info(f"Adjusted UP: {product_id} +{diff} (receipt {document_number})")
 
             else:
-                # Недостаточно товара — вычитаем сколько можем
-                if available > 0:
+                # Уменьшение количества
+                required_decrease = abs(diff)
+
+                if available >= required_decrease:
+                    # Достаточно товара
                     await self._create_wms_movement(
                         api_url=wms_api_url,
                         movement_type="adjust",
                         product_id=product_id,
                         from_location_code=self.RECEIPT_LOCATION,
-                        quantity=available,
+                        quantity=required_decrease,
                         user_name=author,
-                        reason=f"Частичная корректировка поставки {document_number}: -{available} из -{required_decrease}"
+                        reason=f"Корректировка поставки {document_number}: {old_quantity} → {new_quantity}"
                     )
+                    logger.info(f"Adjusted DOWN: {product_id} -{required_decrease}")
 
-                shortage = required_decrease - available
-                stats["adjustment_warnings"].append({
-                    "guid": guid,
-                    "product_id": product_id,
-                    "document_number": document_number,
-                    "required_decrease": required_decrease,
-                    "available": available,
-                    "shortage": shortage,
-                    "message": f"Не удалось уменьшить на {shortage} шт (доступно только {available})"
-                })
-                logger.warning(f"Partial adjustment: {product_id} shortage {shortage} in receipt {guid}")
+                else:
+                    # Недостаточно товара — вычитаем сколько можем
+                    if available > 0:
+                        await self._create_wms_movement(
+                            api_url=wms_api_url,
+                            movement_type="adjust",
+                            product_id=product_id,
+                            from_location_code=self.RECEIPT_LOCATION,
+                            quantity=available,
+                            user_name=author,
+                            reason=f"Частичная корректировка поставки {document_number}: -{available} из -{required_decrease}"
+                        )
 
-        # Обновить количество в receipt_items
+                    shortage = required_decrease - available
+                    stats["adjustment_warnings"].append({
+                        "guid": guid,
+                        "product_id": product_id,
+                        "document_number": document_number,
+                        "required_decrease": required_decrease,
+                        "available": available,
+                        "shortage": shortage,
+                        "message": f"Не удалось уменьшить на {shortage} шт (доступно только {available})"
+                    })
+                    logger.warning(f"Partial adjustment: {product_id} shortage {shortage} in receipt {guid}")
+
+        # Snapshot обновляется и при неизменившемся количестве; updated_at ведёт DB trigger.
         await self.receipt_repo.update_receipt_item_quantity(
             guid=guid,
             product_id=product_id,
-            new_quantity=new_quantity
+            new_quantity=new_quantity,
+            document_number=document_number,
+            supplier_name=supplier_name,
+            supplier_code=supplier_code,
+            document_created_at=document_created_at,
+            supply_date=supply_date,
+            update_document_datetime=update_document_datetime,
+            event_status=event_status,
+            author_of_the_change=author_of_the_change,
+            our_organizations_name=our_organizations_name,
+            order_guid=order_guid,
+            currency=currency
+        )
+        logger.info(
+            "WMS metadata snapshot | guid=%s | product_id=%s | status=updated",
+            guid,
+            product_id,
         )
 
     async def _create_wms_movement(
@@ -383,7 +504,9 @@ class WMSIntegrationService:
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(api_url, json=payload)
+                # WMS /api/movements has a batch-only contract, including when
+                # a receipt correction creates exactly one movement.
+                response = await client.post(api_url, json=[payload])
                 response.raise_for_status()
                 logger.info(f"      ✅ WMS movement created | {movement_type} {product_id} qty={quantity}")
 

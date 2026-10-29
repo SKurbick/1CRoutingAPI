@@ -198,7 +198,10 @@ class DocsService:
 
                 # Extract header (only once, but we collect across pages if needed)
                 if not main_data:
-                    header = self.extract_invoice_data(text)
+                    header = self.extract_invoice_data(
+                        text,
+                        filename=doc.get('filename', '')
+                    )
                     if header:
                         main_data = header
 
@@ -220,11 +223,24 @@ class DocsService:
 
         return result
 
-    def extract_invoice_data(self, text):
+    def extract_invoice_data(self, text, filename=''):
         data = {}
 
         # Extract invoice number and date
         match = re.search(r'Счет-фактура №\s*(\d+) от (\d{2}\.\d{2}\.\d{4})', text)
+        if not match:
+            match = re.search(
+                r'Универсальный\s+передаточный\s+документ,?\s*'
+                r'№\s*(\d+)\s+от\s+(\d{2}\.\d{2}\.\d{4})',
+                text,
+                re.IGNORECASE
+            )
+        if not match and filename:
+            match = re.search(
+                r'УПД\s*№\s*(\d+)\s+от\s+(\d{2}\.\d{2}\.\d{4})',
+                filename,
+                re.IGNORECASE
+            )
         if match:
             data["Счёт фактура номер"] = match.group(1)
             data["Счёт фактура дата"] = match.group(2)

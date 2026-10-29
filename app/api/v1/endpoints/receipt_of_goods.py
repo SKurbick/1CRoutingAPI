@@ -1,14 +1,24 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status, Body, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, status, Body, HTTPException, Query
 from app.dependencies import  get_receipt_of_goods_service
-from app.models.receipt_of_goods import ReceiptOfGoodsResponse, example_receipt_of_goods_data, ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate, example_add_incoming_receipt_data
+from app.models.receipt_of_goods import ReceiptOfGoodsData, ReceiptOfGoodsResponse, example_receipt_of_goods_data, ReceiptOfGoodsUpdate, AddIncomingReceiptUpdate, example_add_incoming_receipt_data
 from app.service.receipt_of_goods import ReceiptOfGoodsService
 
 # router = APIRouter(prefix="receipt_of_goods",dependencies=[Depends(verify_service_token)])
 
 router = APIRouter(prefix="/receipt_of_goods", tags=["Поступления товаров на склад продавца"])
 
+
+@router.get("/get_receipt_of_goods", response_model=ReceiptOfGoodsData)
+async def get_receipt_of_goods(
+    guid: str = Query(..., min_length=1, max_length=45),
+    service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service),
+):
+    result = await service.get_valid_data_by_guid(guid)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Valid receipt not found")
+    return result
 
 @router.post("/update", response_model=ReceiptOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def create_data(
@@ -38,11 +48,12 @@ async def create_data(
 
 @router.post("/add_incoming_receipt", response_model=ReceiptOfGoodsResponse, status_code=status.HTTP_201_CREATED)
 async def add_incoming_receipt(
-        data: List[AddIncomingReceiptUpdate] = Body(example=example_add_incoming_receipt_data),
+        background_tasks: BackgroundTasks,
+        data: List[AddIncomingReceiptUpdate] = Body(examples=[example_add_incoming_receipt_data]),
         service: ReceiptOfGoodsService = Depends(get_receipt_of_goods_service)
 ):
     """Оприходование товаров (от акта приемки) на основной склад продавца. Временное решение пока нет актуализации поступлений в 1С"""
-    # result = await service.add_incoming_receipt(data)
+    # result = await service.add_incoming_receipt(data, background_tasks)
     result = ReceiptOfGoodsResponse(status=201,message="стоит заглушка на оприходование")
     if result.status >= 400:
         raise HTTPException(

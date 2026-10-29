@@ -14,6 +14,7 @@ from .products_dimensions import router as products_dimensions_router
 from .box_stickers import router as box_stickers_router
 from .cash_flow_writeoff import router as cash_flow_writeoff_router
 from .return_to_supplier import router as return_to_supplier_router
+from .product_writeoff import router as product_writeoff_router
 
 
 __all__ = [
@@ -33,4 +34,5 @@ __all__ = [
     'box_stickers_router',
     'cash_flow_writeoff_router',
     'return_to_supplier_router',
+    'product_writeoff_router',
 ]
