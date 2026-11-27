@@ -4,7 +4,7 @@
 |---|---|---|---|
 | Receipt update | receipt/supply tables -> WMS -> `wms.receipt_items` | local DB commit first; WMS per batch | no retry; marker-based weak dedup; no compensation |
 | Incoming receipt | acceptance/receipt tables -> 1С `inc_invoice/` | DB first | none |
-| Incoming return | `incoming_returns`, goods return/link/marks -> 1С | one DB tx, then 1С | none |
+| Incoming return | `incoming_returns`, goods return/link/marks, `kiz_returns_outbox` -> 1С и отдельный RabbitMQ | приход/марки/outbox в одной DB tx; затем внешние вызовы | КИЗы: outbox retry + confirms, возможны дубли; 1С без outbox |
 | Return-to-supplier | two versioned tables | two consecutive transactions | repeat versions data; partial commit possible |
 | Financial updates | four financial tables | invalidation then insert, generally no explicit tx | guid versioning only; partial invalidation possible |
 | Kit/resorting | command table -> DB processor -> 1С | insert then polling; external after final | repeat creates command; no timeout/compensation |
@@ -27,11 +27,11 @@
 
 ## Background jobs
 
-Планировщиков/Celery/cron нет. Единственная встроенная background coroutine — монитор pool. FastStream consumers lifecycle-controlled.
+Планировщиков/Celery/cron нет. Lifespan управляет обработчиком `KizReturnsOutboxWorker`: при наличии `RABBITMQ_URL` он опрашивает outbox, публикует сообщения и сохраняет результат/повторную попытку. Монитор pool запускается отдельно. FastStream consumers lifecycle-controlled.
 
 ## Интеграционные операции с 1С
 
-Пять исходящих paths перечислены в `integration_map.md`; входящие update routes version data. Outbox, retry queue и журнал attempts не найдены.
+Пять исходящих paths перечислены в `integration_map.md`; входящие update routes version data. Для вызовов 1С outbox/retry отсутствуют. Outbox с `attempts` реализован отдельно для КИЗов в RabbitMQ.
 
 ## Прямые операции с БД
 

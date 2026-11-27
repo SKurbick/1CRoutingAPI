@@ -15,6 +15,7 @@ qrcode==8.2
 pymupdf
 httpx>=0.24.0
 faststream[rabbit]==0.6.7
+aio-pika>=9.6.2,<10
 aiobotocore==3.6.0
 types-aiobotocore-s3==3.6.0
 redis==7.4.0

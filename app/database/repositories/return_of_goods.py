@@ -5,6 +5,7 @@ from typing import List, Tuple
 
 import asyncpg
 from asyncpg import Pool
+from app.database.repositories.kiz_returns_outbox import enqueue_kiz_returns
 from app.models.return_of_goods import (
     GoodsReturn,
     GroupDataGoodsReturns,
@@ -438,6 +439,8 @@ class ReturnOfGoodsRepository:
                             ],
                         )
 
+                    await enqueue_kiz_returns(conn, data.mark_list or [])
+
             return ReturnOfGoodsResponse(status=201, message="Успешно")
         except asyncpg.PostgresError as e:
             return ReturnOfGoodsResponse(
@@ -554,6 +557,11 @@ class ReturnOfGoodsRepository:
                             data_to_insert_goods_returns_mark_list
                         )
 
+                    await enqueue_kiz_returns(
+                        conn,
+                        (mark for item in data for mark in (item.mark_list or [])),
+                    )
+
             result = ReturnOfGoodsResponse(
                 status=201,
                 message="Успешно"
@@ -669,6 +677,8 @@ class ReturnOfGoodsRepository:
                                 for mark in data.mark_list
                             ],
                         )
+
+                    await enqueue_kiz_returns(conn, data.mark_list or [])
 
             return ReturnOfGoodsResponse(status=201, message="Успешно")
         except asyncpg.UniqueViolationError as e:

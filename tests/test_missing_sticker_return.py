@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import date
 
 from app.database.repositories.return_of_goods import ReturnOfGoodsRepository
@@ -128,7 +129,7 @@ def test_missing_sticker_creates_receipt_link_and_marks():
     result = asyncio.run(repository.receive_missing_sticker(make_request()))
 
     assert result.status == 201
-    assert len(connection.executed) == 2
+    assert len(connection.executed) == 3
 
     incoming_query, incoming_args = connection.executed[0]
     assert "INSERT INTO public.incoming_returns" in incoming_query
@@ -144,3 +145,7 @@ def test_missing_sticker_creates_receipt_link_and_marks():
         ("mark-1", "Operator", "SKU-1"),
         ("broken", "Operator", "SKU-1"),
     ]
+
+    outbox_query, outbox_args = connection.executed[2]
+    assert "INSERT INTO public.kiz_returns_outbox" in outbox_query
+    assert json.loads(outbox_args[0]) == {"mark_codes": ["mark-1"]}

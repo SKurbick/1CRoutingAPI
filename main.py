@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager, AsyncExitStack
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +15,8 @@ from app.api.v1.endpoints import (receipt_of_goods_router, income_on_bank_accoun
                                   containers_router, products_dimensions_router, box_stickers_router, cash_flow_writeoff_router,
                                   return_to_supplier_router, product_writeoff_router)
 from app.broker.broker import broker_manager
+from app.broker.kiz_returns import KizReturnsPublisher
+from app.service.kiz_returns_outbox import KizReturnsOutboxWorker
 import app.broker.subscriber  # noqa: F401
 from app.database.db_connect import init_db, close_db
 from app.dependencies.config import settings
@@ -32,6 +35,25 @@ async def lifespan(app: FastAPI):
         print("Инициализация подключения к БД...")
         pool = await init_db()
         stack.push_async_callback(close_db, pool)
+
+        # Start without connecting to WMS RabbitMQ: outages must not block API.
+        if settings.RABBITMQ_URL:
+            kiz_worker = KizReturnsOutboxWorker(
+                pool,
+                KizReturnsPublisher(
+                    settings.RABBITMQ_URL.get_secret_value(),
+                    settings.KIZ_RETURNS_EXCHANGE,
+                    settings.KIZ_RETURNS_ROUTING_KEY,
+                    settings.KIZ_RETURNS_PUBLISH_TIMEOUT,
+                ),
+                settings.KIZ_RETURNS_POLL_INTERVAL,
+            )
+            kiz_worker.start()
+            stack.push_async_callback(kiz_worker.close)
+        else:
+            logging.getLogger(__name__).warning(
+                "RABBITMQ_URL is unset: KIZ events accumulate in outbox without publishing"
+            )
         active_redis_client = redis_client
         if settings.REDIS_ENABLED:
             print("Инициализация подключения к Redis...")

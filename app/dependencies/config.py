@@ -1,5 +1,5 @@
 from functools import lru_cache
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     RABBIT_USER: str
     RABBIT_PASS: SecretStr
     RABBIT_VHOST: str = '/'
+
+    # Independent WMS KIZ broker; does not affect docgen/sticker publishing.
+    RABBITMQ_URL: SecretStr | None = None
+    KIZ_RETURNS_EXCHANGE: str = "wms.events"
+    KIZ_RETURNS_ROUTING_KEY: str = "wms.kiz_returns"
+    KIZ_RETURNS_POLL_INTERVAL: float = Field(default=1.0, gt=0)
+    KIZ_RETURNS_PUBLISH_TIMEOUT: float = Field(default=10.0, gt=0)
     
     # rabbit exchanges
     RABBIT_EXC_DOCGEN_REQUEST: str = "docgen.request.exchange"
